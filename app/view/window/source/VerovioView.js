@@ -59,9 +59,9 @@ Ext.define('EdiromOnline.view.window.source.VerovioView', {
         });
     },
     
-    setIFrameURL: function (url) {
+    setIFrameContent: function (uri, edition) {
         var me = this;
-        me.verovioImageView.setIFrameURL(url);
+        me.verovioImageView.setIFrameContent(uri, edition);
     },
     
     createMenuEntries: function () {
