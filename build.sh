@@ -28,5 +28,8 @@ sencha app build $1
 # download the Euryanthe Font
 ant download-euryanthe
 
+# inject build properties
+ant inject-properties
+
 # build xar
 ant xar

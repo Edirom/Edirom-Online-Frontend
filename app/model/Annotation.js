@@ -34,7 +34,7 @@ Ext.define('EdiromOnline.model.Annotation', {
 
     proxy: {
         type: 'ajax',
-        url: 'data/xql/getAnnotations.xql',
+        url: '@backend.url@data/xql/getAnnotations.xql',
         reader: {
             type: 'json',
             root: 'annotations',

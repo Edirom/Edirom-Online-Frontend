@@ -3,6 +3,8 @@
     
     <import file="${basedir}/.sencha/app/build-impl.xml"/>
     
+    <property name="backend.url" value="/exist/apps/Edirom-Online-Backend/"/>
+
     <property name="project.version" value="1.0.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
     <property name="project.title" value="Edirom Online Frontend"/>
@@ -29,6 +31,16 @@
                 <include name="*.ttf"/>
             </fileset>
         </copy>
+    </target>
+
+    <target name="inject-properties">
+        <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true">
+            <filterset begintoken="@" endtoken="@">
+                <filter token="backend.url" value="${backend.url}"/>
+            </filterset>
+        </copy>
+        <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js"  overwrite="true" preservelastmodified="true"/>
+        <delete file="${build.dir}/app-temp.js"/>
     </target>
 
 
