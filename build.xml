@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="EdiromOnline" default="xar">
+    
+    <import file="${basedir}/.sencha/app/build-impl.xml"/>
+    
+    <property name="project.version" value="1.0.0"/>
+    <property name="project.app" value="Edirom-Online-Frontend"/>
+    <property name="project.title" value="Edirom Online Frontend"/>
+    <property name="repo.target" value="${project.app}"/>
+    <property name="build.dir" value="build"/>
+    <property name="dist.dir" value="build-xar"/>
+    <property name="temp.dir.name" value="temp"/>
+    <property name="temp.dir" value="${build.dir}/${temp.dir.name}"/>
+    <property name="euryanthe.dir" value="build-euryanthe"/>
+    <property name="exist.dir" value="exist-packaging"/>
+    
+    <tstamp/>
+
+    <!-- Download Euryanthe Font Zip file and extract it to ${euryanthe.dir} -->
+    <target name="download-euryanthe">
+        <mkdir dir="${euryanthe.dir}"/>
+        <get src="https://github.com/Edirom/EuryantheFont/archive/refs/tags/v1.0.0.zip" dest="${euryanthe.dir}/v1.0.0.zip"/>
+        <unzip src="${euryanthe.dir}/v1.0.0.zip" dest="${euryanthe.dir}"/>
+        
+        <!-- Copy Euryanthe Font from ${euryanthe.dir} -->
+        <mkdir dir="${build.dir}/resources/fonts/euryanthe"/>
+        <copy todir="${build.dir}/resources/fonts/euryanthe" preservelastmodified="true">
+            <fileset dir="${euryanthe.dir}/EuryantheFont-1.0.0">
+                <include name="*.ttf"/>
+            </fileset>
+        </copy>
+    </target>
+
+
+    <target name="xar">
+        <copy todir="${build.dir}" preservelastmodified="true">
+            <fileset dir="${exist.dir}">
+                <exclude name="*.png"/>
+            </fileset>
+            <filterset begintoken="@" endtoken="@">
+                <filter token="project.version" value="${project.version}"/>
+                <filter token="project.app" value="${project.app}"/>
+                <filter token="project.title" value="${project.title}"/>
+                <filter token="repo.target" value="${repo.target}"/>
+            </filterset>
+        </copy>
+        <copy todir="${build.dir}" preservelastmodified="true">
+            <fileset dir="${exist.dir}">
+                <include name="*.png"/>
+            </fileset>            
+        </copy>
+        <mkdir dir="${dist.dir}"/>
+        <zip basedir="${build.dir}" destfile="${dist.dir}/${project.app}-${project.version}-${DSTAMP}-${TSTAMP}.xar">
+            <exclude name="${temp.dir.name}/**"/>
+        </zip>
+    </target>
+    
+</project>

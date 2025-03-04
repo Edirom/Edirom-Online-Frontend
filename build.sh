@@ -19,15 +19,14 @@ while getopts "d" flag; do
  esac
 done
 
-
 # cleaning the build dir
 sencha ant clean
 
 # building the app
 sencha app build $1
 
-# get additional stuff for exist-db
-ant build-plus
+# download the Euryanthe Font
+ant download-euryanthe
 
 # build xar
 ant xar
