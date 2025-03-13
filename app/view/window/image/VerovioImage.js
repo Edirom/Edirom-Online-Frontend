@@ -31,77 +31,89 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		me.callParent();
 	},
 
-	setIFrameContent: function (uri, edition) {
+	setIFrameContent: function(uri, edition) {
 		var me = this;
-
-		var html = `<html>
-        		<head>
-					<title>Verovio</title>
-					<script
-						src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
-					<script
-						src="https://code.jquery.com/jquery-3.5.1.min.js"
-						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
-						crossorigin="anonymous"></script>
-					<script
-						src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>
-					<script
-						src="resources/js/he.js"></script>
-					
-					<script
-						src="resources/js/tipped/tipped.js"></script>
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/tipped/tipped.css"/>
-					
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/verovio-view.css"/>
+		var html = `
+		<!DOCTYPE html>
+		<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Verovio Renderer</title>
+	
+				<!-- Import Web Component -->
+				<script src="./resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js" type="text/javascript" charset="utf-8"></script>
+	
+				<script src="https://code.jquery.com/jquery-3.5.1.min.js" 
+					integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" 
+					crossorigin="anonymous"></script>
 				
-				</head>
-				<body>
-					<div
-						id="output"></div>
-					<div
-						id="toolbar"
-						class="noselect">
-						<span
-							class="button"
-							onclick="prevPage()">
-							<span
-								class="iconify"
-								data-icon="mdi-chevron-left"
-								style="font-size: 1.3em;"></span>
-						</span>
-						<span
-							id="page">1</span> / <span
-							id="pageCount">1</span>
-						<span
-							class="button"
-							onclick="nextPage()">
-							<span
-								class="iconify"
-								data-icon="mdi-chevron-right"
-								style="font-size: 1.3em;"></span>
-						</span>
-					</div>
-					<div
-						class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-					
-					<script>
-						var uri = "${uri}";
-						var edition = "${edition}";
-						var movementId = "";
-						var appBasePath = "@backend.url@";
-					</script>
-					<script
-						src="resources/js/verovio-view.js"></script>
-				</body>
-			</html>`;
-
-
+				<script src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>
+				<script src="resources/js/he.js"></script>
+				<script src="resources/js/tipped/tipped.js"></script>
+				
+				<link rel="stylesheet" type="text/css" href="resources/css/tipped/tipped.css"/>
+				<link rel="stylesheet" type="text/css" href="resources/css/verovio-view.css"/>
+			</head>
+			<body>
+				<!-- Replaced #output with edirom-verovio-renderer -->
+				<edirom-verovio-renderer 
+					id="verovioRenderer"
+					width="800"
+					height="600"
+					zoom="33"
+					pagenumber="1">
+				</edirom-verovio-renderer>
+	
+				<div id="toolbar" class="noselect">
+					<span class="button" onclick="prevPage()">
+						<span class="iconify" data-icon="mdi-chevron-left" style="font-size: 1.3em;"></span>
+					</span>
+					<span id="page">1</span> / <span id="pageCount">1</span>
+					<span class="button" onclick="nextPage()">
+						<span class="iconify" data-icon="mdi-chevron-right" style="font-size: 1.3em;"></span>
+					</span>
+				</div>
+	
+				<div class='lds-roller'>
+					<div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+				</div>
+	
+				<script>
+					var uri = "` + uri + `";
+					var edition = "` + edition + `";
+					var appBasePath = "/exist/apps/Edirom-Online-Backend/";
+	
+					// Update Verovio Component with MEI Data
+					function updateVerovioRenderer(movementId) {
+						let verovioRenderer = document.getElementById("verovioRenderer");
+						let meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition + "&movementId=" + movementId;
+						
+						verovioRenderer.setAttribute("meiurl", meiUrl);
+						verovioRenderer.setAttribute("pagenumber", "1");
+						verovioRenderer.setAttribute("zoom", "33");
+					}
+	
+					function prevPage() {
+						let verovioRenderer = document.getElementById("verovioRenderer");
+						let currentPage = parseInt(verovioRenderer.getAttribute("pagenumber"));
+						if (currentPage > 1) {
+							verovioRenderer.setAttribute("pagenumber", currentPage - 1);
+						}
+					}
+	
+					function nextPage() {
+						let verovioRenderer = document.getElementById("verovioRenderer");
+						let currentPage = parseInt(verovioRenderer.getAttribute("pagenumber"));
+						let totalPages = verovioRenderer.totalPages;
+						if (currentPage < totalPages) {
+							verovioRenderer.setAttribute("pagenumber", currentPage + 1);
+						}
+					}
+				</script>
+			</body>
+		</html>`;
+	
 		var iframe = me.el.getById(me.id + '_rendContIFrame');
 		iframe.dom.contentWindow.document.open();
 		iframe.dom.contentWindow.document.write(html);
