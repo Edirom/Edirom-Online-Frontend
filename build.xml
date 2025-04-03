@@ -58,8 +58,11 @@
         </copy>
         <copy todir="${build.dir}" preservelastmodified="true">
             <fileset dir="${exist.dir}">
-                <include name="*.png"/>
-            </fileset>            
+                <include name="*.png"/>                
+            </fileset>       
+            <fileset dir="${basedir}">
+                <include name="controller.xq"/>
+            </fileset>     
         </copy>
         <mkdir dir="${dist.dir}"/>
         <zip basedir="${build.dir}" destfile="${dist.dir}/${project.app}-${project.version}-${DSTAMP}-${TSTAMP}.xar">
