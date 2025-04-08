@@ -7,7 +7,6 @@ declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:controller external;
 declare variable $exist:prefix external;
-declare variable $exist:root external;
 
 if ($exist:path eq "") then
     (: forward missing / to / :)
@@ -17,7 +16,7 @@ if ($exist:path eq "") then
 else if ($exist:path eq "/") then
     (: redirect root path to index.html :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="index.html"/>
+        <forward url="index.html"/>
     </dispatch>
 else
     (: everything else is passed through :)
