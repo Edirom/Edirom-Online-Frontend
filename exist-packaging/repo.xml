@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>@project.title@</description>
+    <author>The Edirom Online Developers</author>
+    <website>https://edirom.github.io/Edirom-Online/</website>
+    <status>alpha</status>
+    <license>GPL-3.0</license>
+    <copyright>true</copyright>
+    <type>application</type>
+    <target>@repo.target@</target>
+    <finish/>
+    <permissions user="edirom" password="edirom" group="dba" mode="0775"/>
+</meta>

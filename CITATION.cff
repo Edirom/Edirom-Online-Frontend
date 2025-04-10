@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+title: Edirom-Online Frontend
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Benjamin W.
+    family-names: Bohl
+    orcid: https://orcid.org/0000-0001-7217-9167
+  - given-names: Daniel
+    family-names: Röwenstrunk
+    orcid: https://orcid.org/0000-0001-6271-2095
+  - given-names: Nikolaos
+    family-names: Beer
+    orcid: https://orcid.org/0009-0005-4739-5227
+  - given-names: Peter
+    family-names: Stadler
+    orcid: https://orcid.org/0000-0002-2544-1481
+  - given-names: Daniel
+    family-names: Jettka
+    orcid: https://orcid.org/0000-0002-2375-2227
+  - given-names: Kristin
+    family-names: Herold
+    orcid: https://orcid.org/0000-0003-2915-353X
+  - given-names: Hizkiel
+    family-names: Alemayehu
+    orcid: https://orcid.org/0009-0006-3345-086X
+  - given-names: Dennis
+    family-names: Friedl
+    orcid: https://orcid.org/0009-0000-4410-4627
+  - given-names: Dennis
+    family-names: Ried
+    orcid: https://orcid.org/0000-0001-5545-2088
+  - given-names: Johannes
+    family-names: Kepper
+    orcid: https://orcid.org/0000-0003-4891-260X
+  - given-names: Silke
+    family-names: Reich
+    orcid: https://orcid.org/0009-0007-8817-0299
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.15013104
+    description: Edirom-Online Frontend
+repository-code: https://github.com/Edirom/Edirom-Online-Frontend
+abstract: >-
+  Edirom-Online Frontend is the frontend for the Edirom 
+  Online which is used for the presentation and
+  analysis of critical musical editions in a digital format,
+  particularly in the fields of musicology and philology.
+license: MIT
+version: 1.0.0
+date-released: 2025-03-12

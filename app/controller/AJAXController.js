@@ -67,6 +67,8 @@ Ext.define('EdiromOnline.controller.AJAXController', {
         if(typeof async === 'undefined')
             async = true;
 
+        url = this.application.backendURL + url;
+
         var fn = Ext.bind(function(response, options, retryNoInt) {
         
             try {

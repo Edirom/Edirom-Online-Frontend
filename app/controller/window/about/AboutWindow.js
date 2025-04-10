@@ -39,41 +39,65 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
         if(view.initialized) return;
         view.initialized = true;
 
-        window.doAJAXRequest('resources/CITATION.cff',
-            'GET', {}, 
-            Ext.bind(function(response){
-                
-                const citation = response.responseText;
+        // Fetching content of CITATION.cff files and turn into HTML        
+        async function fetchContent(url) {
+            const response = await fetch(url);
+            const citation = await response.text();
 
-                // find keys in citation
-                const abstract = String(citation.match(/^abstract:\s>-\n(\s+.*\n)+/gm)).replace(/^abstract:\s>-\n/, '');
-                const version = citation.match(/^version: (.*)/m)[1];
-                const title = citation.match(/^title: (.*)/m)[1];
-                const license = citation.match(/^license: (.*)/m)[1];
-                const repoUrl = citation.match(/^repository\-code: '(.*)'/m)[1];
-                const releaseDate = citation.match(/^date\-released: '(.*)'/m)[1];
-                const doi = citation.match(/value: ([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/)[1];
+            const title = citation.match(/^title: (.*)/m)[1];
+            const abstract = String(citation.match(/^abstract:\s>-\n(\s+.*\n)+/gm)).replace(/^abstract:\s>-\n/, '');
+            const version = citation.match(/^version: (.*)/m)[1];
+            const releaseDate = citation.match(/^date\-released: (.*)/m)[1];
+            const license = citation.match(/^license: (.*)/m)[1];
+            const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
+            const doi = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/)[1];
 
-                view.setResult(`
-                    <div class="tei_body">
-                        <h1>About ${title}</h1>
-                        <section class="teidiv0">
-                            <p>${abstract}</p>
-                            <p>Version: ${version}</p>
-                            <p>Release date: ${releaseDate}</p>
-                            <p>DOI: <a href="https://doi.org/${doi}">${doi}</a></p>
-                            <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
-                            <p>GitHub: <a href="${repoUrl}">${repoUrl}</a></p>
-                            <p>Contributors: <br/>
-                                <a href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
-                                <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}" alt="Avatars of contributors to ${title} in GitHub" />
-                                </a>
-                            </p>
-                        </section>
-                    </div>
-                    `);
+            const resultHTML = `                
+                <h1>About ${title}</h1>
+                <section class="teidiv0">
+                    <p>${abstract}</p>
+                    <p>Version: ${version}</p>
+                    <p>Release date: ${releaseDate}</p>
+                    <p>DOI: <a href="https://doi.org/${doi}">${doi}</a></p>
+                    <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
+                    <p>GitHub: <a href="${repoUrl}">${repoUrl}</a></p>
+                    <p>Contributors: <br/>
+                        <a href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
+                            <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
+                        </a>
+                    </p>
+                </section>                
+            `;
 
-            }, this)
-        );
+            return resultHTML;
+        }
+
+
+        // Fetching content of CITATION.cff files and set result
+        Promise.all([
+            fetchContent('../Edirom-Online-Frontend/resources/CITATION.cff'),
+            fetchContent('../Edirom-Online-Backend/resources/CITATION.cff')
+        ]).then(function([frontend, backend]) {
+            view.setResult(`
+                <div class="tei_body">
+                    <h1>About Edirom-Online</h1>
+                    <section class="teidiv0">
+                        <p>
+                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions. 
+                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media. 
+                            Edirom-Online is developed by the Edirom Project.
+                        </p>
+                        <p>
+                            The software consists of two main modules: the frontend and the backend.
+                            Information about the parts of the software can be found below.
+                        </p>
+                    </section>
+                    ${frontend}
+                    ${backend}
+                </div>`);
+        });
+
+
+
     }
 });

@@ -72,7 +72,7 @@ function updatePageData() {
         
         Tipped.create(annotIcon, {
             ajax: {
-                url: '/exist/apps/Edirom-Online/data/xql/getAnnotation.xql',
+                url: appBasePath + 'data/xql/getAnnotation.xql',
                 type: 'post',
                 data: {
                     uri: uri + '#' + annotId,

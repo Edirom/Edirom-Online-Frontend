@@ -64,6 +64,7 @@ Ext.define('EdiromOnline.Application', {
     
     activeEdition: '',
     activeWork: '', 
+    backendURL: '@backend.url@',
 
     launch: function() {
         var me = this;
@@ -73,9 +74,81 @@ Ext.define('EdiromOnline.Application', {
         me.addEvents('workSelected');
         
         var editionParam = me.getURLParameter('edition');
-        if(editionParam !== null)
+
+        if(editionParam == null) {
+
+            Ext.Ajax.request({
+                url: me.backendURL + "data/xql/getEditions.xql",
+                method: 'GET',
+                params: {},
+                success: Ext.bind(function(response){
+                    var editions = JSON.parse(response.responseText);
+                    
+                    // If there is no edition in the backend
+                    if(editions == null) {
+                        let html = `<div class="container" style="margin: 8.75%;">
+                                        <img src="icon.png"/>
+                                        <h1 style="margin-top:5px;">Edirom Online</h1>
+                                        <h3 class="navigatorCategoryTitle">No editions found.</h3>
+                                        <ul></ul></div>`;
+                        
+                        document.body.innerHTML = html;
+
+                    // If there is only one edition in the backend load it directly
+                    }else if(!Array.isArray(editions)) {
+                        this.activeEdition = editions.id;
+                        this.loadEdiromForEdition();
+
+                    // If there is only one edition in the backend load it directly
+                    }else if(editions.length == 1) {
+                        this.activeEdition = editions[0].id;
+                        this.loadEdiromForEdition();
+
+                    // If there are multiple editions in the backend show a selection screen
+                    }else {
+                        let html = `<div class="container" style="margin: 8.75%;">
+                                        <img src="icon.png"/>
+                                        <h1 style="margin-top:5px;">Edirom Online</h1>
+                                        <h3 class="navigatorCategoryTitle">Bitte Edition auswählen</h3>
+                                        <ul>`;
+                        for(var i = 0; i < editions.length; i++) {
+                                        
+                            html += `<li class="navigatorItem" style="padding-bottom: 0.75em;">
+                                <i>${editions[i].name}</i>
+                                <ul>`;
+                                
+                            if(Array.isArray(editions[i].languages)) {
+                                
+                                for(var j = 0; j < editions[i].languages.length; j++) {
+                                    html += `<li><a class="x-btn" target="_self" href="index.html?edition=${editions[i].id}&amp;lang=${editions[i].languages[j]}">${editions[i].languages[j]}</a></li>`;
+                                }
+                                
+                            }else {
+                                html += `<li><a class="x-btn" target="_self" href="index.html?edition=${editions[i].id}&amp;lang=${editions[i].languages}">${editions[i].languages}</a></li>`;
+                            }
+
+                            html += '</ul></li>';
+                            
+                        }
+                        
+                        html += '</ul></div>';
+                        document.body.innerHTML = html;
+                    }                 
+
+                }, this),
+                async: true
+            });
+
+        }else {
             me.activeEdition = editionParam;
+            me.loadEdiromForEdition();
+        }
+    },
+
+    loadEdiromForEdition: function() { 
         
+        var me = this;
+
         window.doAJAXRequest('data/xql/getEditionURI.xql',
             'GET', 
             {
