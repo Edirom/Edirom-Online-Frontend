@@ -8,14 +8,13 @@ declare variable $exist:resource external;
 declare variable $exist:controller external;
 declare variable $exist:prefix external;
 
-if ($exist:path eq "") then
-    (: forward missing / to / :)
+if ($exist:path eq '') then
+    (: redirect both simple slash and missing slash to index.html :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="{request:get-uri()}/"/>
+        <redirect url="{request:get-uri()}/{if(string-length(request:get-query-string()) gt 0) then '?' else ''}{request:get-query-string()}"/>
     </dispatch>
-else if ($exist:path eq "/") then
-    (: redirect root path to index.html :)
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+else if($exist:path eq '/') then
+     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="index.html"/>
     </dispatch>
 else
@@ -26,4 +25,4 @@ else
         <set-attribute name="exist:controller" value="{$exist:controller}"/>
         <set-attribute name="exist:prefix" value="{$exist:prefix}"/>
         <cache-control cache="yes"/>
-        </dispatch>
+    </dispatch>
