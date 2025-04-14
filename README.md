@@ -3,6 +3,8 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![GitHub release](https://img.shields.io/github/v/release/Edirom/Edirom-Online-Frontend.svg)](https://github.com/Edirom/Edirom-Online-Frontend/releases)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15013104.svg)](https://doi.org/10.5281/zenodo.15013104)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
+
 
 </div>
 
