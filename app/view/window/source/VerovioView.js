@@ -69,10 +69,12 @@ Ext.define('EdiromOnline.view.window.source.VerovioView', {
         var me = this;
         
         me.gotoMenu = Ext.create('Ext.button.Button', {
+
             text: getLangString('view.window.source.SourceView_gotoMenu'),
             indent: false,
             cls: 'menuButton',
             menu: {
+
                 items:[ {
                     id: me.id + '_gotoMeasure',
                     text: getLangString('view.window.source.SourceView_gotoMeasure'),
@@ -121,17 +123,19 @@ Ext.define('EdiromOnline.view.window.source.VerovioView', {
         me.verovioImageView.showMovement(movementId);
     },
     
-    gotoMeasureDialog: function () {
-        var me = this;
+    // gotoMeasureDialog: function () {
+    //     var me = this;
         
-        Ext.create('EdiromOnline.view.window.source.GotoMsg', {
-            movements: me.movements,
-            callback: Ext.bind(function (measure, movementId) {
-                this.fireEvent('gotoMeasureByName', this, measure, movementId);
-            },
-            me)
-        }).show();
-    },
+    //     Ext.create('EdiromOnline.view.window.source.GotoMsg', {
+    //         movements: me.movements,
+    //         callback: Ext.bind(function (measure, movementId) {
+    //             this.fireEvent('gotoMeasureByName', this, measure, movementId);
+    //         },
+    //         me)
+    //     }).show();
+    // },
+
+
 
     /* 
      * Call showMeasure of corresponding VerovioImageView.

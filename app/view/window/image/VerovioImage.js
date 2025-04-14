@@ -69,7 +69,9 @@ setIFrameContent: function(uri, edition) {
                 height="100%"
                 zoom="33"
                 pagenumber="1"
-                meiurl="${meiUrl}">
+                meiurl="${meiUrl}"
+				verovioheight="200"
+				veroviowidth="200">
             </edirom-verovio-renderer>
         </div>
 
