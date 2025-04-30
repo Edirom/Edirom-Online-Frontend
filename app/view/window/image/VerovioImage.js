@@ -51,7 +51,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 			const prevBtn = document.getElementById('prevButton');
 		
 			document.addEventListener('page-info-update', function(e) {
-				console.log("something is changed ", e.detail)
 				const { pageNumber, totalPages } = e.detail;
 				document.getElementById("page").textContent = pageNumber;
                 document.getElementById("pageCount").textContent = totalPages;
