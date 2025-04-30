@@ -159,6 +159,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
     },
 
     gotoMovement: function(pageId, view) {
+        console.log("goto movement from sourc view controller")
+
         if(pageId != '')
             view.showPage(pageId);
     },

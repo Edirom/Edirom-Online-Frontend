@@ -326,6 +326,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     },
 
     gotoMovement: function(menuItem, event, movementId) {
+        console.log("goto movement from sourc view view")
         this.fireEvent('gotoMovement', this, movementId);
     },
 
