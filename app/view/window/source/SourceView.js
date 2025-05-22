@@ -139,6 +139,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         
         me.annotationsVisible = visible;
         me.toggleAnnotationVisibility.setChecked(visible, true);
+        console.log("hi this is an annotation view status on Source view2 ",         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible()))
+
         me.fireEvent('annotationsVisibilityChange', me, visible);
     },
 

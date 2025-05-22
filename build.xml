@@ -6,7 +6,7 @@
     <!-- info for backend -->
     <property name="backend.protocol" value="http"/>
     <property name="backend.host" value="localhost"/>
-    <property name="backend.port" value="8080"/>
+    <property name="backend.port" value="8484"/>
     <property name="backend.path" value="/exist/apps/Edirom-Online-Backend/"/>
     <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
