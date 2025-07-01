@@ -45,6 +45,7 @@ function initData() {
 }
 
 function updatePageData() {
+    console.log("updatePageData called");
     $("#page").html(page);
     $("#pageCount").html(pageCount);
     
