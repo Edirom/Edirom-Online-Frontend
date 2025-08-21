@@ -98,15 +98,10 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
         var me = this;
         var view = btn.view;
 
-        this.cleanWindowsList(view.closeAllButton);
 
         // Are there allready opened windows from the last action?
         if (view.closeAllButton.windows != null) {
-            view.closeAllButton.windows.each(function (win) {
-                if (win) {
-                    win.close();
-                }
-            });
+            this.onCloseAllParticipants(view.closeAllButton);
         }
 
         var linkController = this.application.getController('LinkController');
@@ -129,41 +124,21 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
     onCloseAllParticipants: function(btn, e) {
         var me = this;
         btn.disable();
-        
 
-        this.cleanWindowsList(btn);
-        btn.windows.each(function (win) {
-            if(win)
-                win.close();
-        });
-        
-
-        btn.windows = null;
-    },
-
-    cleanWindowsList: function (btn) {
-        console.log("Cleaning Windows...");
-
-        if (btn.windows) {
-            console.log("Length before cleanup:", btn.windows.length);
-        }
+        // Cleanup already closed windows
         if (btn.windows) {
             btn.windows.each(function (win) {
                 if (!Ext.WindowManager.get(win.id)) {
                     btn.windows.remove(win);
-                    console.log("Removed window:", win.id);
-                    console.log("Remaining windows:", btn.windows);
-                    console.log("Length of remaining windows:", btn.windows.length);
                 }
             });
         }
 
-        if (btn.windows) {
-            console.log("Length after cleanup:", btn.windows.length);
-        }
+        btn.windows.each(function (win) {
+            if (win)
+                win.close();
+        });
 
-    // if (!btn.windows || btn.windows.length === 0) {
-    //     btn.disable();
-    // }
+        btn.windows = null;
     }
 });
