@@ -97,13 +97,11 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
     onOpenAllParticipants: function(btn, e) {
         var me = this;
         var view = btn.view;
-        
+
+
         // Are there allready opened windows from the last action?
-        if(view.closeAllButton.windows != null) {
-            view.closeAllButton.windows.each(function(win) {
-                if(win)
-                    win.close();
-            });
+        if (view.closeAllButton.windows != null) {
+            this.onCloseAllParticipants(view.closeAllButton);
         }
 
         var linkController = this.application.getController('LinkController');
@@ -126,12 +124,21 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
     onCloseAllParticipants: function(btn, e) {
         var me = this;
         btn.disable();
-        
-        btn.windows.each(function(win) {
-            if(win)
+
+        // Cleanup already closed windows
+        if (btn.windows) {
+            btn.windows.each(function (win) {
+                if (!Ext.WindowManager.get(win.id)) {
+                    btn.windows.remove(win);
+                }
+            });
+        }
+
+        btn.windows.each(function (win) {
+            if (win)
                 win.close();
         });
-        
+
         btn.windows = null;
     }
 });

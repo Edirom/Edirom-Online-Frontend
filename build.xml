@@ -3,11 +3,17 @@
     
     <import file="${basedir}/.sencha/app/build-impl.xml"/>
     
-    <property name="backend.url" value="/exist/apps/Edirom-Online-Backend/"/>
+    <!-- info for backend -->
+    <property name="backend.protocol" value="http"/>
+    <property name="backend.host" value="localhost"/>
+    <property name="backend.port" value="8080"/>
+    <property name="backend.path" value="/exist/apps/Edirom-Online-Backend/"/>
+    <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
-    <property name="project.version" value="1.0.0"/>
+    <!-- other properties -->
+    <property name="project.version" value="1.0.1"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
-    <property name="project.title" value="Edirom Online Frontend"/>
+    <property name="project.title" value="Edirom-Online Frontend"/>
     <property name="repo.target" value="${project.app}"/>
     <property name="build.dir" value="build"/>
     <property name="dist.dir" value="build-xar"/>
@@ -62,7 +68,8 @@
         <copy todir="${build.dir}" preservelastmodified="true">
             <fileset dir="${exist.dir}">
                 <include name="*.png"/>
-            </fileset>            
+                <include name="controller.xq"/>            
+            </fileset>       
         </copy>
         <mkdir dir="${dist.dir}"/>
         <zip basedir="${build.dir}" destfile="${dist.dir}/${project.app}-${project.version}-${DSTAMP}-${TSTAMP}.xar">
