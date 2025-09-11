@@ -25,7 +25,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         'Ext.grid.Panel',
         /*'Ext.grid.PagingScroller',*/
         'Ext.ux.grid.FiltersFeature',
-        'EdiromOnline.model.Annotation',
+        /*'EdiromOnline.model.Annotation',*/
         'EdiromOnline.model.AnnotationParticipant',
         'EdiromOnline.view.utils.Lightbox',
         'EdiromOnline.view.window.annotationLayouts.AnnotationLayout1',
@@ -292,7 +292,8 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         var me = this;
 
         me.listStore = Ext.create('Ext.data.Store', {
-            model: 'EdiromOnline.model.Annotation',
+            //model: 'EdiromOnline.model.Annotation',
+            fields: me.getStoreFieldsDefinition(),
             autoLoad: false
         });
 
@@ -303,6 +304,52 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         };
 
         return me.listStore;
+    },
+
+    /*
+     * @param data must be the returned JSON of getAnnotations.xql (loadAnnotations)
+     * or me.annotations has to be set already
+     */
+    getStoreFieldsDefinition: function() {
+        var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: getStoreFieldsDefinition:');
+            console.log(me);
+            console.log(me.data);
+            console.log(me.annotations);
+        }
+
+        // initialise fields variable, setting default fields
+        var fields = [
+            'id',
+            'sigla',
+            // create an integer field with the name pos for sorting in document-order
+            {
+                name: 'pos',
+                type: 'int'
+            }
+        ];
+
+        // Only proceed if data is loaded
+        if (!me.data || !me.data.fields) {
+            return fields; // Return default fields if data not loaded yet
+        }
+
+        // create fields config
+        // get the existing field names from the above fields array
+        var existingFieldNames = fields.map(field =>
+            typeof field === 'string' ? field : field.name
+        );
+
+        // Iterate over data.fields and add missing ones to fields variable
+        me.data.fields.forEach(fieldName => {
+            if (!existingFieldNames.includes(fieldName)) {
+                fields.push(fieldName);
+            }
+        });
+
+        return fields;
     },
 
     loadStore: function() {
