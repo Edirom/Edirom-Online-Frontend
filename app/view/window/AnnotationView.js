@@ -50,6 +50,30 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
         me.activeSingleAnnotation = "";
 
+
+        // Initialize components that don't depend on loaded annotation data
+        me.initializeIndependentComponents();
+
+        me.callParent();
+
+        me.on('afterrender', me.createToolbarEntries, me, {single: true});
+        me.on('afterrender', me.createMenuEntries, me, {single: true});
+        me.on('show', me.loadStore, me, {single: true});
+
+        me.window.on('loadInternalLink', me.loadInternalId, me);
+
+        me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
+        me.on('resize', me.resizePanels, me, {buffer: 100});
+
+        me.list.on('itemdblclick', me.onItemDblClicked, me);
+    },
+
+    initializeIndependentComponents: function() {
+        var me = this;
+
+        /*
+         * Create the single annotation perspective
+         */
         me.participantsList = Ext.create('Ext.grid.Panel', {
             store: Ext.create('Ext.data.Store', {
                 model: 'EdiromOnline.model.AnnotationParticipant'
@@ -137,22 +161,18 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             ]
         });
 
+        // Initially add only the single view toolbar, list will be added after data loads
         me.items = [
-            me.list,
             me.singlePlusToolbar
         ];
+    },
 
-        me.callParent();
     loadAnnotationsAndCreateComponents: function() {
         var me = this;
 
-        me.on('afterrender', me.createToolbarEntries, me, {single: true});
-        me.on('afterrender', me.createMenuEntries, me, {single: true});
-        me.on('show', me.loadStore, me, {single: true});
         // Show loading mask while loading data
         me.setLoading('Loading annotations...');
 
-        me.window.on('loadInternalLink', me.loadInternalId, me);
         window.doAJAXRequest(
             'data/xql/getAnnotations.xql',
             'GET',
@@ -175,12 +195,9 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                     console.log(data.emptyFields);
                 }
 
-        me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
-        me.on('resize', me.resizePanels, me, {buffer: 100});
                 // Now create the list and store that depend on the loaded data
                 me.createListAndStore(data.annotations, me.getStoreFieldsDefinition(), data.emptyFields);
 
-        me.list.on('itemdblclick', me.onItemDblClicked, me);
                 // Add the list to the card layout at index 0
                 me.insert(0, me.list);
 
