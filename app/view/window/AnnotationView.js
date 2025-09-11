@@ -306,6 +306,59 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         return me.listStore;
     },
 
+
+    getColumns: function(storeFields) {
+        var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: getColumns for:');
+            console.log(storeFields);
+        }
+
+        // default columns configuration
+        var columns = [
+            {
+                header: getLangString('view.window.AnnotationView_No'),
+                dataIndex: 'pos',
+                width: 35 //TODO 45
+            },
+            {
+                header: getLangString('view.window.AnnotationView_Sigla'),
+                dataIndex: 'sigla',
+                flex: 2,
+                filter: true
+            }
+        ];
+
+        // save existing dataIndex entries as column names
+        const existingColumnNames = columns.map(column =>
+            column.dataIndex);
+
+        //iterate over storeFields to create missing grid columns
+        storeFields.forEach(field => {
+            if (!existingColumnNames.includes(typeof field === 'string' ? field : field.name)) {
+                // if existingColumnNames does not include the value of field or field.name
+                // create fieldObject
+                const fieldObject = {
+                    header: field + '_header', //TODO getLangString('view.window.AnnotationView_' + fieldName) throwing an error
+                    dataIndex: field,
+                    flex: 1, //TODO evaluate filed content length to set more appropriate flex value
+                    filter: true
+                    // hide columns for empty fields
+                };
+                // push fieldObject to columns array
+                columns.push(fieldObject);
+            }
+        });
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: finished columns:');
+            console.log(columns);
+        }
+
+        return columns;
+    },
+
     /*
      * @param data must be the returned JSON of getAnnotations.xql (loadAnnotations)
      * or me.annotations has to be set already
