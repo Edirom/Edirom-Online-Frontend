@@ -474,7 +474,9 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
     loadStore: function() {
         var me = this;
-        me.listStore.load();
+        if(me.listStore) {
+            me.listStore.load();
+        }
     },
 
     getWeightForInternalLink: function(uri, type, id) {
