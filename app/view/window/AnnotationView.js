@@ -48,8 +48,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
        
         me.addEvents('showAnnotation');
 
+        me.addEvents('annotationsLoaded');
+
         me.activeSingleAnnotation = "";
 
+        me.annotationsLoaded = false;
 
         // Initialize components that don't depend on loaded annotation data
         me.initializeIndependentComponents();
