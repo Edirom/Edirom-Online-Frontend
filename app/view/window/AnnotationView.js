@@ -143,17 +143,65 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         ];
 
         me.callParent();
+    loadAnnotationsAndCreateComponents: function() {
+        var me = this;
 
         me.on('afterrender', me.createToolbarEntries, me, {single: true});
         me.on('afterrender', me.createMenuEntries, me, {single: true});
         me.on('show', me.loadStore, me, {single: true});
+        // Show loading mask while loading data
+        me.setLoading('Loading annotations...');
 
         me.window.on('loadInternalLink', me.loadInternalId, me);
+        window.doAJAXRequest(
+            'data/xql/getAnnotations.xql',
+            'GET',
+            {
+                uri: me.uri
+            },
+            Ext.bind(function(response) {
+                var data = Ext.JSON.decode(response.responseText);
+
+                // Store the loaded data
+                me.data = data;
+                me.annotations = data.annotations;
+                me.annotationsLoaded = true;
+
+                if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                    console.log('view: AnnotationView: ajax callback');
+                    console.log(me);
+                    console.log(data);
+                    console.log(data.annotations);
+                    console.log(data.emptyFields);
+                }
 
         me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
         me.on('resize', me.resizePanels, me, {buffer: 100});
+                // Now create the list and store that depend on the loaded data
+                me.createListAndStore(data.annotations, me.getStoreFieldsDefinition(), data.emptyFields);
 
         me.list.on('itemdblclick', me.onItemDblClicked, me);
+                // Add the list to the card layout at index 0
+                me.insert(0, me.list);
+
+                // Set the list as the active item initially
+                me.getLayout().setActiveItem(me.list);
+
+                // Hide loading mask
+                me.setLoading(false);
+
+                // Fire the event to notify that annotations are loaded
+                me.fireEvent('annotationsLoaded', me, me.uri, data);
+
+                console.log('Annotations loaded and components created');
+                console.log(me);
+            }, me),
+            Ext.bind(function(response) {
+                // Error handling
+                me.setLoading(false);
+                Ext.Msg.alert('Error', 'Failed to load annotations');
+            }, me)
+        );
     },
 
     resizePanels: function() {
