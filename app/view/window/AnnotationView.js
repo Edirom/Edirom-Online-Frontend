@@ -61,7 +61,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
         me.on('afterrender', me.createToolbarEntries, me, {single: true});
         me.on('afterrender', me.createMenuEntries, me, {single: true});
-        me.on('show', me.loadStore, me, {single: true});
+
+        // IMPORTANT: Load annotations and create dependent components after render
+        me.on('afterrender', function() {
+            me.loadAnnotationsAndCreateComponents();
+        }, me, {single: true});
 
         me.window.on('loadInternalLink', me.loadInternalId, me);
 
