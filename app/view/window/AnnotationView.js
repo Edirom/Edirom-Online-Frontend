@@ -509,10 +509,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
     showList: function() {
         var me = this;
 
-        if(me.getLayout().getActiveItem() != me.list)
+        if(me.list && me.getLayout().getActiveItem() != me.list)
             me.getLayout().setActiveItem(me.list);
 
-        var selection = me.list.getSelectionModel().getSelection();
+        if(me.list) {
+            var selection = me.list.getSelectionModel().getSelection();
 
         if(selection.length == 0) {
             if(me.activeSingleAnnotation != "") {
@@ -520,6 +521,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 me.list.getSelectionModel().select(activeIndex);
             }else
                 me.list.getSelectionModel().select(0);
+            }
         }
     },
 
