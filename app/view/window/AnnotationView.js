@@ -72,7 +72,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
         me.on('resize', me.resizePanels, me, {buffer: 100});
 
-        me.list.on('itemdblclick', me.onItemDblClicked, me);
     },
 
     initializeIndependentComponents: function() {
