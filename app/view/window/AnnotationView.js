@@ -50,51 +50,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
         me.activeSingleAnnotation = "";
 
-        me.list = Ext.create('Ext.grid.Panel', {
-            store: me.createStore(),
-            title: getLangString('view.window.AnnotationView_Title'),
-            bodyBorder: false,
-            border: '0 0 0 0',
-            cls: 'annotationList',
-            features: [{
-                ftype: 'filters',
-                encode: false,
-                local: true,
-                filters: []
-            }],
-            columns: [
-            	{
-                    header: getLangString('view.window.AnnotationView_No'),
-                    dataIndex: 'pos',
-                    width: 35
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_TitleLabel'),
-                    dataIndex: 'title',
-                    flex: 4,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Categories'),
-                    dataIndex: 'categories',
-                    flex: 2,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Priority'),
-                    dataIndex: 'priority',
-                    flex: 1,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Sigla'),
-                    dataIndex: 'sigla',
-                    flex: 2,
-                    filter: true
-                }
-            ]
-        });
-
         me.participantsList = Ext.create('Ext.grid.Panel', {
             store: Ext.create('Ext.data.Store', {
                 model: 'EdiromOnline.model.AnnotationParticipant'
