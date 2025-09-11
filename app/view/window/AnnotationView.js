@@ -261,6 +261,47 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         return me.listStore;
     },
 
+    createListAndStore: function(annotations, storeFields, emptyFields) {
+    var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: createListAndStore');
+            console.log(me.annotations);
+            console.log(storeFields);
+            console.log(emptyFields);
+        }
+
+        // Create list Store
+        me.listStore = Ext.create('Ext.data.Store', {
+            fields: storeFields,
+            autoLoad: false,
+            data: annotations
+        });
+
+        // Create the annotation list
+        me.list = Ext.create('Ext.grid.Panel', {
+            store: me.listStore,
+            title: getLangString('view.window.AnnotationView_Title'),
+            bodyBorder: false,
+            border: '0 0 0 0',
+            cls: 'annotationList',
+            features: [{
+                ftype: 'filters',
+                encode: false,
+                local: true,
+                filters: []
+            }],
+            columns: me.getColumns(storeFields)
+        });
+
+        // Add event listener for double click
+        me.list.on('itemdblclick', me.onItemDblClicked, me);
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: createList final');
+            console.log(me.list);
+        }
+    },
 
     getColumns: function(storeFields) {
         var me = this;
