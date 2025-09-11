@@ -19,7 +19,7 @@
 Ext.define('EdiromOnline.view.window.AnnotationView', {
     extend: 'EdiromOnline.view.window.View',
     
-    cls: 'annotView',
+    cls: 'annotView', //TODO duplicate cls definition
     
     requires: [
         'Ext.grid.Panel',
@@ -38,7 +38,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
     layout: 'card',
     
-    cls: 'annotationView',
+    cls: 'annotationView', //TODO duplicate cls definition
     
     image_server: null,
     
