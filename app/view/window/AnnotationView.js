@@ -362,7 +362,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 local: true,
                 filters: []
             }],
-            columns: me.getColumns(storeFields)
+            columns: me.getColumns(storeFields, emptyFields)
         });
 
         // Add event listener for double click
@@ -374,7 +374,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         }
     },
 
-    getColumns: function(storeFields) {
+    getColumns: function(storeFields, emptyFields) {
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -410,8 +410,8 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                     header: field + '_header', //TODO getLangString('view.window.AnnotationView_' + fieldName) throwing an error
                     dataIndex: field,
                     flex: 1, //TODO evaluate filed content length to set more appropriate flex value
-                    filter: true
-                    // hide columns for empty fields
+                    filter: true,
+                    hidden: emptyFields.includes(field)
                 };
                 // push fieldObject to columns array
                 columns.push(fieldObject);
