@@ -15,6 +15,10 @@ $content_baseFont_size: 14px;
 		@include background(linear-gradient(top,lighten(#ffd538,10%), lighten(#f07822,10%)));
 	}
 	
+	.x-grid-cell.pos {
+		text-align: right !important;
+	}
+	
 }
 
 .annotationTip {
