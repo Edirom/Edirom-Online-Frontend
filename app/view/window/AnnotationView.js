@@ -400,6 +400,12 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 dataIndex: 'sigla',
                 flex: 2,
                 filter: true
+            },
+            {
+                header: getLangString('view.window.AnnotationView_TitleLabel'),
+                dataIndex: 'title',
+                flex: 4,
+                filter: true
             }
         ];
 
