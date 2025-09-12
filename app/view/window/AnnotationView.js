@@ -385,6 +385,12 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         // default columns configuration
         var columns = [
             {
+                header: getLangString('view.window.AnnotationView_AnnotationID'),
+                dataIndex: 'id',
+                flex: 1,
+                hidden: true
+            },
+            {
                 header: getLangString('view.window.AnnotationView_No'),
                 dataIndex: 'pos',
                 width: 35 //TODO 45
