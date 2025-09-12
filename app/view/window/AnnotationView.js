@@ -407,7 +407,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 // if existingColumnNames does not include the value of field or field.name
                 // create fieldObject
                 const fieldObject = {
-                    header: field + '_header', //TODO getLangString('view.window.AnnotationView_' + fieldName) throwing an error
+                    header: getLangString('view.window.AnnotationView_' + field),
                     dataIndex: field,
                     flex: 1, //TODO evaluate filed content length to set more appropriate flex value
                     filter: true,
