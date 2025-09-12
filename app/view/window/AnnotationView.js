@@ -393,7 +393,9 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             {
                 header: getLangString('view.window.AnnotationView_No'),
                 dataIndex: 'pos',
-                width: 35 //TODO 45
+                cls: 'pos',
+                tdCls: 'pos',
+                width: 45
             },
             {
                 header: getLangString('view.window.AnnotationView_Sigla'),
