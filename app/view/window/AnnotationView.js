@@ -64,7 +64,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
         // IMPORTANT: Load annotations and create dependent components after render
         me.on('afterrender', function() {
-            me.loadAnnotationsAndCreateComponents();
+            me.fireEvent('loadAnnotations', me);
         }, me, {single: true});
 
         me.window.on('loadInternalLink', me.loadInternalId, me);
@@ -173,59 +173,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         ];
     },
 
-    loadAnnotationsAndCreateComponents: function() {
-        var me = this;
-
-        // Show loading mask while loading data
-        me.setLoading('Loading annotations...');
-
-        window.doAJAXRequest(
-            'data/xql/getAnnotations.xql',
-            'GET',
-            {
-                uri: me.uri
-            },
-            Ext.bind(function(response) {
-                var data = Ext.JSON.decode(response.responseText);
-
-                // Store the loaded data
-                me.data = data;
-                me.annotations = data.annotations;
-                me.annotationsLoaded = true;
-
-                if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                    console.log('view: AnnotationView: ajax callback');
-                    console.log(me);
-                    console.log(data);
-                    console.log(data.annotations);
-                    console.log(data.emptyFields);
-                }
-
-                // Now create the list and store that depend on the loaded data
-                me.createListAndStore(data.annotations, me.getStoreFieldsDefinition(), data.emptyFields);
-
-                // Add the list to the card layout at index 0
-                me.insert(0, me.list);
-
-                // Set the list as the active item initially
-                me.getLayout().setActiveItem(me.list);
-
-                // Hide loading mask
-                me.setLoading(false);
-
-                // Fire the event to notify that annotations are loaded
-                me.fireEvent('annotationsLoaded', me, me.uri, data);
-
-                console.log('Annotations loaded and components created');
-                console.log(me);
-            }, me),
-            Ext.bind(function(response) {
-                // Error handling
-                me.setLoading(false);
-                Ext.Msg.alert('Error', 'Failed to load annotations');
-            }, me)
-        );
-    },
 
     resizePanels: function() {
         var me = this;
@@ -310,69 +257,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         });
         me.bottomBar.add(me.closeAllButton);
 
-        
+
 
     },
 
-    createStore: function() {
-        var me = this;
 
-        me.listStore = Ext.create('Ext.data.Store', {
-            //model: 'EdiromOnline.model.Annotation',
-            fields: me.getStoreFieldsDefinition(),
-            autoLoad: false
-        });
-
-        me.listStore.getProxy().extraParams = {
-            uri: me.uri,
-            lang: getPreference('application_language'),
-            edition: EdiromOnline.getApplication().activeEdition
-        };
-
-        return me.listStore;
-    },
-
-    createListAndStore: function(annotations, storeFields, emptyFields) {
-    var me = this;
-
-        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('view: AnnotationView: createListAndStore');
-            console.log(me.annotations);
-            console.log(storeFields);
-            console.log(emptyFields);
-        }
-
-        // Create list Store
-        me.listStore = Ext.create('Ext.data.Store', {
-            fields: storeFields,
-            autoLoad: false,
-            data: annotations
-        });
-
-        // Create the annotation list
-        me.list = Ext.create('Ext.grid.Panel', {
-            store: me.listStore,
-            title: getLangString('view.window.AnnotationView_Title'),
-            bodyBorder: false,
-            border: '0 0 0 0',
-            cls: 'annotationList',
-            features: [{
-                ftype: 'filters',
-                encode: false,
-                local: true,
-                filters: []
-            }],
-            columns: me.getColumns(storeFields, emptyFields)
-        });
-
-        // Add event listener for double click
-        me.list.on('itemdblclick', me.onItemDblClicked, me);
-
-        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('view: AnnotationView: createList final');
-            console.log(me.list);
-        }
-    },
 
     getColumns: function(storeFields, emptyFields) {
         var me = this;
@@ -440,58 +329,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         return columns;
     },
 
-    /*
-     * @param data must be the returned JSON of getAnnotations.xql (loadAnnotations)
-     * or me.annotations has to be set already
-     */
-    getStoreFieldsDefinition: function() {
-        var me = this;
 
-        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('view: AnnotationView: getStoreFieldsDefinition:');
-            console.log(me);
-            console.log(me.data);
-            console.log(me.annotations);
-        }
-
-        // initialise fields variable, setting default fields
-        var fields = [
-            'id',
-            'sigla',
-            // create an integer field with the name pos for sorting in document-order
-            {
-                name: 'pos',
-                type: 'int'
-            }
-        ];
-
-        // Only proceed if data is loaded
-        if (!me.data || !me.data.fields) {
-            return fields; // Return default fields if data not loaded yet
-        }
-
-        // create fields config
-        // get the existing field names from the above fields array
-        var existingFieldNames = fields.map(field =>
-            typeof field === 'string' ? field : field.name
-        );
-
-        // Iterate over data.fields and add missing ones to fields variable
-        me.data.fields.forEach(fieldName => {
-            if (!existingFieldNames.includes(fieldName)) {
-                fields.push(fieldName);
-            }
-        });
-
-        return fields;
-    },
-
-    loadStore: function() {
-        var me = this;
-        if(me.listStore) {
-            me.listStore.load();
-        }
-    },
 
     getWeightForInternalLink: function(uri, type, id) {
         var me = this;
@@ -859,30 +697,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         me.calculateLimitingImageFactor();
     },
 
-    loadParticipantSingleContent: function() {
-        var me = this;
-
-        var contEl = me.el.getById(me.id + '_annotationParticipantsSingle');
-        var previewTxtData = contEl.query('input.previewTxtData');
-
-        if (previewTxtData.length == 0) return;
-
-        var txtData = previewTxtData[0].value;
-        var uri = txtData.match(/uri:(.*)__\$\$__/)[1];
-        var id = txtData.match(/__\$\$__participantId:(.*)/)[1];
-
-        window.doAJAXRequest('data/xql/getReducedDocument.xql?uri=' + uri + '&selectionId=' + id + '&subtreeRoot=div&idPrefix=' + me.id + '_',
-            'GET', 
-            {},
-            Ext.bind(function(response){
-                var contEl = this.el.getById(me.id + '_annotationParticipantsSingle');
-                var txtBox = new Ext.Element(contEl.query('div.txtBox')[0]);
-                txtBox.update(response.responseText);
-
-                contEl.query('#' + this.id + '_' + id)[0].scrollIntoView(txtBox);
-            }, me)
-        );
-    },
 
     previousParticipantSingle: function() {
         //TODO: console.log(arguments);
@@ -915,7 +729,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             } break;
             case 'single': {
                 me.participantsPanel.getLayout().setActiveItem(me.participantsPanelSingle);
-                me.loadParticipantSingleContent();
+                me.fireEvent('loadParticipantSingleContent', me);
 
             } break;
             case 'list': {
