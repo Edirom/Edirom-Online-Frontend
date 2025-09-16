@@ -319,6 +319,20 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 // push fieldObject to columns array
                 columns.push(fieldObject);
             }
+            else {
+                // find columns entry with dataIndex === field
+                const fieldName = typeof field === 'string' ? field : field.name;
+                const existingColumn = columns.find(column => column.dataIndex === fieldName);
+                
+                if (existingColumn) {
+                    // if column.hidden === true leave as is
+                    // if column.hidden === undefined set to emptyFields.includes(field)
+                    if (existingColumn.hidden !== true) {
+                        existingColumn.hidden = emptyFields.includes(fieldName);
+                    }
+                }
+            }
+            
         });
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
