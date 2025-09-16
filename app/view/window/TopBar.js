@@ -75,6 +75,7 @@ Ext.define('EdiromOnline.view.window.TopBar', {
             me.helpButton*/
         ];
 
+        me.viewSwitch.hide();
         me.callParent();
     },
 
@@ -90,6 +91,10 @@ Ext.define('EdiromOnline.view.window.TopBar', {
 
         me.viewToMenuItem.add(view.view.id, item);
         me.viewSwitchMenu.add(item);
+
+        if(me.viewSwitchMenu.items.length > 1) {
+            me.viewSwitch.show();
+        }
     },
 
     switchView: function(view) {
