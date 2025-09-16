@@ -10,7 +10,7 @@ while getopts "d" flag; do
     # set a variable OPTIONS with the remaining input arguments to pass to the build command
     OPTIONS=${@}
     # run docker
-    docker run --rm -it -v `pwd`:/app --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ./build.sh $OPTIONS
+    docker run --rm -it -v `pwd`:/app --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 "./build.sh $OPTIONS"
    exit
    ;;
    \?)
@@ -24,6 +24,7 @@ echo "******************************************************"
 echo "* Welcome to the Edirom-Online Frontend build script *"
 echo "******************************************************"
 echo ""
+
 
 # set shell to exit if any command fails
 set -e
@@ -46,7 +47,7 @@ sencha ant clean
 echo ""
 echo "Building Edirom-Online Frontend…"
 echo "-----------------"
-sencha app build $1
+sencha app build ${@}
 
 # download euryanthe font
 echo ""
