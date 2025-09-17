@@ -83,6 +83,8 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         if(typeof me.toggleAnnotationVisibility != 'undefined')
             me.toggleAnnotationVisibility.setChecked(visible, true);
         
+        console.log("hi this is an annotation view status on Textview ",         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible()))
+
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)
             me.showAnnotations();
@@ -126,12 +128,14 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             });
 
             return;
-        }
+        }   
+        
+        console.log("this is the annotation but it is hidden")
 
-        me.annotationsLoaded = true;
+        // me.annotationsLoaded = true;
 
-        var tpl = Ext.DomHelper.createTemplate('<div class="annotation"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}"></div></div>');
-        tpl.compile();
+        // var tpl = Ext.DomHelper.createTemplate('<div class="annotation"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}"></div></div>');
+        // tpl.compile();
 
         annotations.each(function(annotation) {
 
