@@ -499,8 +499,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     setMeasure: function(measure, measureCount) {
         var me = this;
 
-        if(me.measure == measure && me.owner.intervalSpinner.getValue() == measureCount) return;
-
         me.measure = measure;
         if(typeof measureCount != 'undefined' && typeof measureCount != 'object' ) me.owner.intervalSpinner.setValue(measureCount);
 
