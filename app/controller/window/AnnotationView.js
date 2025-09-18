@@ -203,6 +203,12 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
         view.listStore = Ext.create('Ext.data.Store', {
             //model: 'EdiromOnline.model.Annotation',
             fields: me.getStoreFieldsDefinition(view),
+            proxy: {
+                reader: {
+                    type: 'json',
+                    useSimpleAccessors: false
+                }
+            },
             autoLoad: false
         });
 
@@ -275,7 +281,8 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
             {
                 name: 'pos',
                 type: 'int'
-            }
+            }//,
+            //{name: "bazga.annotation", mapping: 'properties["bazga.annotation"]'}
         ];
 
         // Only proceed if data is loaded
@@ -292,7 +299,11 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
         // Iterate over data.fields and add missing ones to fields variable
         view.data.fields.forEach(fieldName => {
             if (!existingFieldNames.includes(fieldName)) {
-                    fields.push(fieldName);
+                    var fieldDef = {
+                        name: fieldName,
+                        mapping: me.createFieldMapping(fieldName)
+                    };
+                    fields.push(fieldDef);
             }
         });
         
@@ -302,6 +313,17 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
         }
 
         return fields;
+    },
+
+    createFieldMapping: function(fieldName) {
+        // Handle fields with dots by using a custom mapping function
+        // ExtJS interprets dots as nested object access, so we need bracket notation
+        if (fieldName.includes('.')) {
+            return function(data) {
+                return data[fieldName];
+            };
+        }
+        return fieldName;
     },
 
     loadStore: function(view) {
