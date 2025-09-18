@@ -295,6 +295,11 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
                     fields.push(fieldName);
             }
         });
+        
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: getStoreFieldsDefinition: return fields');
+            console.log(fields);
+        }
 
         return fields;
     },
