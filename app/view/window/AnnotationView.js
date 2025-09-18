@@ -309,9 +309,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             if (!existingColumnNames.includes(typeof field === 'string' ? field : field.name)) {
                 // if existingColumnNames does not include the value of field or field.name
                 // create fieldObject
+                const fieldName = typeof field === 'string' ? field : field.name;
                 const fieldObject = {
-                    header: getLangString('view.window.AnnotationView_' + field),
-                    dataIndex: field,
+                    header: getLangString('view.window.AnnotationView_' + fieldName),
+                    dataIndex: fieldName,
+                    renderer: me.createFieldRenderer(fieldName),
                     flex: 1, //TODO evaluate filed content length to set more appropriate flex value
                     filter: true,
                     hidden: emptyFields ? emptyFields.includes(fieldName) : false
@@ -341,6 +343,19 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         }
 
         return columns;
+    },
+
+    createFieldRenderer: function(fieldName) {
+        // For fields with dots, create a custom renderer that accesses the data correctly
+        if (fieldName.includes('.')) {
+            return function(value, metaData, record) {
+                // Access the field value directly from record data using bracket notation
+                var data = record.data || record.raw;
+                return data && data[fieldName] ? data[fieldName] : '';
+            };
+        }
+        // For regular fields, return undefined to use default rendering
+        return undefined;
     },
 
 
