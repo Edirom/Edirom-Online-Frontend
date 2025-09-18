@@ -314,7 +314,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                     dataIndex: field,
                     flex: 1, //TODO evaluate filed content length to set more appropriate flex value
                     filter: true,
-                    hidden: emptyFields.includes(field)
+                    hidden: emptyFields ? emptyFields.includes(fieldName) : false
                 };
                 // push fieldObject to columns array
                 columns.push(fieldObject);
@@ -328,7 +328,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                     // if column.hidden === true leave as is
                     // if column.hidden === undefined set to emptyFields.includes(field)
                     if (existingColumn.hidden !== true) {
-                        existingColumn.hidden = emptyFields.includes(fieldName);
+                        existingColumn.hidden = emptyFields ? emptyFields.includes(fieldName) : false;
                     }
                 }
             }
