@@ -18,9 +18,7 @@
  */
 Ext.define('EdiromOnline.view.window.AnnotationView', {
     extend: 'EdiromOnline.view.window.View',
-    
-    cls: 'annotView', //TODO duplicate cls definition
-    
+        
     requires: [
         'Ext.grid.Panel',
         /*'Ext.grid.PagingScroller',*/
@@ -38,7 +36,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
     layout: 'card',
     
-    cls: 'annotationView', //TODO duplicate cls definition
+    cls: 'annotationView',
     
     image_server: null,
     
