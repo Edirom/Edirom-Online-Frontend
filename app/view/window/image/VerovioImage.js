@@ -55,7 +55,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						<span
 							class="button"
 							onclick="prevPage()">
-							<span style="font-size: 1.6em;">&lt;</span>
+							<span style="font-size: 1.3em;">&lt;</span>
 						</span>
 						<span
 							id="page">1</span> / <span
@@ -63,7 +63,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						<span
 							class="button"
 							onclick="nextPage()">
-							<span style="font-size: 1.6em;">&gt;</span>
+							<span style="font-size: 1.3em;">&gt;</span>
 						</span>
 					</div>
 					<div
