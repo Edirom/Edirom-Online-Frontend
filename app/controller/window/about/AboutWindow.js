@@ -75,8 +75,8 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
         // Fetching content of CITATION.cff files and set result
         Promise.all([
-            fetchContent('../Edirom-Online-Frontend/resources/CITATION.cff'),
-            fetchContent('../Edirom-Online-Backend/resources/CITATION.cff')
+            fetchContent('../resources/CITATION.cff'),
+            fetchContent('@backend.url@resources/CITATION.cff')
         ]).then(function([frontend, backend]) {
             view.setResult(`
                 <div class="tei_body">

@@ -203,6 +203,15 @@ Ext.define('EdiromOnline.Application', {
         }else {
             app.on('ready', Ext.bind(me.openStartDocuments, me), me, {single: true});
         }
+
+        //check for 'additional_css_path' in edition preferences and insert as CSS link into HTML head
+        if (me.getController('PreferenceController').getPreference('additional_css_path', true) !== null) {
+            const editionCssLink = document.createElement("link");
+            editionCssLink.rel = 'stylesheet';
+            editionCssLink.href = this.backendURL.split('apps/')[0] + me.getController('PreferenceController').getPreference('additional_css_path', true).split("xmldb:exist:///db/")[1];
+            document.getElementsByTagName("head")[0].appendChild(editionCssLink);
+        }
+
     },
     
     initDataStores: function() {
