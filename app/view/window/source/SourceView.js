@@ -139,7 +139,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         
         me.annotationsVisible = visible;
         me.toggleAnnotationVisibility.setChecked(visible, true);
-
         me.fireEvent('annotationsVisibilityChange', me, visible);
     },
 

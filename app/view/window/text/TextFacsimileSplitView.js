@@ -125,7 +125,6 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.annotationsVisible = visible;
         if(typeof me.toggleAnnotationVisibility != 'undefined')
             me.toggleAnnotationVisibility.setChecked(visible, true);
-
         
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)

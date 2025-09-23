@@ -389,6 +389,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
+        
         me.viewers.each(function(v) {
             v.annotationFilterChanged(visibleCategories, visiblePriorities);
         });
@@ -640,6 +641,7 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
 
+        
 		var image_server = getPreference('image_server');
 
         Ext.Array.each(me.imageViewers, function(viewer) {
