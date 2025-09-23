@@ -389,8 +389,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
-        console.log("this is annotation inside annotationFilterChanged")
-
         me.viewers.each(function(v) {
             v.annotationFilterChanged(visibleCategories, visiblePriorities);
         });
@@ -642,7 +640,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
 
-        console.log("annotation is in annotationFilterChanged in MeasureBasedView.js")
 		var image_server = getPreference('image_server');
 
         Ext.Array.each(me.imageViewers, function(viewer) {
