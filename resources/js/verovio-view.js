@@ -1,5 +1,13 @@
-// Function to update and render movement in edirom-verovio-renderer
-function showMovement(movementId) {
+window.vrvToolkit = new verovio.toolkit();
+showMovement(movementId);
+
+/* add event as constant */
+const vrvToolkitDataInitialized = new Event("vrvToolkitDataInitialized");
+
+/* add event listener to window */
+window.addEventListener('vrvToolkitDataInitialized', (e) => {on_vrvToolkitDataInitialized()}, false);
+
+function showMovement(movementId) {        
     showLoader();
     window.movementId = movementId;
 
