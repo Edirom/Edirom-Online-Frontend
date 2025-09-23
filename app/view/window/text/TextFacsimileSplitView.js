@@ -126,8 +126,6 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         if(typeof me.toggleAnnotationVisibility != 'undefined')
             me.toggleAnnotationVisibility.setChecked(visible, true);
 
-        console.log("hi this is an annotation view status on TextFacsimileSplitView ",         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible()))
-
         
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)

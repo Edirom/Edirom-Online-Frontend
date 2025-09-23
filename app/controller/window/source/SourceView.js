@@ -56,9 +56,6 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 
         ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
-
-        console.log("hi this is an annotation view status on sourceview ",         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible()))
-
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('Controller: SourceView: onSourceViewRendered. getMovements');
         }
@@ -161,8 +158,6 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
     },
 
     gotoMovement: function(pageId, view) {
-        console.log("goto movement from sourc view controller")
-
         if(pageId != '')
             view.showPage(pageId);
     },

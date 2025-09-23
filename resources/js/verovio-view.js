@@ -8,7 +8,6 @@ const vrvToolkitDataInitialized = new Event("vrvToolkitDataInitialized");
 window.addEventListener('vrvToolkitDataInitialized', (e) => {on_vrvToolkitDataInitialized()}, false);
 
 function showMovement(movementId) {        
-    console.log("show movemnt in verovio-View")
     showLoader();
     window.movementId = movementId;
 
