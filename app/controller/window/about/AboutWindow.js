@@ -68,11 +68,11 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                     <p>${abstract}</p>
                     <p>Version: ${version}</p>
                     <p>Release date: ${releaseDate}</p>
-                    <p>DOI: <a href="https://doi.org/${doi}">${doi}</a></p>
+                    <p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>
                     <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
-                    <p>GitHub: <a href="${repoUrl}">${repoUrl}</a></p>
+                    <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
                     <p>Contributors: <br/>
-                        <a href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
+                        <a target="_blank" href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
                             <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
                         </a>
                     </p>
