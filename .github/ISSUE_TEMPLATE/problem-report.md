@@ -23,8 +23,8 @@ A clear and concise description of what you expected to happen.
 Please provide a link to your data (e.g. https://github.com/Edirom/EditionExample) to see the problem or an extract of your data to reproduce the problem.
 
 **Edirom information**
- - Version of Edirom-Online [e.g. Release v1.0.1, see [releases](https://github.com/Edirom/Edirom-Online/releases)]
- - Version of Edirom-Online Frontend and Backend (e.g. Release v1.0.1, see About page in Edirom-Online interface - top-right corner)
+ - Version of Edirom-Online [e.g. Release v1.1.0, see [releases](https://github.com/Edirom/Edirom-Online/releases)]
+ - Version of Edirom-Online Frontend and Backend (e.g. Release v1.1.0, see About page in Edirom-Online interface - top-right corner)
  - Add any other context, that might be helpful
 
 **Environment information**

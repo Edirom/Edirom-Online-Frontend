@@ -14,9 +14,9 @@
     <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
     <!-- other properties -->
-    <property name="project.version" value="1.0.1"/>
+    <property name="project.version" value="1.1.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
-    <property name="project.title" value="Edirom-Online Frontend"/>
+    <property name="project.title" value="Edirom Online Frontend"/>
     <property name="repo.target" value="${project.app}"/>
     <property name="build.dir" value="build"/>
     <property name="dist.dir" value="build-xar"/>
