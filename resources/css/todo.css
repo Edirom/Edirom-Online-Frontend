@@ -253,6 +253,7 @@ color: rgba(0,0,0,0.75);
 position: absolute;
 top: 5px;
 left: 10px;
+}
 
 .annotTip {
     width: 100% !important;
