@@ -25,33 +25,6 @@ $edirom-taskbarWindowButton-background-color: #cccccc;
 	cursor: pointer;
 }
 
-.taskSquareButton.grid {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
-.taskSquareButton.vertical {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: -24px 0;
-
-	&:hover {
-		background-position: -24px -24px;
-	}
-}
-
-.taskSquareButton.horizontal {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: -48px 0;
-
-	&:hover {
-		background-position: -48px -24px;
-	}
-}
-
 .taskSquareButton.annotations {
 	background-image: url('pix/annotations.png');
 	background-position: 0 0;

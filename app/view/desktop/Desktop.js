@@ -154,11 +154,24 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             me.addWindow(nav);
             nav.show();
 
-        }else if(nav != me.getActiveWindow())
+        }else if(nav != me.getActiveWindow()){
+
+            // show concordance navigator window
             nav.show();
 
-        else
+            // set attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
+        }
+
+        else{
+
+            // hide concordance navigator window
             nav.hide();
+
+            // unset attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+        }
+            
     },
 
     openHelp: function() {
