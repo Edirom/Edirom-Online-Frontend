@@ -43,15 +43,6 @@ $edirom-taskbarWindowButton-background-color: #cccccc;
 	}
 }
 
-.taskSquareButton.concordance {
-	background-image: url('pix/concordanceNavigator.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
 .taskSquareButton.help {
 	background-image: url('pix/help.png');
 	background-position: 0 0;

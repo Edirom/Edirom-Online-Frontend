@@ -102,11 +102,19 @@ class EdiromIcon extends HTMLElement {
                 color: var(--edirom-icon-color, inherit);
             }
 
-            .pressed {
+            .button {
+                cursor: pointer;
+            }
+
+            .button.pressed {
                 background-color:rgb(167, 167, 167) !important;
                 box-shadow: 0 1px 1px rgba(8, 8, 8, 0.5) inset;
             }
             
+            .button:hover {
+                background-color:rgb(197, 197, 197) !important;
+                box-shadow: 0 1px 1px rgba(8, 8, 8, 0.45) inset;
+            }
 
             /* spin animation */
             @keyframes edirom-icon-spin {
@@ -166,7 +174,7 @@ class EdiromIcon extends HTMLElement {
 
         // role/button behavior
         if (this.hasAttribute('button') || this.getAttribute('role') === 'button') {
-            this.setAttribute('role', 'button');
+            wrapper.classList.add('button');
             if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
         }
 

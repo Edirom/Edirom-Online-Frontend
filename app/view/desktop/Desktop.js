@@ -187,13 +187,30 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         if(help == null) {
             help = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
             me.addWindow(help);
+
+            // show help window
             help.show();
 
-        }else if(help != me.getActiveWindow())
+            // set attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').setAttribute('pressed', '');
+
+        }else if(help != me.getActiveWindow()){
+
+            // show help window
             help.show();
 
-        else
+            // set attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').setAttribute('pressed', '');
+        
+        } else{
+
+            // hide help window
             help.hide();
+
+            // unset attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').removeAttribute('pressed');
+        }
+
     },
 
     openSearchWindow: function(term) {
