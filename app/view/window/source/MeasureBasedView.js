@@ -760,25 +760,29 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
         });
 
         me.add([
-            {
-                xtype: 'button',
-                cls : 'prev toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure'), align: 'bl-tl' },
+
+            // previous button
+            me.prevButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="arrow_left" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.prev
-                }
-            },
+                    scope: me,
+                    click: me.prev
+               },
+            }),
+
+            // combo box
             me.combo,
-            {
-                xtype: 'button',
-                cls : 'next toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure'), align: 'bl-tl' },
+
+            // next button
+            me.nextButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="arrow_right" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.next
-                }
-            }
+                    scope: me,
+                    click: me.next
+               },
+            })
         ]);
 
         this.combo.on('select', this.owner.setMeasure, this.owner);

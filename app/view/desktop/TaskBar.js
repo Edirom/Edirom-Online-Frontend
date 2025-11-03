@@ -45,7 +45,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'openAboutWindow',
                     'switchLanguage');
 
-        me.globalTools = new Ext.toolbar.Toolbar(me.getGlobalToolsConfig());
         me.desktopSwitch = new Ext.toolbar.Toolbar(me.getDesktopSwitchConfig());
 
         me.windowBar1 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
@@ -90,27 +89,33 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                 }
             },
 
-            // toggle measures button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon role="button" name="pin" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('toggleMeasureVisibility'); });
-                    }
-                }
-            },
+            // toggle measure numbers button
+            me.measureNumberButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="pin" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                enableToggle: true,
+                action: 'toggleMeasureVisibility',
+                baseCls: 'edirom-icon-button'
+            }),
 
             // toggle annotations button
-            {
+            /*{
                 xtype: 'component', 
                 html: '<edirom-icon role="button" name="comment" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('toggleAnnotationVisibility'); });
                     }
-                }
-            },
+                },
+                action: 'toggleMeasureVisibility'
+            },*/
+
+            // toggle annotations button
+            me.annotationsButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="comment" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
+                enableToggle: true,
+                action: 'toggleAnnotationVisibility',
+                baseCls: 'edirom-icon-button'
+            }),
 
             // open concordance navigator button
             {
@@ -120,10 +125,10 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('openConcordanceNavigator'); });
                     }
-                }
+                }                
             },
 
-            me.globalTools,
+
             //me.desktopSwitch,
 
             // separator icon
@@ -177,33 +182,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         me.windowBar4.el.on('contextmenu', me.onButtonContextMenu, me);
     },
 
-    getGlobalToolsConfig: function() {
-        var me = this;
-
-        me.measureNumberButton = Ext.create('Ext.button.Button', {
-            id: 'measureNumberBtn',
-            cls: 'taskSquareButton measureNumbers',
-            enableToggle: true,
-            tooltip: { text: getLangString('view.desktop.TaskBar_measureNumbers'), align: 'bl-tl' },
-            action: 'toggleMeasureVisibility'
-        });
-
-        me.annotationsButton = Ext.create('Ext.button.Button', {
-            id: 'annotationsBtn',
-            cls: 'taskSquareButton annotations',
-            enableToggle: true,
-            tooltip: { text: getLangString('view.desktop.TaskBar_annotations'), align: 'bl-tl' },
-            action: 'toggleAnnotationVisibility'
-        });
-
-        return {
-            width: 60,
-            items: [
-                me.measureNumberButton,
-                me.annotationsButton
-            ]
-        };
-    },
 
     getDesktopSwitchConfig: function () {
         var me = this, ret = {

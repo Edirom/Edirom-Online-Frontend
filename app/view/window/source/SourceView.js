@@ -129,6 +129,13 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.measuresVisible = visible;
         me.toggleMeasureVisibility.setChecked(visible, true);
         me.fireEvent('measureVisibilityChange', me, visible);
+
+        // set pressed state of toggle button in taskbar
+        if(visible){
+            document.getElementById('icon_toggleMeasures').setAttribute('pressed', '');
+        } else {
+            document.getElementById('icon_toggleMeasures').removeAttribute('pressed');
+        }
     },
     
     checkGlobalAnnotationVisibility: function(visible) {
@@ -140,6 +147,13 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.annotationsVisible = visible;
         me.toggleAnnotationVisibility.setChecked(visible, true);
         me.fireEvent('annotationsVisibilityChange', me, visible);
+
+        // set pressed state of toggle button in taskbar
+        if(visible){
+            document.getElementById('icon_toggleAnnotations').setAttribute('pressed', '');
+        } else {
+            document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
+        }
     },
 
     //TODO: in mixin verpacken, wenn möglich

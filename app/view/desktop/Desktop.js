@@ -26,12 +26,10 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     alias: 'widget.desktop',
 
     uses: [
-        'EdiromOnline.view.navigator.Navigator',
-        
+        'EdiromOnline.view.navigator.Navigator',        
         'Ext.util.MixedCollection',
         'Ext.menu.Menu',
         'Ext.window.Window',
-
         'Ext.ux.desktop.Wallpaper'
     ],
 

@@ -131,6 +131,13 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             me.showAnnotations();
         else
             this.fireEvent('annotationsVisibilityChange', me, visible);
+
+        // set pressed state of toggle button in taskbar
+        if(visible){
+            document.getElementById('icon_toggleAnnotations').setAttribute('pressed', '');
+        } else {
+            document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
+        }
     },
 
     toggleAnnotations: function(item, state) {
