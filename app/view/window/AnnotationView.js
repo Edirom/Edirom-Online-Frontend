@@ -247,38 +247,38 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         var me = this;
 
 		me.listButton =  Ext.create('Ext.button.Button', {
-        	cls: 'list toolButton',
-        	tooltip: { text: getLangString('view.window.AnnotationView_ListView'), align: 'bl-tl' },
+            html: '<edirom-icon role="button" name="data_table" title="' + getLangString('view.window.AnnotationView_ListView') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.showList, me)
         });
         me.bottomBar.add(me.listButton);
 
 
-        me.prevItemButton =  Ext.create('Ext.button.Button', {
-            cls: 'prev toolButton',
-            tooltip: { text: getLangString('view.window.AnnotationView_PreviousAnnotation'), align: 'bl-tl' },
+        me.prevItemButton =  Ext.create('Ext.button.Button', {    
+            html: '<edirom-icon role="button" name="arrow_left" title="' + getLangString('view.window.AnnotationView_PreviousAnnotation') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.showPrevItem, me)
         });
         me.bottomBar.add(me.prevItemButton);
 
         me.nextItemButton =  Ext.create('Ext.button.Button', {
-            cls: 'next toolButton',
-            tooltip: { text: getLangString('view.window.AnnotationView_NextAnnotation'), align: 'bl-tl' },
+            html: '<edirom-icon role="button" name="arrow_right" title="' + getLangString('view.window.AnnotationView_NextAnnotation') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.showNextItem, me)
         });
         me.bottomBar.add(me.nextItemButton);
         
         me.openAllButton =  Ext.create('Ext.button.Button', {
-            cls: 'openAll toolButton',
-            tooltip: { text: getLangString('view.window.AnnotationView_OpenAll'), align: 'bl-tl' },
+            html: '<edirom-icon role="button" name="select_window" title="' + getLangString('view.window.AnnotationView_OpenAll') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             view: me,
             action: 'openAll'
         });
         me.bottomBar.add(me.openAllButton);
         
         me.closeAllButton =  Ext.create('Ext.button.Button', {
-            cls: 'closeAll toolButton',
-            tooltip: { text: getLangString('view.window.AnnotationView_CloseAll'), align: 'bl-tl' },
+            html: '<edirom-icon role="button" name="select_window_off" title="' + getLangString('view.window.AnnotationView_CloseAll') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             disabled: true,
             action: 'closeAll'
         });
