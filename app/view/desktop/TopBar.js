@@ -50,7 +50,6 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
             }
         });
 
-
         me.searchButton = Ext.create('Ext.button.Button', {
             html: '<edirom-icon id="icon_search" role="button" name="search" title="' + getLangString('view.desktop.TaskBar_search') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
