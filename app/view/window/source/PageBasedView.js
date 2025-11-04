@@ -226,10 +226,17 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var image_server = getPreference('image_server');
 
+        // page selection bar
+        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
+            width: 100,
+            cls: 'pageSpinner',
+            owner: me
+        });
+
         // zoom slider (if applicable)
         if (image_server === 'openseadragon' || image_server === 'digilib'){ 
             me.zoomSlider = Ext.create('Ext.slider.Single', {
-                width: 140,
+                width: 100,
                 value: 100,
                 increment: 5,
                 minValue: ( image_server === 'openseadragon' ) ? 90 : 10,
@@ -246,21 +253,9 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             });
         }
 
-        // separator
-        me.separator = Ext.create('Ext.Component', {
-            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
-        });
-
-        // page selection bar
-        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
-            width: 121,
-            cls: 'pageSpinner',
-            owner: me
-        });
-
         // if image server (and zoomSlider) is defined, return zoom slider and page spinner
         if(image_server === 'digilib' || image_server === 'openseadragon'){
-            return [me.zoomSlider, me.separator, me.pageSpinner];
+            return [me.pageSpinner, me.zoomSlider];
         }
         // otherwise return only page spinner
         else{

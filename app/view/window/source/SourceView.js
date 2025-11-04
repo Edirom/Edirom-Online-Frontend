@@ -488,16 +488,10 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false),
         });
-
-        // separator icon
-        me.separatorIcon = Ext.create('Ext.Component', {
-            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
-        });
         
         // add buttons to bottom bar
         me.bottomBar.add(me.pageBasedViewButton);
         me.bottomBar.add(me.measureBasedViewButton);
-        me.bottomBar.add(me.separatorIcon);
 
         var entries = me.pageBasedView.createToolbarEntries();
 

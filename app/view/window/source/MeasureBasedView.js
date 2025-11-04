@@ -85,13 +85,14 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         });
 
         me.measureSpinner = Ext.create('EdiromOnline.view.window.source.MeasureSpinner', {
-            width: 121,
+            width: 80,
             cls: 'pageSpinner', //TODO adjust class to measureSpinner and add in SCSS
             owner: me,
             hidden: true
         });
 
         me.intervalSpinner = Ext.create('EdiromOnline.view.window.source.IntervalSpinner', {
+            width: 60,
             value: 1,
             maxValue: 99,
             minValue: 1,
@@ -101,6 +102,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
         me.intervalSpinner.on('change', me.measureSpinner.onIntervalChange, me.measureSpinner);
 
+        // voice filter button
         me.voiceFilter = Ext.create('Ext.button.Button', {
             html: '<edirom-icon id="icon_voiceFilterDialog" role="button" name="checklist" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
@@ -110,11 +112,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             disabled: true,
             hidden: true
         });
-
-        var settingsContainer = Ext.create('Ext.container.Container', {
-            layout: 'hbox'
-        });
-        settingsContainer.add(me.voiceFilter);
 
         // two separators
         me.separator1 = Ext.create('Ext.Component', {
@@ -126,7 +123,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             hidden: true
         });
 
-        return [me.mdivSelector, me.separator1, me.measureSpinner, me.intervalSpinner, me.separator2, settingsContainer];
+        return [me.voiceFilter, me.measureSpinner, me.mdivSelector, me.intervalSpinner];
     },
 
     fitFacsimile: function() {
