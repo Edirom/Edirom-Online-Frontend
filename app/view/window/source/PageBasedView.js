@@ -224,33 +224,16 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var me = this;
 
-       var image_server = getPreference('image_server');
+        var image_server = getPreference('image_server');
 
-    	if(image_server === 'digilib'){
-    		me.zoomSlider = Ext.create('Ext.slider.Single', {
-            width: 140,
-            value: 100,
-            increment: 5,
-            minValue: 10,
-            maxValue: 400,
-            checkChangeBuffer: 100,
-            useTips: true,
-            cls: 'zoomSlider',
-            tipText: function(thumb){
-                return Ext.String.format('{0}%', thumb.value);
-            },
-            listeners: {
-                change: Ext.bind(me.zoomChanged, me, [], 0)
-            }
-        });
-    	}
-    	if (image_server === 'openseadragon') {
+        // zoom slider (if applicable)
+        if (image_server === 'openseadragon' || image_server === 'digilib'){ 
             me.zoomSlider = Ext.create('Ext.slider.Single', {
                 width: 140,
                 value: 100,
                 increment: 5,
-                minValue: 90,
-                maxValue: 700,
+                minValue: ( image_server === 'openseadragon' ) ? 90 : 10,
+                maxValue: ( image_server === 'openseadragon' ) ? 700 : 400,
                 checkChangeBuffer: 100,
                 useTips: true,
                 cls: 'zoomSlider',
@@ -263,19 +246,25 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             });
         }
 
+        // separator
+        me.separator = Ext.create('Ext.Component', {
+            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
+        });
+
+        // page selection bar
         me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
             width: 121,
             cls: 'pageSpinner',
             owner: me
         });
 
-        me.separator = Ext.create('Ext.toolbar.Separator');
-
+        // if image server (and zoomSlider) is defined, return zoom slider and page spinner
         if(image_server === 'digilib' || image_server === 'openseadragon'){
-        return [me.zoomSlider, me.separator, me.pageSpinner];
+            return [me.zoomSlider, me.separator, me.pageSpinner];
         }
+        // otherwise return only page spinner
         else{
-        	 return [me.pageSpinner];
+        	return [me.pageSpinner];
         }
     },
 

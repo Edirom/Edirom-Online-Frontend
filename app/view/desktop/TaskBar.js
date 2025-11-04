@@ -141,9 +141,19 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             me.windowBar2,
             me.windowBar3,
             me.windowBar4,
+
+            // adding space
             '-',
 
-            // open help button
+            // open about window button
+            me.aboutButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="info" title="' + getLangString('view.desktop.TaskBar_about') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
+                action: 'openAboutWindow'
+            }),
+
+
+            // open help window button
             {
                 xtype: 'component', 
                 html: '<edirom-icon role="button" id="icon_openHelp" name="help" title="' + getLangString('view.desktop.TaskBar_help') + '"></edirom-icon>',

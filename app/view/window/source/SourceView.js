@@ -76,7 +76,10 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             ]
         });
 
-        me.bottomBar = new EdiromOnline.view.window.BottomBar({owner:me, region:'south', enableOverflow: false});
+        // define bottom bar
+        me.bottomBar = new EdiromOnline.view.window.BottomBar(
+            { owner:me, region:'south', enableOverflow: false }
+        );
 
         me.items = [
             me.viewerContainer,
@@ -472,24 +475,29 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         var me = this;
 
+        // button for switching to page based view
         me.pageBasedViewButton = Ext.create('Ext.button.Button', {
-            handler: Ext.bind(me.switchInternalView, me, ['pageBasedView'], false),
-            tooltip: { text: getLangString('view.window.source.SourceView_PageBasedView'), align: 'bl-tl' },
-            enableToggle: true,
-            pressed: true,
-            cls : 'pageBasedView toolButton'
+            html: '<edirom-icon id="icon_pageBasedView" role="button" name="content_copy" pressed="" title="' + getLangString('view.window.source.SourceView_PageBasedView') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            handler: Ext.bind(me.switchInternalView, me, ['pageBasedView'], false)
         });
 
+        // button for switching to measure based view
         me.measureBasedViewButton = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_measureBasedView" role="button" name="align_items_stretch" rotate="90" title="' + getLangString('view.window.source.SourceView_MeasureBasedView') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false),
-            tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView'), align: 'bl-tl' },
-            enableToggle: true,
-            cls : 'measureBasedView toolButton'
+        });
+
+        // separator icon
+        me.separatorIcon = Ext.create('Ext.Component', {
+            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
         });
         
+        // add buttons to bottom bar
         me.bottomBar.add(me.pageBasedViewButton);
         me.bottomBar.add(me.measureBasedViewButton);
-        me.bottomBar.add({xtype:'tbseparator'});
+        me.bottomBar.add(me.separatorIcon);
 
         var entries = me.pageBasedView.createToolbarEntries();
 
@@ -514,8 +522,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
         
         if(viewId == 'pageBasedView') {
-            me.measureBasedViewButton.toggle(false, true);
-            me.pageBasedViewButton.toggle(true, true);
+            document.getElementById('icon_pageBasedView').setAttribute('pressed', '');
+            document.getElementById('icon_measureBasedView').removeAttribute('pressed');
             me.measureBasedView.hideToolbarEntries();
             me.pageBasedView.showToolbarEntries();
             me.viewerContainer.getLayout().setActiveItem(me.pageBasedView);
@@ -523,8 +531,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.gotoMenu.show();
 
         }else if(viewId == 'measureBasedView') {
-            me.pageBasedViewButton.toggle(false, true);
-            me.measureBasedViewButton.toggle(true, true);
+            document.getElementById('icon_measureBasedView').setAttribute('pressed', '');
+            document.getElementById('icon_pageBasedView').removeAttribute('pressed');
             me.pageBasedView.hideToolbarEntries();
             me.measureBasedView.showToolbarEntries();
             me.viewerContainer.getLayout().setActiveItem(me.measureBasedView);

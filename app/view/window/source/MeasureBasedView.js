@@ -102,12 +102,11 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.intervalSpinner.on('change', me.measureSpinner.onIntervalChange, me.measureSpinner);
 
         me.voiceFilter = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_voiceFilterDialog" role="button" name="checklist" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: function() {
                 me.showVoiceFilterDialog();
             },
-            cls : 'voiceFilter toolButton',
-            tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices'), align: 'bl-tl' },
-            margin: '0 0 0 5',
             disabled: true,
             hidden: true
         });
@@ -117,8 +116,15 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         });
         settingsContainer.add(me.voiceFilter);
 
-        me.separator1 = Ext.create('Ext.toolbar.Separator', {hidden: true});
-        me.separator2 = Ext.create('Ext.toolbar.Separator', {hidden: true});
+        // two separators
+        me.separator1 = Ext.create('Ext.Component', {
+            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>',
+            hidden: true
+        });
+        me.separator2 = Ext.create('Ext.Component', {
+            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>',
+            hidden: true
+        });
 
         return [me.mdivSelector, me.separator1, me.measureSpinner, me.intervalSpinner, me.separator2, settingsContainer];
     },
