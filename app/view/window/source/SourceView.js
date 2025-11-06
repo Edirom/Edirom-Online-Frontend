@@ -477,16 +477,16 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // button for switching to page based view
         me.pageBasedViewButton = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_pageBasedView" role="button" name="eo_page_view" pressed="" title="' + getLangString('view.window.source.SourceView_PageBasedView') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_pageBasedView_'+me.id+'" role="button" name="eo_page_view" pressed="" title="' + getLangString('view.window.source.SourceView_PageBasedView') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['pageBasedView'], false)
         });
 
         // button for switching to measure based view
         me.measureBasedViewButton = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_measureBasedView" role="button" name="eo_measure_view" rotate="90" title="' + getLangString('view.window.source.SourceView_MeasureBasedView') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_measureBasedView_'+me.id+'" role="button" name="eo_measure_view" rotate="90" title="' + getLangString('view.window.source.SourceView_MeasureBasedView') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
-            handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false),
+            handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false)
         });
         
         // add buttons to bottom bar
@@ -516,8 +516,11 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
         
         if(viewId == 'pageBasedView') {
-            document.getElementById('icon_pageBasedView').setAttribute('pressed', '');
-            document.getElementById('icon_measureBasedView').removeAttribute('pressed');
+            // set pressed state of toggle button
+            document.getElementById('icon_pageBasedView_'+me.id).setAttribute('pressed', '');
+            document.getElementById('icon_measureBasedView_'+me.id).removeAttribute('pressed');
+
+            // adapt toolbar entries and switch view
             me.measureBasedView.hideToolbarEntries();
             me.pageBasedView.showToolbarEntries();
             me.viewerContainer.getLayout().setActiveItem(me.pageBasedView);
@@ -525,8 +528,11 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.gotoMenu.show();
 
         }else if(viewId == 'measureBasedView') {
-            document.getElementById('icon_measureBasedView').setAttribute('pressed', '');
-            document.getElementById('icon_pageBasedView').removeAttribute('pressed');
+            // set pressed state of toggle button
+            document.getElementById('icon_measureBasedView_'+me.id).setAttribute('pressed', '');
+            document.getElementById('icon_pageBasedView_'+me.id).removeAttribute('pressed');
+
+            // adapt toolbar entries and switch view
             me.pageBasedView.hideToolbarEntries();
             me.measureBasedView.showToolbarEntries();
             me.viewerContainer.getLayout().setActiveItem(me.measureBasedView);
