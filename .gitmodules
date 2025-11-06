@@ -1,0 +1,3 @@
+[submodule "resources/js/edirom-core-web-components"]
+	path = resources/js/edirom-core-web-components
+	url = https://github.com/Edirom/edirom-core-web-components.git
