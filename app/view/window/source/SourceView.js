@@ -477,14 +477,14 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // button for switching to page based view
         me.pageBasedViewButton = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_pageBasedView" role="button" name="content_copy" pressed="" title="' + getLangString('view.window.source.SourceView_PageBasedView') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_pageBasedView" role="button" name="page_view" pressed="" title="' + getLangString('view.window.source.SourceView_PageBasedView') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['pageBasedView'], false)
         });
 
         // button for switching to measure based view
         me.measureBasedViewButton = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_measureBasedView" role="button" name="align_items_stretch" rotate="90" title="' + getLangString('view.window.source.SourceView_MeasureBasedView') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_measureBasedView" role="button" name="measure_view" rotate="90" title="' + getLangString('view.window.source.SourceView_MeasureBasedView') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false),
         });

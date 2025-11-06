@@ -59,7 +59,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortGrid button
             {
                 xtype: 'component',
-                html: '<edirom-icon role="button" name="dataset" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="sort_grid" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortGrid'); });
@@ -70,7 +70,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortVertically button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" name="splitscreen_portrait" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="sort_vertical" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortVertically'); });
@@ -81,7 +81,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortHorizontally button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" name="splitscreen_landscape" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="sort_horizontal" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortHorizontally'); });
@@ -91,7 +91,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
             // toggle measure numbers button
             me.measureNumberButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="pin" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
                 enableToggle: true,
                 action: 'toggleMeasureVisibility',
                 baseCls: 'edirom-icon-button'
@@ -111,7 +111,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
             // toggle annotations button
             me.annotationsButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="comment" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
                 enableToggle: true,
                 action: 'toggleAnnotationVisibility',
                 baseCls: 'edirom-icon-button'
@@ -120,7 +120,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // open concordance navigator button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="sync_alt" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="concordance_navigator" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('openConcordanceNavigator'); });

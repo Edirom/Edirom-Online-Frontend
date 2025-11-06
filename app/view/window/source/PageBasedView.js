@@ -269,9 +269,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         	me.zoomSlider.hide();
         }
         me.pageSpinner.hide();
-        if(typeof me.separator !== 'undefined'){
-        	me.separator.hide();
-        }
     },
 
     showToolbarEntries: function() {
@@ -280,9 +277,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         	me.zoomSlider.show();
         }
         me.pageSpinner.show();
-        if(typeof me.separator !== 'undefined'){
-        	 me.separator.show();
-        }
 
     },
 

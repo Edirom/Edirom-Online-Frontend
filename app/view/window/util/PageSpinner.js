@@ -57,7 +57,7 @@ Ext.define('EdiromOnline.view.window.util.PageSpinner', {
 
             // previous button
             me.prevButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon role="button" name="arrow_left" title="' + getLangString('view.window.source.SourceView_PageBasedView_previousPage') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="previous" title="' + getLangString('view.window.source.SourceView_PageBasedView_previousPage') + '"></edirom-icon>',
                 baseCls: 'edirom-icon-button',
                 listeners:{
                     scope: me,
@@ -70,7 +70,7 @@ Ext.define('EdiromOnline.view.window.util.PageSpinner', {
 
             // next button
             me.nextButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon role="button" name="arrow_right" title="' + getLangString('view.window.source.SourceView_PageBasedView_nextPage') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="next" title="' + getLangString('view.window.source.SourceView_PageBasedView_nextPage') + '"></edirom-icon>',
                 baseCls: 'edirom-icon-button',
                 listeners:{
                     scope: me,
