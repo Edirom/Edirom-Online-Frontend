@@ -104,7 +104,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
         // voice filter button
         me.voiceFilter = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_voiceFilterDialog" role="button" name="voice_filter" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_voiceFilterDialog" role="button" name="eo_voice_filter" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: function() {
                 me.showVoiceFilterDialog();
@@ -753,7 +753,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
 
             // previous button
             me.prevButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon role="button" name="previous" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_previous" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure') + '"></edirom-icon>',
                 baseCls: 'edirom-icon-button',
                 listeners:{
                     scope: me,
@@ -766,7 +766,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
 
             // next button
             me.nextButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon role="button" name="next" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_next" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure') + '"></edirom-icon>',
                 baseCls: 'edirom-icon-button',
                 listeners:{
                     scope: me,

@@ -59,7 +59,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortGrid button
             {
                 xtype: 'component',
-                html: '<edirom-icon role="button" name="sort_grid" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortGrid'); });
@@ -70,7 +70,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortVertically button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" name="sort_vertical" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_sort_vertical" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortVertically'); });
@@ -81,7 +81,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // sortHorizontally button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" name="sort_horizontal" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_sort_horizontal" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { me.fireEvent('sortHorizontally'); });
@@ -91,7 +91,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
             // toggle measure numbers button
             me.measureNumberButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
                 enableToggle: true,
                 action: 'toggleMeasureVisibility',
                 baseCls: 'edirom-icon-button'
@@ -111,7 +111,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
             // toggle annotations button
             me.annotationsButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
                 enableToggle: true,
                 action: 'toggleAnnotationVisibility',
                 baseCls: 'edirom-icon-button'
@@ -120,7 +120,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // open concordance navigator button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="concordance_navigator" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('openConcordanceNavigator'); });
@@ -147,7 +147,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
             // open about window button
             me.aboutButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon role="button" name="info" title="' + getLangString('view.desktop.TaskBar_about') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_about" title="' + getLangString('view.desktop.TaskBar_about') + '"></edirom-icon>',
                 baseCls: 'edirom-icon-button',
                 action: 'openAboutWindow'
             }),
@@ -156,7 +156,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // open help window button
             {
                 xtype: 'component', 
-                html: '<edirom-icon role="button" id="icon_openHelp" name="help" title="' + getLangString('view.desktop.TaskBar_help') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" id="icon_openHelp" name="eo_help" title="' + getLangString('view.desktop.TaskBar_help') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('openHelp'); });
@@ -167,7 +167,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // language switch button
             /*{
                 xtype: 'component', 
-                html: '<edirom-icon role="button" name="language" title="' + getLangString('view.desktop.TaskBar_lang') + '"></edirom-icon>',
+                html: '<edirom-icon role="button" name="eo_language_switch" title="' + getLangString('view.desktop.TaskBar_lang') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('switchLanguage'); });

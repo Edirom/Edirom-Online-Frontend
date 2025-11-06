@@ -65,7 +65,7 @@ Ext.define('EdiromOnline.view.window.search.SearchWindow', {
 
         // button with search icon
         me.searchButton = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon role="button" name="search" title="' + getLangString('view.desktop.TaskBar_search') + '"></edirom-icon>',
+            html: '<edirom-icon role="button" name="eo_search" title="' + getLangString('view.desktop.TaskBar_search') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             id: 'doSearchBtn',
             action: 'doSearch',
