@@ -133,12 +133,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.toggleMeasureVisibility.setChecked(visible, true);
         me.fireEvent('measureVisibilityChange', me, visible);
 
-        // set pressed state of toggle button in taskbar
-        if(visible){
-            document.getElementById('icon_toggleMeasures').setAttribute('pressed', '');
-        } else {
-            document.getElementById('icon_toggleMeasures').removeAttribute('pressed');
-        }
     },
     
     checkGlobalAnnotationVisibility: function(visible) {
@@ -411,30 +405,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         var me = this;
 
-        me.toggleMeasureVisibility = Ext.create('Ext.menu.CheckItem', {
-            id: me.id + '_showMeasures',
-            checked: me.measuresVisible,
-            text: getLangString('view.window.source.SourceView_showMeasures'),
-            checkHandler: Ext.bind(me.toggleMeasures, me, [], true)
-        });
-
-        me.viewMenu =  Ext.create('Ext.button.Button', {
-            text: getLangString('view.window.source.SourceView_viewMenu'),
-            indent: false,
-            cls: 'menuButton',
-            menu : {
-                items: [
-                    me.toggleMeasureVisibility,
-                    {
-                        id: me.id + '_fitFacsimile',
-                        text: getLangString('view.window.source.SourceView_fitView'),
-                        handler: Ext.bind(me.fitFacsimile, me, [], 0)
-                    }
-                ]
-            }
-        });
-        me.window.getTopbar().addViewSpecificItem(me.viewMenu, me.id);
-
         me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
@@ -488,10 +458,26 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.switchInternalView, me, ['measureBasedView'], false)
         });
+
+        // button for resetting zoom and position
+        me.fitFacsimileButton = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_fitFacsimile_'+me.id+'" role="button" name="eo_reset_view" title="' + getLangString('view.window.source.SourceView_fitView') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            handler: Ext.bind(me.fitFacsimile, me, [], 0)
+        });
+
+        // button for toggling measure visibility
+        me.toggleMeasureDisplay = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_displayMeasuresWindow_'+me.id+'" role="button" name="eo_toggle_measures" title="' + getLangString('view.window.source.SourceView_showmeasureNumbersWindow') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            handler: Ext.bind(me.toggleMeasures, me, [], true)
+        });
         
         // add buttons to bottom bar
         me.bottomBar.add(me.pageBasedViewButton);
         me.bottomBar.add(me.measureBasedViewButton);
+        me.bottomBar.add(me.fitFacsimileButton);
+        me.bottomBar.add(me.toggleMeasureDisplay);
 
         var entries = me.pageBasedView.createToolbarEntries();
 
@@ -557,8 +543,16 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
         me.measuresVisible = state;
         me.measuresVisibilitySetLocaly = true;
+        nextState = document.getElementById('icon_displayMeasuresWindow_'+me.id).hasAttribute('pressed') ? false : true;
         
-        this.fireEvent('measureVisibilityChange', me, state);
+        // set pressed state of toggle button in toolbar
+        if(nextState){
+            document.getElementById('icon_displayMeasuresWindow_'+me.id).setAttribute('pressed', '');
+        } else {
+            document.getElementById('icon_displayMeasuresWindow_'+me.id).removeAttribute('pressed');
+        }
+
+        this.fireEvent('measureVisibilityChange', me, nextState);
     },
 
     showMeasures: function(measures) {
