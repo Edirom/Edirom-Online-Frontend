@@ -340,8 +340,6 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 		Ext.fly(me.id + '_textCont').update(text);
 		this.fireEvent('documentLoaded', me);
 		
-		Tipped.create('#' + me.id + '_textCont .tipped', { position: 'top', maxWidth: 300 });
-		
 		Ext.Array.each(Ext.query('.scrollto'), function(dom, n, all) {
             var elem = Ext.get(dom);
             var scrollTo = elem.getAttribute('data-footnote');
