@@ -98,18 +98,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             }),
 
             // toggle annotations button
-            /*{
-                xtype: 'component', 
-                html: '<edirom-icon role="button" name="comment" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('toggleAnnotationVisibility'); });
-                    }
-                },
-                action: 'toggleMeasureVisibility'
-            },*/
-
-            // toggle annotations button
             me.annotationsButton = Ext.create('Ext.button.Button', {
                 html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
                 enableToggle: true,
