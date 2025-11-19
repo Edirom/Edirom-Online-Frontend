@@ -48,6 +48,11 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<script
 						src="resources/js/he.js"></script>
 					
+					<!-- Edirom Verovio Renderer Component -->
+					<script
+						src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
+						type="text/javascript"></script>
+					
 					<script
 						src="resources/js/tipped/tipped.js"></script>
 					<link
@@ -62,8 +67,20 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 				
 				</head>
 				<body>
-					<div
-						id="output"></div>
+					<script>
+						var uri = "${uri}";
+						var edition = "${edition}";
+						var movementId = "";
+						var appBasePath = "@backend.url@";
+						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+						console.log("uri is as follow: " + uri); 
+						console.log("meiUrl  is as follow: " + meiUrl);
+						</script>
+					
+					<div id="output">
+						<!-- Loading spinner shown initially -->
+						<div class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+					</div>
 					<div
 						id="toolbar"
 						class="noselect">
@@ -90,12 +107,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<div
 						class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
 					
-					<script>
-						var uri = "${uri}";
-						var edition = "${edition}";
-						var movementId = "";
-						var appBasePath = "@backend.url@";
-					</script>
 					<script
 						src="resources/js/verovio-view.js"></script>
 				</body>
