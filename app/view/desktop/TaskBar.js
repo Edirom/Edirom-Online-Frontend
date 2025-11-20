@@ -40,6 +40,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'sortGrid',
                     'sortHorizontally',
                     'sortVertically',
+                    'toggleMeasuresGlobally',
                     'openConcordanceNavigator',
                     'openSearchWindow',
                     'openAboutWindow',
@@ -90,12 +91,41 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             },
 
             // toggle measure numbers button
-            me.measureNumberButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleMeasures" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
-                enableToggle: true,
-                action: 'toggleMeasureVisibility',
-                baseCls: 'edirom-icon-button'
-            }),
+            {
+                xtype: 'component', 
+                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { 
+
+                            // toggle pressed state
+                            var iconElem = document.getElementById('icon_toggleMeasuresGlobally');
+                            var newState = iconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-measures-visible-global', newState);
+
+                            // fire event
+                            console.log('Fire event toggleMeasuresGlobally (newState: ' + newState + ')');
+                            me.fireEvent('toggleMeasuresGlobally');
+
+                        });
+                    }
+                }
+            },
+
+            /*me.measureNumberButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { 
+                            console.log('toggleMeasuresGlobally fired');
+                            me.fireEvent('toggleMeasuresGlobally');
+                        });
+                    }
+                }
+            }),*/
 
             // toggle annotations button
             me.annotationsButton = Ext.create('Ext.button.Button', {

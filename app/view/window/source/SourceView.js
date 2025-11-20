@@ -123,15 +123,23 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         }
     },
 
-    checkGlobalMeasureVisibility: function(visible) {
+    checkGlobalMeasureVisibility: function() {
         
         var me = this;
+
+        console.log('Checking global measure visibility for SourceView ' + me.id);
         
+        // If: measures visibility was set locally, do nothing
         if(me.measuresVisibilitySetLocaly) return;
         
-        me.measuresVisible = visible;
-        me.toggleMeasureVisibility.setChecked(visible, true);
-        me.fireEvent('measureVisibilityChange', me, visible);
+        // Otherwise: check local visibility state and decide on next visibility state        
+        // only if local state is null (case in which window does not override global) fire event with global visibility
+        var localState = sessionStorage.getItem('edirom-measures-visible-' + me.id);
+        if(localState === null) {
+            visible = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
+            me.measuresVisible = visible;
+            me.fireEvent('measureVisibilityChange', me, visible);
+        }
 
     },
     
@@ -385,7 +393,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         me.pageBasedView.setPage(combo, store);
         
-        if(me.measuresVisible)
+        if(sessionStorage.getItem('edirom-measures-visible-global') === 'true')
             this.fireEvent('measureVisibilityChange', me, true);
 
         if(me.annotationsVisible)
@@ -470,7 +478,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.toggleMeasureDisplay = Ext.create('Ext.button.Button', {
             html: '<edirom-icon id="icon_displayMeasuresWindow_'+me.id+'" role="button" name="eo_toggle_measures" title="' + getLangString('view.window.source.SourceView_showmeasureNumbersWindow') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
-            handler: Ext.bind(me.toggleMeasures, me, [], true)
+            handler: Ext.bind(me.toggleMeasures, me, [])
         });
         
         // add buttons to bottom bar
@@ -539,20 +547,46 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.measureBasedView.fitFacsimile();
     },
 
-    toggleMeasures: function(item, state) {
-        var me = this;
-        me.measuresVisible = state;
-        me.measuresVisibilitySetLocaly = true;
-        nextState = document.getElementById('icon_displayMeasuresWindow_'+me.id).hasAttribute('pressed') ? false : true;
+    toggleMeasures: function(item) {
         
-        // set pressed state of toggle button in toolbar
-        if(nextState){
-            document.getElementById('icon_displayMeasuresWindow_'+me.id).setAttribute('pressed', '');
-        } else {
-            document.getElementById('icon_displayMeasuresWindow_'+me.id).removeAttribute('pressed');
+        var me = this;
+
+        // toggle attribute in DOM and save state in session storage
+        var iconElem = document.getElementById('icon_displayMeasuresWindow_'+me.id);
+        var currentState = iconElem.hasAttribute('pressed');
+        var displayOn = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
+
+        // if current button is pressed and measures are currently displayed -> switch to hiding measures
+        if(currentState && displayOn) {
+            iconElem.setAttribute('name', 'capture');
+            iconElem.classList.remove('on');
+            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'false');
         }
 
-        this.fireEvent('measureVisibilityChange', me, nextState);
+        // if current button is pressed and measures are not displayed -> switch to unpressed and open measure display for global setting
+        if(currentState && !displayOn) {
+            iconElem.setAttribute('name', 'eo_toggle_measures');
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-measures-visible-'+me.id);
+        }
+
+        // if current button is not pressed -> switch to pressed and display measures
+        if(!currentState) {
+            iconElem.setAttribute('pressed', '');
+            iconElem.classList.add('on');
+            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
+        }
+
+        // update local variables
+        me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
+        me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
+
+        // if locally shown then global must be hidden
+        if(me.measuresVisibilitySetLocaly && me.measuresVisible)
+            me.hideMeasures();
+        
+        // fire event
+        this.fireEvent('measureVisibilityChange', me, me.measuresVisible);
     },
 
     showMeasures: function(measures) {

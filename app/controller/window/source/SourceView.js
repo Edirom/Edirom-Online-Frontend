@@ -52,7 +52,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         view.on('gotoZone', me.onGotoZone, me);
 
         ToolsController.addMeasureVisibilityListener(view.id, Ext.bind(view.checkGlobalMeasureVisibility, view));
-        view.checkGlobalMeasureVisibility(ToolsController.areMeasuresVisible());
+        view.checkGlobalMeasureVisibility();
 
         ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());

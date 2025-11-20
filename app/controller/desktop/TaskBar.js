@@ -36,10 +36,8 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
                     fn: this.onSwitchDesktop,
                     scope: this
                 },
-                switchLanguage: this.onSwitchLanguage
-            },
-            'taskbar button[action=toggleMeasureVisibility]': {
-                click: me.onMeasureVisibilityChanged
+                switchLanguage: this.onSwitchLanguage,
+                toggleMeasuresGlobally: this.onMeasureVisibilityChanged
             },
             'taskbar button[action=toggleAnnotationVisibility]': {
                 click: me.onAnnotationVisibilityChanged
@@ -76,10 +74,13 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
             window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname + '?edition=' + EdiromOnline.getApplication().getActiveEdition() + '&work=' + EdiromOnline.getApplication().activeWork;
     },
     
-    onMeasureVisibilityChanged: function(button, event) {
+    onMeasureVisibilityChanged: function() {
+
+        console.log('onMeasureVisibilityChanged called');
+
         var me = this;
         var tools = me.application.getController('ToolsController');
-        tools.setGlobalMeasureVisibility(button.pressed);
+        tools.setGlobalMeasureVisibility();
     },
     
     onAnnotationVisibilityChanged: function(button, event) {

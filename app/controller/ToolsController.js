@@ -55,16 +55,18 @@ Ext.define('EdiromOnline.controller.ToolsController', {
         delete me.annotationVisibilityListeners[id];
     },
     
-    areMeasuresVisible: function() {
-        return this.globalMeasureVisibility;
-    },
-    
     areAnnotationsVisible: function() {
         return this.globalAnnotationVisibility;
     },
 
-    setGlobalMeasureVisibility: function(state) {
+    setGlobalMeasureVisibility: function() {
+        
         var me = this;
+
+        var state = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
+
+        console.log('setGlobalMeasureVisibility called (state: ' + state + ')');
+
         me.globalMeasureVisibility = state;
         
         Ext.Object.each(me.measureVisibilityListeners, function(id, listener, obj) {

@@ -182,6 +182,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var me = this;
 
+        console.log('PageBasedView '+me.id+': setPage called');
+
         // Remove old stuff
         me.imageViewer.clear();
 
@@ -192,8 +194,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.imageViewer.showImage(me.activePage.get('path'),
             me.activePage.get('width'), me.activePage.get('height'));
 
-        if(me.owner.measuresVisible)
+        // set measure visibility according to global and local settings
+        var globalVisible = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
+        var localVisible = sessionStorage.getItem('edirom-measures-visible-' + me.owner.id) === 'true';
+        var localBlocked = document.getElementById('icon_displayMeasuresWindow_' + me.owner.id).hasAttribute('pressed') && !localVisible;
+        
+        // decide whether to show measures
+        if(localVisible || (globalVisible && !localBlocked)){
             me.owner.fireEvent('measureVisibilityChange', me.owner, true);
+        }
 
         if(me.owner.annotationsVisible)
             me.owner.fireEvent('annotationsVisibilityChange', me.owner, true);
