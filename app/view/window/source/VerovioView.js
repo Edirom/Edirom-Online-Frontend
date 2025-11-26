@@ -117,8 +117,8 @@ Ext.define('EdiromOnline.view.window.source.VerovioView', {
     },
     
     showMovement: function (menuItem, event, movementId) {
-        var me = this;
-        me.verovioImageView.showMovement(movementId);
+        document.getElementById("verovioRenderer").setAttribute("movementid",movementId)
+  
     },
     
     gotoMeasureDialog: function () {
