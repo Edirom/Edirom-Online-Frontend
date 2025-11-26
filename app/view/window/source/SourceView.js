@@ -543,7 +543,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // if current button is pressed and measures are currently displayed -> switch to hiding measures
         if(currentState && displayOn) {
-            iconElem.setAttribute('name', 'capture');
+            iconElem.setAttribute('name', 'eo_toggle_measures_off');
             iconElem.classList.remove('on');
             sessionStorage.setItem('edirom-measures-visible-'+me.id, 'false');
         }
@@ -634,7 +634,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // if current button is pressed and annotations are currently displayed -> switch to hiding annotations
         if(currentState && displayOn) {
-            iconElem.setAttribute('name', 'comments_disabled');
+            iconElem.setAttribute('name', 'eo_toggle_annotations_off');
             iconElem.classList.remove('on');
             sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'false');
         }
