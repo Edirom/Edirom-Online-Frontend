@@ -395,21 +395,13 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         var me = this;
 
-        me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
-            id: me.id + '_showAnnotations',
-            checked: me.annotationsVisible,
-            text: getLangString('view.window.source.SourceView_ShowAnnotations'),
-            checkHandler: Ext.bind(me.toggleAnnotations, me, [], true)
-        });
-
+        // annotations menu (used for priority and category filter)
         me.annotMenu =  Ext.create('Ext.button.Button', {
             text: getLangString('view.window.source.SourceView_annotationsMenu'),
             indent: false,
             cls: 'menuButton',
             menu : {
-                items: [
-                    me.toggleAnnotationVisibility
-                ]
+                items: [  ]
             }
         });
         me.window.getTopbar().addViewSpecificItem(me.annotMenu, me.id);
