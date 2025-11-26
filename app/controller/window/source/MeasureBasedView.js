@@ -118,10 +118,6 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
     onMeasureVisibilityChange: function(viewer, visible, pageId, uri, args) {
         var me = this;
 
-        console.log('controller: MeasureBasedView: onMeasureVisibilityChange');
-        console.log(sessionStorage);
-
-
         // get global measure visibility from session storage
         visibleGlobal = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
 

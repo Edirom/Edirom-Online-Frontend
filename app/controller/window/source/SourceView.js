@@ -53,11 +53,9 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 
         ToolsController.addMeasureVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
         view.checkGlobalVisibility('measures');
-        console.log('checkGlobalVisibility measures called (SourceView controller)');   
 
         ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
         view.checkGlobalVisibility('annotations');
-        console.log('checkGlobalVisibility annotations called (SourceView controller)');
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('Controller: SourceView: onSourceViewRendered. getMovements');

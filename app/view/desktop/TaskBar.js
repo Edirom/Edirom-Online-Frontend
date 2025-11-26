@@ -107,7 +107,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                             sessionStorage.setItem('edirom-measures-visible-global', newState);
 
                             // fire event
-                            console.log('Fire event toggleMeasuresGlobally (newState: ' + newState + ')');
                             me.fireEvent('toggleMeasuresGlobally');
 
                         });
@@ -131,7 +130,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                             sessionStorage.setItem('edirom-annotations-visible-global', newState);
 
                             // fire event
-                            console.log('Fire event toggleAnnotationsGlobally (newState: ' + newState + ')');
                             me.fireEvent('toggleAnnotationsGlobally');
 
                         });

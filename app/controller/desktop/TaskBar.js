@@ -73,18 +73,12 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
     },
     
     onMeasureVisibilityChanged: function() {
-
-        console.log('onMeasureVisibilityChanged called');
-
         var me = this;
         var tools = me.application.getController('ToolsController');
         tools.setGlobalVisibility('measures');
     },
     
     onAnnotationVisibilityChanged: function() {
-        
-        console.log('onAnnotationVisibilityChanged called');
-
         var me = this;
         var tools = me.application.getController('ToolsController');
         tools.setGlobalVisibility('annotations');

@@ -69,9 +69,7 @@ Ext.define('EdiromOnline.controller.ToolsController', {
 
         // get state from session storage
         var state = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
-
-        console.log('setGlobalVisibility(\''+type+'\') called (state: ' + state + ')');
-
+        
         // set local property to current state
         me[type+'globalVisibility'] = state;
         
