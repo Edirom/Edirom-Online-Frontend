@@ -45,8 +45,9 @@ Ext.define('EdiromOnline.controller.window.text.TextFacsimileSplitView', {
         view.on('afterImageChanged', me.onAfterImageChanged, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
-        view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
+        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('annotations');
+        console.log('checkGlobalVisibility annotations called (TextFacsimileSplitView controller)');
 
         var uri = view.uri;
 

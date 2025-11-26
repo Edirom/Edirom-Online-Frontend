@@ -182,8 +182,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var me = this;
 
-        console.log('PageBasedView '+me.id+': setPage called');
-
         // Remove old stuff
         me.imageViewer.clear();
 
@@ -201,7 +199,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         
         // decide whether to show measures
         if(localVisible || (globalVisible && !localBlocked)){
-            me.owner.fireEvent('measureVisibilityChange', me.owner, true);
+            me.owner.fireEvent('measuresVisibilityChange', me.owner, true);
         }
 
         if(me.owner.annotationsVisible)

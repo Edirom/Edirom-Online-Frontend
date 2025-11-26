@@ -41,6 +41,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'sortHorizontally',
                     'sortVertically',
                     'toggleMeasuresGlobally',
+                    'toggleAnnotationsGlobally',
                     'openConcordanceNavigator',
                     'openSearchWindow',
                     'openAboutWindow',
@@ -114,26 +115,29 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                 }
             },
 
-            /*me.measureNumberButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
-                baseCls: 'edirom-icon-button',
+            // toggle annotations button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { 
-                            console.log('toggleMeasuresGlobally fired');
-                            me.fireEvent('toggleMeasuresGlobally');
+
+                            // toggle pressed state
+                            var iconElem = document.getElementById('icon_toggleAnnotationsGlobally');
+                            var newState = iconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-annotations-visible-global', newState);
+
+                            // fire event
+                            console.log('Fire event toggleAnnotationsGlobally (newState: ' + newState + ')');
+                            me.fireEvent('toggleAnnotationsGlobally');
+
                         });
                     }
                 }
-            }),*/
-
-            // toggle annotations button
-            me.annotationsButton = Ext.create('Ext.button.Button', {
-                html: '<edirom-icon id="icon_toggleAnnotations" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
-                enableToggle: true,
-                action: 'toggleAnnotationVisibility',
-                baseCls: 'edirom-icon-button'
-            }),
+            },
 
             // open concordance navigator button
             {

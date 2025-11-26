@@ -22,7 +22,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     requires: [
         'EdiromOnline.view.window.source.PageBasedView',
         'EdiromOnline.view.window.source.MeasureBasedView',
-
         'Ext.draw.Component',
         'Ext.slider.Single',
         'Ext.form.ComboBox',
@@ -49,7 +48,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         var me = this;
 
-        me.addEvents('measureVisibilityChange',
+        me.addEvents('measuresVisibilityChange',
             'annotationsVisibilityChange',
             'overlayVisiblityChange',
             'gotoMovement',
@@ -123,44 +122,25 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         }
     },
 
-    checkGlobalMeasureVisibility: function() {
+    checkGlobalVisibility: function(type) {
         
         var me = this;
 
-        console.log('Checking global measure visibility for SourceView ' + me.id);
-        
-        // If: measures visibility was set locally, do nothing
-        if(me.measuresVisibilitySetLocaly) return;
+        // If: measures/annotations visibility was set locally, do nothing
+        if(me[type+'VisibilitySetLocaly']) 
+            return;
         
         // Otherwise: check local visibility state and decide on next visibility state        
         // only if local state is null (case in which window does not override global) fire event with global visibility
-        var localState = sessionStorage.getItem('edirom-measures-visible-' + me.id);
+        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
         if(localState === null) {
-            visible = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
-            me.measuresVisible = visible;
-            me.fireEvent('measureVisibilityChange', me, visible);
+            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+            me[type+'Visible'] = visible;
+            me.fireEvent(type+'VisibilityChange', me, visible);
         }
 
     },
     
-    checkGlobalAnnotationVisibility: function(visible) {
-        
-        var me = this;
-        
-        if(me.annotationsVisibilitySetLocaly) return;
-        
-        me.annotationsVisible = visible;
-        me.toggleAnnotationVisibility.setChecked(visible, true);
-        me.fireEvent('annotationsVisibilityChange', me, visible);
-
-        // set pressed state of toggle button in taskbar
-        if(visible){
-            document.getElementById('icon_toggleAnnotations').setAttribute('pressed', '');
-        } else {
-            document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
-        }
-    },
-
     //TODO: in mixin verpacken, wenn möglich
     setAnnotationFilter: function(priorities, categories) {
         var me = this;
@@ -393,10 +373,12 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         me.pageBasedView.setPage(combo, store);
         
+        // check and activate measures visibility according to global setting
         if(sessionStorage.getItem('edirom-measures-visible-global') === 'true')
-            this.fireEvent('measureVisibilityChange', me, true);
+            this.fireEvent('measuresVisibilityChange', me, true);
 
-        if(me.annotationsVisible)
+        // check and activate annotations visibility according to global setting
+        if(sessionStorage.getItem('edirom-annotations-visible-global') === 'true')
             this.fireEvent('annotationsVisibilityChange', me, true);
     },
 
@@ -481,11 +463,19 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             handler: Ext.bind(me.toggleMeasures, me, [])
         });
         
+        // button for toggling annotation visibility
+        me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_displayAnnotationsWindow_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.source.SourceView_ShowAnnotations') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            handler: Ext.bind(me.toggleAnnotations, me, [])
+        });
+
         // add buttons to bottom bar
         me.bottomBar.add(me.pageBasedViewButton);
         me.bottomBar.add(me.measureBasedViewButton);
         me.bottomBar.add(me.fitFacsimileButton);
         me.bottomBar.add(me.toggleMeasureDisplay);
+        me.bottomBar.add(me.toggleAnnotationDisplay);
 
         var entries = me.pageBasedView.createToolbarEntries();
 
@@ -556,6 +546,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var currentState = iconElem.hasAttribute('pressed');
         var displayOn = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
 
+        // define scope for session storage (default is window id, changed to global in case of window display reset)
+        var scope = me.id;
+
         // if current button is pressed and measures are currently displayed -> switch to hiding measures
         if(currentState && displayOn) {
             iconElem.setAttribute('name', 'capture');
@@ -568,6 +561,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             iconElem.setAttribute('name', 'eo_toggle_measures');
             iconElem.removeAttribute('pressed');
             sessionStorage.removeItem('edirom-measures-visible-'+me.id);
+            scope = 'global';
         }
 
         // if current button is not pressed -> switch to pressed and display measures
@@ -578,7 +572,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         }
 
         // update local variables
-        me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
+        me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+scope) === 'true';
         me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
 
         // if locally shown then global must be hidden
@@ -586,7 +580,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.hideMeasures();
         
         // fire event
-        this.fireEvent('measureVisibilityChange', me, me.measuresVisible);
+        this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
     },
 
     showMeasures: function(measures) {
@@ -634,12 +628,51 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.pageBasedView.showZone(zone);
     },
     
-    toggleAnnotations: function(item, state) {
-        var me = this;
-        me.annotationsVisible = state;
-        me.annotationsVisibilitySetLocaly = true;
+    toggleAnnotations: function(type, item) {
 
-        this.fireEvent('annotationsVisibilityChange', me, state);
+        var me = this;
+
+        // toggle attribute in DOM and save state in session storage
+        var iconElem = document.getElementById('icon_displayAnnotationsWindow_'+me.id);
+        var currentState = iconElem.hasAttribute('pressed');
+        var displayOn = sessionStorage.getItem('edirom-annotations-visible-'+me.id) === 'true';
+
+        // define scope for session storage (default is window id, changed to global in case of window display reset)
+        var scope = me.id;
+
+        // if current button is pressed and annotations are currently displayed -> switch to hiding annotations
+        if(currentState && displayOn) {
+            iconElem.setAttribute('name', 'comments_disabled');
+            iconElem.classList.remove('on');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'false');
+        }
+
+        // if current button is pressed and annotations are not displayed -> switch to unpressed and open annotation display for global setting
+        if(currentState && !displayOn) {
+            iconElem.setAttribute('name', 'eo_toggle_annotations');
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
+            scope = 'global';
+        }
+
+        // if current button is not pressed -> switch to pressed and display annotations
+        if(!currentState) {
+            iconElem.setAttribute('pressed', '');
+            iconElem.classList.add('on');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
+        }
+
+        // update local variables
+        me.annotationsVisible = sessionStorage.getItem('edirom-annotations-visible-'+scope) === 'true';
+        me.annotationsVisibilitySetLocaly = iconElem.hasAttribute('pressed');
+
+        // if locally shown then global must be hidden
+        if(me.annotationsVisibilitySetLocaly && me.annotationsVisible)
+            me.hideAnnotations();
+        
+        // fire event
+        this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
+
     },
 
     showAnnotations: function(annotations) {

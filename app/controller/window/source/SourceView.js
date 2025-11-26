@@ -44,18 +44,20 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         if(view.initialized) return;
         view.initialized = true;
 
-        view.on('measureVisibilityChange', me.onMeasureVisibilityChange, me);
+        view.on('measuresVisibilityChange', me.onMeasureVisibilityChange, me);
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
         view.on('gotoZone', me.onGotoZone, me);
 
-        ToolsController.addMeasureVisibilityListener(view.id, Ext.bind(view.checkGlobalMeasureVisibility, view));
-        view.checkGlobalMeasureVisibility();
+        ToolsController.addMeasureVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('measures');
+        console.log('checkGlobalVisibility measures called (SourceView controller)');   
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
-        view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
+        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('annotations');
+        console.log('checkGlobalVisibility annotations called (SourceView controller)');
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('Controller: SourceView: onSourceViewRendered. getMovements');

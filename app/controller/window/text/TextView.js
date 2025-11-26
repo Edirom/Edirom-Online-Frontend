@@ -44,8 +44,10 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
-        view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
+        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('annotations');
+        
+        console.log('checkGlobalVisibility measures called (TextView controller)');
 
         var uri = view.uri;
 

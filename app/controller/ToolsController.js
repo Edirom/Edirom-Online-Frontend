@@ -25,11 +25,11 @@ Ext.define('EdiromOnline.controller.ToolsController', {
         'Ext.Error'
     ],
     
-    measureVisibilityListeners: {},
-    annotationVisibilityListeners: {},
+    measuresVisibilityListeners: {},
+    annotationsVisibilityListeners: {},
     
-    globalMeasureVisibility: false,
-    globalAnnotationVisibility: false,
+    measuresGlobalVisibility: false,
+    annotationsGlobalVisibility: false,
 
     init: function() {
         window.ToolsController = this;
@@ -37,48 +37,47 @@ Ext.define('EdiromOnline.controller.ToolsController', {
     
     addMeasureVisibilityListener: function(id, listener) {
         var me = this;
-        me.measureVisibilityListeners[id] = listener;
+        me.measuresVisibilityListeners[id] = listener;
     },
     
     addAnnotationVisibilityListener: function(id, listener) {
         var me = this;
-        me.annotationVisibilityListeners[id] = listener;
+        me.annotationsVisibilityListeners[id] = listener;
     },
     
     removeMeasureVisibilityListener: function(id) {
         var me = this;
-        delete me.measureVisibilityListeners[id];
+        delete me.measuresVisibilityListeners[id];
     },
     
     removeAnnotationVisibilityListener: function(id) {
         var me = this;
-        delete me.annotationVisibilityListeners[id];
+        delete me.annotationsVisibilityListeners[id];
     },
     
-    areAnnotationsVisible: function() {
-        return this.globalAnnotationVisibility;
-    },
-
-    setGlobalMeasureVisibility: function() {
+    // setting global visibility for measures or annotations (type = 'measures' | 'annotations')
+    setGlobalVisibility: function(type) {
         
+        // check type
+        if(type !== 'measures' && type !== 'annotations') {
+            console.error('ToolsController.setGlobalVisibility: invalid type \''+type+'\'');
+            return;
+        }
+
+        // assign current this to var me
         var me = this;
 
-        var state = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
+        // get state from session storage
+        var state = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
 
-        console.log('setGlobalMeasureVisibility called (state: ' + state + ')');
+        console.log('setGlobalVisibility(\''+type+'\') called (state: ' + state + ')');
 
-        me.globalMeasureVisibility = state;
+        // set local property to current state
+        me[type+'globalVisibility'] = state;
         
-        Ext.Object.each(me.measureVisibilityListeners, function(id, listener, obj) {
-            listener(state);
-        });
-    },
-    
-    setGlobalAnnotationVisibility: function(state) {
-        var me = this;
-        me.globalAnnotationVisibility = state;
-        Ext.Object.each(me.annotationVisibilityListeners, function(id, listener, obj) {
-            listener(state);
+        // notify listeners about change
+        Ext.Object.each(me[type+'VisibilityListeners'], function(id, listener, obj) {
+            listener(type);
         });
     }
 });

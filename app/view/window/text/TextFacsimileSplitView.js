@@ -116,6 +116,28 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.bottomBar.add(me.pageSpinner);
     },
 
+    checkGlobalVisibility: function(type) {
+        
+        var me = this;
+
+        console.log('Checking global '+type+' visibility for '+ me.alias + ' ' + me.id);
+        console.log(typeof(type)+ ' '+type);
+        
+        // If: measures visibility was set locally, do nothing
+        if(me[type+'VisibilitySetLocaly']) return;
+        
+        // Otherwise: check local visibility state and decide on next visibility state        
+        // only if local state is null (case in which window does not override global) fire event with global visibility
+        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
+        if(localState === null) {
+            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+            me[type+'Visible'] = visible;
+            me.fireEvent(type+'VisibilityChange', me, visible);
+        }
+
+    },
+
+    /*
     checkGlobalAnnotationVisibility: function(visible) {
         
         var me = this;
@@ -139,6 +161,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
         }
     },
+    */
 
     toggleAnnotations: function(item, state) {
         var me = this;
