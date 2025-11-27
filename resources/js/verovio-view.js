@@ -141,7 +141,7 @@ function showMovement(movementId) {
         // Update component attributes to load new movement
         renderer.setAttribute('meiurl', meiUrl);
         console.log("Updated meiurl to:", meiUrl);
-        renderer.setAttribute('movementid', movementId);
+        // Don't set movementid attribute since it's already in the meiUrl
         renderer.setAttribute('pagewidth', initWidth);
         renderer.setAttribute('pageheight', initHeight);
         
