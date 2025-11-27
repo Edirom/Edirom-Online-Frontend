@@ -135,5 +135,26 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 	    var me = this;
 	    var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
 	    iframe.showMeasure(movementId, measureId);
+	},
+
+	/*
+	 * Navigate to a specific measure in a movement.
+	 * @param {string} measureNumber - The measure number to go to.
+	 * @param {string} movementId - The XML-ID of the movement.
+	 */
+	gotoMeasureByAttributes: function (measureNumber, movementId) {
+		var me = this;
+		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
+		
+		// First switch to the movement, then navigate to the measure
+		iframe.showMovement(movementId);
+		
+		// Wait a bit for the movement to load, then set the measure
+		setTimeout(function() {
+			var renderer = iframe.document.getElementById("verovio-renderer");
+			if (renderer) {
+				renderer.setAttribute("measurenumber", measureNumber);
+			}
+		}, 500);
 	}
 });

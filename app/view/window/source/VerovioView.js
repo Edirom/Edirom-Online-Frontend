@@ -143,5 +143,15 @@ Ext.define('EdiromOnline.view.window.source.VerovioView', {
     showMeasure: function(movementId, measureId, measureCount){
         var me = this;
         me.verovioImageView.showMeasure(movementId, measureId);
+    },
+
+    /*
+     * Set attributes on the verovioRenderer element to navigate to a measure.
+     * @param {string} measureNumber - The measure number to go to.
+     * @param {string} movementId - The XML-ID of the movement.
+     */
+    gotoMeasureByAttributes: function(measureNumber, movementId) {
+        var me = this;
+        me.verovioImageView.gotoMeasureByAttributes(measureNumber, movementId);
     }
 });
