@@ -176,40 +176,14 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         // define scope for session storage (default is window id, changed to global in case of window display reset)
         var scope = sourceView.id;
 
-        // if current button is pressed and annotations are currently displayed -> switch to hiding annotations
-        if(currentState && displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_annotations_off');
-            iconElem.classList.remove('on');
-            sessionStorage.setItem(storageItemPrefix + sourceView.id, 'false');
-        }
-
-        // if current button is pressed and annotations are not displayed -> switch to unpressed and open annotation display for global setting
-        if(currentState && !displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_annotations');
-            iconElem.removeAttribute('pressed');
-            sessionStorage.removeItem(storageItemPrefix + sourceView.id);
-            scope = 'global';
-        }
-
-        // if current button is not pressed -> switch to pressed and display annotations
-        if(!currentState) {
-            iconElem.setAttribute('pressed', '');
-            iconElem.classList.add('on');
-            sessionStorage.setItem(storageItemPrefix + sourceView.id, 'true');
-        }
-
-        // update local variables
-        sourceView.annotationsVisible = sessionStorage.getItem(storageItemPrefix + scope) === 'true';
-        sourceView.annotationsVisibilitySetLocaly = iconElem.hasAttribute('pressed');
-
-
+        console.log('sourceView.annotationsVisibilitySetLocaly: ' + sourceView.annotationsVisibilitySetLocaly);
+        console.log('sourceView.annotationsVisible: ' + sourceView.annotationsVisible);
         
-        // if locally shown then global must be hidden
-        if(sourceView.annotationsVisibilitySetLocaly && sourceView.annotationsVisible)
-            viewer.removeShapes('annotations');
+        // remove all annotations first
+        viewer.removeShapes('annotations');
         
         // fetch annotations if global or local visibility is on (both can't be because of the logic above)
-        if(sourceView.annotationsVisible || sourceView.annotationsVisibilitySetLocaly) {
+        if(sourceView.annotationsVisible) {
 
             window.doAJAXRequest('data/xql/getAnnotationsOnPage.xql',
                 'GET', 
@@ -229,10 +203,6 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                     me.annotationsLoaded(annotations, viewer, pageId, sourceView);
                 }, this)
             );
-        }
-        // if neither global nor local visibility is on -> remove annotations
-        else {
-            viewer.removeShapes('annotations');
         }
             
     },
