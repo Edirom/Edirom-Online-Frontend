@@ -450,14 +450,14 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // button for toggling measure visibility
         me.toggleMeasureDisplay = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_displayMeasuresWindow_'+me.id+'" role="button" name="eo_toggle_measures" title="' + getLangString('view.window.source.SourceView_showmeasureNumbersWindow') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_display-measures-window_'+me.id+'" role="button" name="eo_toggle_measures" title="' + getLangString('view.window.source.SourceView_showMeasures') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.toggleMeasures, me, [])
         });
         
         // button for toggling annotation visibility
         me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_displayAnnotationsWindow_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.source.SourceView_ShowAnnotations') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.source.SourceView_showAnnotations') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.toggleAnnotations, me, [])
         });
@@ -534,7 +534,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
 
         // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_displayMeasuresWindow_'+me.id);
+        var iconElem = document.getElementById('icon_display-measures-window_'+me.id);
         var currentState = iconElem.hasAttribute('pressed');
         var displayOn = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
 
@@ -620,12 +620,12 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.pageBasedView.showZone(zone);
     },
     
-    toggleAnnotations: function(type, item) {
+    toggleAnnotations: function() {
 
         var me = this;
 
         // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_displayAnnotationsWindow_'+me.id);
+        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
         var currentState = iconElem.hasAttribute('pressed');
         var displayOn = sessionStorage.getItem('edirom-annotations-visible-'+me.id) === 'true';
 

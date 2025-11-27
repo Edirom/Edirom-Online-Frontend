@@ -94,7 +94,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // toggle measure numbers button
             {
                 xtype: 'component', 
-                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_measureNumbers') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_showMeasures') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { 
@@ -117,7 +117,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             // toggle annotations button
             {
                 xtype: 'component', 
-                html: '<edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_annotations') + '"></edirom-icon>',
+                html: '<edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_showAnnotations') + '"></edirom-icon>',
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function() { 

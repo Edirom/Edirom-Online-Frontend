@@ -192,18 +192,22 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.imageViewer.showImage(me.activePage.get('path'),
             me.activePage.get('width'), me.activePage.get('height'));
 
-        // set measure visibility according to global and local settings
-        var globalVisible = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
-        var localVisible = sessionStorage.getItem('edirom-measures-visible-' + me.owner.id) === 'true';
-        var localBlocked = document.getElementById('icon_displayMeasuresWindow_' + me.owner.id).hasAttribute('pressed') && !localVisible;
-        
-        // decide whether to show measures
-        if(localVisible || (globalVisible && !localBlocked)){
-            me.owner.fireEvent('measuresVisibilityChange', me.owner, true);
-        }
 
-        if(me.owner.annotationsVisible)
-            me.owner.fireEvent('annotationsVisibilityChange', me.owner, true);
+        // check global and local visibility settings for measures and annotations
+        var types = ['measures', 'annotations'];
+
+        // for each type, check visibility and fire event if visible
+        for(var i = 0; i < types.length; i++) {
+            var type = types[i];
+            var globalVisible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+            var localVisible = sessionStorage.getItem('edirom-'+type+'-visible-' + me.owner.id) === 'true';
+            var localBlocked = document.getElementById('icon_display-'+type+'-window_' + me.owner.id).hasAttribute('pressed') && !localVisible;
+
+            // decide whether to show measures/annotations
+            if(localVisible || (globalVisible && !localBlocked)){
+                me.owner.fireEvent(type+'VisibilityChange', me.owner, true);
+            }
+        }
 
         var layers = Object.keys(me.owner.overlaysVisible);
         Ext.Array.each(layers, function(layer) {

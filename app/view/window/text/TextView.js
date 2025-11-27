@@ -77,9 +77,6 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         
         var me = this;
 
-        console.log('Checking global '+type+' visibility for '+ me.alias + ' ' + me.id);
-        console.log(typeof(type)+ ' '+type);
-        
         // If: measures visibility was set locally, do nothing
         if(me[type+'VisibilitySetLocaly']) return;
         
@@ -93,32 +90,6 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         }
 
     },
-
-    /*
-    checkGlobalAnnotationVisibility: function(visible) {
-        
-        var me = this;
-        
-        if(me.annotationsVisibilitySetLocaly) return;
-        
-        me.annotationsVisible = visible;
-        if(typeof me.toggleAnnotationVisibility != 'undefined')
-            me.toggleAnnotationVisibility.setChecked(visible, true);
-        
-        //TODO: Controller mit einbeziehen
-        if(visible && me.annotationsLoaded)
-            me.showAnnotations();
-        else
-            this.fireEvent('annotationsVisibilityChange', me, visible);
-
-        // set pressed state of toggle button in taskbar
-        if(visible){
-            document.getElementById('icon_toggleAnnotations').setAttribute('pressed', '');
-        } else {
-            document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
-        }
-    },
-    */
 
     toggleAnnotations: function(item, state) {
         var me = this;

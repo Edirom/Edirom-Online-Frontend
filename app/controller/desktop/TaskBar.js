@@ -37,8 +37,8 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
                     scope: this
                 },
                 switchLanguage: this.onSwitchLanguage,
-                toggleMeasuresGlobally: this.onMeasureVisibilityChanged,
-                toggleAnnotationsGlobally: this.onAnnotationVisibilityChanged
+                toggleMeasuresGlobally: this.onMeasuresVisibilityChanged,
+                toggleAnnotationsGlobally: this.onAnnotationsVisibilityChanged
             },
         });
     },
@@ -72,13 +72,13 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
             window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname + '?edition=' + EdiromOnline.getApplication().getActiveEdition() + '&work=' + EdiromOnline.getApplication().activeWork;
     },
     
-    onMeasureVisibilityChanged: function() {
+    onMeasuresVisibilityChanged: function() {
         var me = this;
         var tools = me.application.getController('ToolsController');
         tools.setGlobalVisibility('measures');
     },
     
-    onAnnotationVisibilityChanged: function() {
+    onAnnotationsVisibilityChanged: function() {
         var me = this;
         var tools = me.application.getController('ToolsController');
         tools.setGlobalVisibility('annotations');
