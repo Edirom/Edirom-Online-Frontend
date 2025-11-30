@@ -157,6 +157,9 @@ function showMovement(movementId) {
         // Hide renderer until updated
         renderer.style.setProperty('display', 'none', 'important');
         
+        // Reset to page 1 for new movement
+        renderer.setAttribute('pagenumber', '1');
+        
         // Update component attributes to load new movement
         renderer.setAttribute('meiurl', meiUrl);
         console.log("Updated meiurl to:", meiUrl);
