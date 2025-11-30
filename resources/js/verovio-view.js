@@ -6,7 +6,8 @@ function showLoader() {
     var output = document.getElementById('output');
     var spinner = output.querySelector('.lds-roller');
     if (spinner) {
-        spinner.style.display = 'block';
+        // Remove any inline display style to let CSS rule take over
+        spinner.style.removeProperty('display');
     }
     var renderer = document.getElementById('verovio-renderer');
     if (renderer) {
@@ -22,6 +23,8 @@ function hideLoader() {
     }
     var renderer = document.getElementById('verovio-renderer');
     if (renderer) {
+        // Remove the !important flag first, then set to block
+        renderer.style.removeProperty('display');
         renderer.style.display = 'block';
     }
 }
@@ -70,8 +73,10 @@ function initializeComponent() {
         page = e.detail.pageNumber || e.detail.currentPage;
         pageCount = e.detail.totalPages;
         updatePageData();
-        // Hide spinner after component renders
-        hideLoader();
+        // Hide spinner after component renders (with 3 second delay)
+        setTimeout(function() {
+            hideLoader();
+        }, 3000);
     });
     
     console.log("Component initialization complete");
@@ -121,7 +126,6 @@ function showMovement(movementId) {
         renderer.setAttribute('zoom', '33');
         renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
         renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
-        renderer.style.display = 'none'; // Hidden until ready
         
         // Add it to the output div
         var output = document.getElementById('output');
@@ -138,26 +142,33 @@ function showMovement(movementId) {
     if (renderer) {
         console.log("Current meiurl before update:", renderer.getAttribute('meiurl'));
         
+        // Hide renderer until updated
+        renderer.style.setProperty('display', 'none', 'important');
+        
         // Update component attributes to load new movement
         renderer.setAttribute('meiurl', meiUrl);
         console.log("Updated meiurl to:", meiUrl);
-        // Don't set movementid attribute since it's already in the meiUrl
         renderer.setAttribute('pagewidth', initWidth);
         renderer.setAttribute('pageheight', initHeight);
         
         // Store reference
         window.verovioRenderer = renderer;
         
-        // Listen for page info updates from the component (only once)
-        if (isNewComponent) {
-            renderer.addEventListener('page-info-update', function(e) {
-                page = e.detail.pageNumber || e.detail.currentPage;
-                pageCount = e.detail.totalPages;
-                updatePageData();
-                // Hide spinner after component renders
+        // Add one-time listener for page info updates
+        var oneTimeListener = function(e) {
+            page = e.detail.pageNumber || e.detail.currentPage;
+            pageCount = e.detail.totalPages;
+            updatePageData();
+            
+            // Wait 3 seconds before hiding loader
+            setTimeout(function() {
                 hideLoader();
-            });
-        }
+            }, 3000);
+            
+            // Remove this listener after firing once
+            renderer.removeEventListener('page-info-update', oneTimeListener);
+        };
+        renderer.addEventListener('page-info-update', oneTimeListener);
         
         // Dispatch initialization event
         setTimeout(function() {
