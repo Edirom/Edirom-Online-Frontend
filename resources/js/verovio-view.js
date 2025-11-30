@@ -67,16 +67,28 @@ function initializeComponent() {
     // Store reference
     window.verovioRenderer = renderer;
     
+    // Track if this is the initial load
+    var isInitialLoad = true;
+    
     // Listen for page info updates from the component
     renderer.addEventListener('page-info-update', function(e) {
         console.log("Page info update received:", e.detail);
         page = e.detail.pageNumber || e.detail.currentPage;
         pageCount = e.detail.totalPages;
-        updatePageData();
-        // Hide spinner after component renders (with 3 second delay)
-        setTimeout(function() {
-            hideLoader();
-        }, 3000);
+        $("#page").html(page);
+        $("#pageCount").html(pageCount);
+        
+        if (isInitialLoad) {
+            // First load: wait 3 seconds before showing everything
+            isInitialLoad = false;
+            setTimeout(function() {
+                hideLoader();
+                updatePageData();
+            }, 1000);
+        } else {
+            // Page navigation: update annotations immediately (renderer already visible)
+            updatePageData();
+        }
     });
     
     console.log("Component initialization complete");
@@ -154,16 +166,27 @@ function showMovement(movementId) {
         // Store reference
         window.verovioRenderer = renderer;
         
+        // Track if this is the initial movement load
+        var isInitialMovementLoad = true;
+        
         // Add one-time listener for page info updates
         var oneTimeListener = function(e) {
             page = e.detail.pageNumber || e.detail.currentPage;
             pageCount = e.detail.totalPages;
-            updatePageData();
+            $("#page").html(page);
+            $("#pageCount").html(pageCount);
             
-            // Wait 3 seconds before hiding loader
-            setTimeout(function() {
-                hideLoader();
-            }, 3000);
+            if (isInitialMovementLoad) {
+                // First page of new movement: wait 3 seconds
+                isInitialMovementLoad = false;
+                setTimeout(function() {
+                    hideLoader();
+                    updatePageData();
+                }, 3000);
+            } else {
+                // Subsequent page navigation: immediate
+                updatePageData();
+            }
             
             // Remove this listener after firing once
             renderer.removeEventListener('page-info-update', oneTimeListener);
@@ -191,8 +214,7 @@ function initData() {
 }
 
 function updatePageData() {
-    $("#page").html(page);
-    $("#pageCount").html(pageCount);
+    // Page numbers already updated before this is called
     
     // Access the shadow DOM through the component
     if (!window.verovioRenderer || !window.verovioRenderer.shadowRoot) {
@@ -201,6 +223,12 @@ function updatePageData() {
     }
     
     const shadowRoot = window.verovioRenderer.shadowRoot;
+    
+    // Remove existing annotation icons to prevent duplicates
+    shadowRoot.querySelectorAll('.annotIcon').forEach(icon => icon.remove());
+    
+    // Remove existing tooltips from Light DOM
+    document.querySelectorAll('.tip').forEach(tip => tip.remove());
     
     // Inject entire verovio-view.css into shadow DOM (only once)
     if (!shadowRoot.querySelector('#verovio-styles')) {
