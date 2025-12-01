@@ -106,9 +106,17 @@ function showMovement(movementId) {
     showLoader();
     
     window.movementId = movementId;
+
+    var body = document.body;
+    var html = document.documentElement;
+
+    var height = Math.max( body.scrollHeight, body.offsetHeight, 
+                    html.clientHeight, html.scrollHeight, html.offsetHeight );
+    var width = Math.max( body.scrollWidth, body.offsetWidth, 
+                    html.clientWidth, html.scrollWidth, html.offsetWidth );
     
-    var initHeight = Math.floor($(document).height() * 100.0 / 33.0) - 35;
-    var initWidth = Math.floor($(document).width() * 100.0 / 33.0);
+    var initHeight = Math.floor(height * 100.0 / 33.0) - 35;
+    var initWidth = Math.floor(width * 100.0 / 33.0);
 
     // Build MEI URL with movementId
     var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition + "&movementId=" + movementId;
@@ -331,7 +339,9 @@ function updatePageData() {
 
 function getMeasureIds() {
     var measureIds = "";
-    $("#output svg .measure").each(function(n, measure) { measureIds += measure.id + ","; } );
+    document.querySelectorAll('#output svg .measure').forEach(function(measure) {
+        measureIds += measure.id + ",";
+    });
     return measureIds;
 }
 
