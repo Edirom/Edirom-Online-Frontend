@@ -31,14 +31,12 @@ function hideLoader() {
 
 // Initialize component on page load
 function initializeComponent() {
-    console.log("Initializing verovio component...");
     
     var initHeight = Math.floor($(document).height() * 100.0 / 33.0) - 35;
     var initWidth = Math.floor($(document).width() * 100.0 / 33.0);
     
     // Build initial MEI URL (without movementId)
     var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
-    console.log("Initial MEI URL:", meiUrl);
     
     // Create the component element
     var renderer = document.createElement('edirom-verovio-renderer');
@@ -52,15 +50,12 @@ function initializeComponent() {
     renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
     renderer.style.display = 'none'; // Hidden until ready
     
-    console.log("Component created with meiurl:", meiUrl);
     
     // Add it to the output div
     var output = document.getElementById('output');
     if (output) {
         output.appendChild(renderer);
-        console.log("Component appended to output div");
     } else {
-        console.error('Output div not found');
         return;
     }
     
@@ -72,7 +67,6 @@ function initializeComponent() {
     
     // Listen for page info updates from the component
     renderer.addEventListener('page-info-update', function(e) {
-        console.log("Page info update received:", e.detail);
         page = e.detail.pageNumber || e.detail.currentPage;
         pageCount = e.detail.totalPages;
         $("#page").html(page);
@@ -91,7 +85,6 @@ function initializeComponent() {
         }
     });
     
-    console.log("Component initialization complete");
 }
 
 // Call initialization when DOM is ready
@@ -109,8 +102,6 @@ const vrvToolkitDataInitialized = new Event("vrvToolkitDataInitialized");
 window.addEventListener('vrvToolkitDataInitialized', (e) => {on_vrvToolkitDataInitialized()}, false);
 
 function showMovement(movementId) {
-    console.log("showMovement called with movementId:", movementId);
-
     // Show loading spinner first
     showLoader();
     
@@ -121,14 +112,12 @@ function showMovement(movementId) {
 
     // Build MEI URL with movementId
     var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition + "&movementId=" + movementId;
-    console.log("Built MEI URL:", meiUrl);
     
     // Get or create the component
     var renderer = document.getElementById('verovio-renderer');
     var isNewComponent = false;
     
     if (!renderer) {
-        console.log("Creating new verovio-renderer component");
         isNewComponent = true;
         
         // Create the component element
@@ -144,15 +133,11 @@ function showMovement(movementId) {
         if (output) {
             output.appendChild(renderer);
         } else {
-            console.error('Output div not found');
             return;
         }
     }
-    
-    console.log("Renderer component found/created:", renderer ? "YES" : "NO");
-    
+        
     if (renderer) {
-        console.log("Current meiurl before update:", renderer.getAttribute('meiurl'));
         
         // Hide renderer until updated
         renderer.style.setProperty('display', 'none', 'important');
@@ -162,7 +147,6 @@ function showMovement(movementId) {
         
         // Update component attributes to load new movement
         renderer.setAttribute('meiurl', meiUrl);
-        console.log("Updated meiurl to:", meiUrl);
         renderer.setAttribute('pagewidth', initWidth);
         renderer.setAttribute('pageheight', initHeight);
         
@@ -201,7 +185,6 @@ function showMovement(movementId) {
             window.dispatchEvent(vrvToolkitDataInitialized);
         }, 500);
     } else {
-        console.error('Failed to create/find verovio renderer component');
     }
 }
 
@@ -243,7 +226,6 @@ function updatePageData() {
                 style.id = 'verovio-styles';
                 style.textContent = cssText;
                 shadowRoot.appendChild(style);
-                console.log('Verovio styles injected into Shadow DOM');
             })
             .catch(error => {
                 console.error('Failed to load verovio styles:', error);
@@ -402,7 +384,6 @@ function showMeasure(movementId, measureId) {
  * Callback function on dispatch of vrvToolkitDataInitialized event
  */
 function on_vrvToolkitDataInitialized(){
-    console.log("event fired and catched");
     if (window.measureId == undefined ) return; 
     showMeasure(window.movementId, window.measureId); //? set window.measureId to undefined ?
 }

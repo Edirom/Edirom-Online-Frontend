@@ -73,8 +73,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						var movementId = "";
 						var appBasePath = "@backend.url@";
 						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
-						console.log("uri is as follow: " + uri); 
-						console.log("meiUrl  is as follow: " + meiUrl);
 						</script>
 					
 					<div id="output">
