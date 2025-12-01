@@ -116,8 +116,34 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
     },
     
     onMeasureVisibilityChange: function(viewer, visible, pageId, uri, args) {
+
         var me = this;
 
+        // toggle attribute in DOM and save state in session storage
+        var iconElem = document.getElementById('icon_display-measures-window_'+sourceView.id);
+        var storageItemPrefix = 'edirom-measures-visible-';
+
+        // get current state
+        var currentState = iconElem.hasAttribute('pressed');
+        var displayOn = sessionStorage.getItem(storageItemPrefix + sourceView.id) === 'true';
+
+        // define scope for session storage (default is window id, changed to global in case of window display reset)
+        var scope = sourceView.id;
+
+        console.log('sourceView.measuresVisibilitySetLocaly: ' + sourceView.measuresVisibilitySetLocaly);
+        console.log('sourceView.measuresVisible: ' + sourceView.measuresVisible);
+        
+        // remove all measures first
+        viewer.removeShapes('measures');
+        
+        // fetch measures if global or local visibility is on (both can't be because of the logic above)
+        if(sourceView.measuresVisible) {
+
+            me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
+
+        }
+
+        /*
         // get global measure visibility from session storage
         visibleGlobal = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
 
@@ -130,6 +156,7 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         }else {
             viewer.removeShapes('measures');
         }
+            */
     },
     
     fetchMeasures: function(uri, pageId, fn) {
@@ -163,7 +190,6 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
     onAnnotationsVisibilityChange: function(viewer, visible, pageId, uri, sourceView, args) {
         var me = this;
-
 
         // toggle attribute in DOM and save state in session storage
         var iconElem = document.getElementById('icon_display-annotations-window_'+sourceView.id);
