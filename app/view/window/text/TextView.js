@@ -235,7 +235,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
 
-        me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
+        me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
             text: getLangString('view.window.text.TextView_showAnnotations'),
@@ -248,7 +248,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             cls: 'menuButton',
             menu : {
                 items: [
-                    me.toggleAnnotationVisibility
+                    me.toggleAnnotationsVisibility
                 ]
             }
         });

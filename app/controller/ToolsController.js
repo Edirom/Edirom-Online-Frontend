@@ -35,22 +35,22 @@ Ext.define('EdiromOnline.controller.ToolsController', {
         window.ToolsController = this;
     },
     
-    addMeasureVisibilityListener: function(id, listener) {
+    addMeasuresVisibilityListener: function(id, listener) {
         var me = this;
         me.measuresVisibilityListeners[id] = listener;
     },
     
-    addAnnotationVisibilityListener: function(id, listener) {
+    addAnnotationsVisibilityListener: function(id, listener) {
         var me = this;
         me.annotationsVisibilityListeners[id] = listener;
     },
     
-    removeMeasureVisibilityListener: function(id) {
+    removeMeasuresVisibilityListener: function(id) {
         var me = this;
         delete me.measuresVisibilityListeners[id];
     },
     
-    removeAnnotationVisibilityListener: function(id) {
+    removeAnnotationsVisibilityListener: function(id) {
         var me = this;
         delete me.annotationsVisibilityListeners[id];
     },

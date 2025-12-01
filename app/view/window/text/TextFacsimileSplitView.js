@@ -135,15 +135,15 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     },
 
     /*
-    checkGlobalAnnotationVisibility: function(visible) {
+    checkGlobalAnnotationsVisibility: function(visible) {
         
         var me = this;
         
         if(me.annotationsVisibilitySetLocaly) return;
         
         me.annotationsVisible = visible;
-        if(typeof me.toggleAnnotationVisibility != 'undefined')
-            me.toggleAnnotationVisibility.setChecked(visible, true);
+        if(typeof me.toggleAnnotationsVisibility != 'undefined')
+            me.toggleAnnotationsVisibility.setChecked(visible, true);
         
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)
@@ -298,7 +298,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
 
-        me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
+        me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
             text: getLangString('view.window.text.TextView_showAnnotations'),
@@ -310,7 +310,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             indent: false,
             menu : {
                 items: [
-                    me.toggleAnnotationVisibility
+                    me.toggleAnnotationsVisibility
                 ]
             }
         });

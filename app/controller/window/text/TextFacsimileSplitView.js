@@ -45,7 +45,7 @@ Ext.define('EdiromOnline.controller.window.text.TextFacsimileSplitView', {
         view.on('afterImageChanged', me.onAfterImageChanged, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
         view.checkGlobalVisibility('annotations');
 
         var uri = view.uri;
@@ -174,6 +174,6 @@ Ext.define('EdiromOnline.controller.window.text.TextFacsimileSplitView', {
     onBeforeDestroy: function(view) {
         var me = this;
         
-        ToolsController.removeAnnotationVisibilityListener(view.id);
+        ToolsController.removeAnnotationsVisibilityListener(view.id);
     }
 });

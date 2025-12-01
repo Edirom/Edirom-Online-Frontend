@@ -34,7 +34,7 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
             
             'horizontalMeasureViewer': {
                 showMeasure: this.onShowMeasure,
-                measuresVisibilityChange: this.onMeasureVisibilityChange,
+                measuresVisibilityChange: this.onMeasuresVisibilityChange,
                 annotationsVisibilityChange: this.onAnnotationsVisibilityChange,
                 overlayVisiblityChange: this.onOverlayVisiblityChange
             }
@@ -115,48 +115,18 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         view.showMeasure(data);
     },
     
-    onMeasureVisibilityChange: function(viewer, visible, pageId, uri, args) {
+    onMeasuresVisibilityChange: function(viewer, visible, pageId, uri, sourceView, args) {
 
         var me = this;
 
-        // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_display-measures-window_'+sourceView.id);
-        var storageItemPrefix = 'edirom-measures-visible-';
-
-        // get current state
-        var currentState = iconElem.hasAttribute('pressed');
-        var displayOn = sessionStorage.getItem(storageItemPrefix + sourceView.id) === 'true';
-
-        // define scope for session storage (default is window id, changed to global in case of window display reset)
-        var scope = sourceView.id;
-
-        console.log('sourceView.measuresVisibilitySetLocaly: ' + sourceView.measuresVisibilitySetLocaly);
-        console.log('sourceView.measuresVisible: ' + sourceView.measuresVisible);
-        
         // remove all measures first
         viewer.removeShapes('measures');
         
         // fetch measures if global or local visibility is on (both can't be because of the logic above)
         if(sourceView.measuresVisible) {
-
             me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
-
         }
 
-        /*
-        // get global measure visibility from session storage
-        visibleGlobal = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
-
-        // get local measure visibility
-        visibleLocal = sessionStorage.getItem('edirom-measures-visible-' + me.id) === 'true';
-        
-
-        if(visibleGlobal || visibleLocal) {
-            me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
-        }else {
-            viewer.removeShapes('measures');
-        }
-            */
     },
     
     fetchMeasures: function(uri, pageId, fn) {
@@ -191,20 +161,6 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
     onAnnotationsVisibilityChange: function(viewer, visible, pageId, uri, sourceView, args) {
         var me = this;
 
-        // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_display-annotations-window_'+sourceView.id);
-        var storageItemPrefix = 'edirom-annotations-visible-';
-
-        // get current state
-        var currentState = iconElem.hasAttribute('pressed');
-        var displayOn = sessionStorage.getItem(storageItemPrefix + sourceView.id) === 'true';
-
-        // define scope for session storage (default is window id, changed to global in case of window display reset)
-        var scope = sourceView.id;
-
-        console.log('sourceView.annotationsVisibilitySetLocaly: ' + sourceView.annotationsVisibilitySetLocaly);
-        console.log('sourceView.annotationsVisible: ' + sourceView.annotationsVisible);
-        
         // remove all annotations first
         viewer.removeShapes('annotations');
         
