@@ -48,24 +48,15 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<script
 						src="resources/js/he.js"></script>
 					
-					<!-- Edirom Verovio Renderer Component -->
-					<script
-						src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
-						type="text/javascript"></script>
-					
-					<script
-						src="resources/js/tipped/tipped.js"></script>
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/tipped/tipped.css"/>
-					
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/verovio-view.css"/>
+				<!-- Edirom Verovio Renderer Component -->
+				<script
+					src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
+					type="text/javascript"></script>
 				
-				</head>
+				<link
+					rel="stylesheet"
+					type="text/css"
+					href="resources/css/verovio-view.css"/>				</head>
 				<body>
 					<script>
 						var uri = "${uri}";
