@@ -1,0 +1,6 @@
+[submodule "resources/js/edirom-verovio-renderer"]
+	path = resources/js/edirom-verovio-renderer
+	url = git@github.com:Edirom/edirom-verovio-renderer.git
+[submodule "edirom-verovio-renderer"]
+	path = edirom-verovio-renderer
+	url = /Users/hizkielalemayehu/Documents/GitHub/Edirom/Edirom-Online-Frontend/resources/js/edirom-verovio-renderer
