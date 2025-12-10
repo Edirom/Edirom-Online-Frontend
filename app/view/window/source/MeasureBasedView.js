@@ -118,7 +118,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             hidden: true
         });
 
-        return [me.voiceFilter, me.measureSpinner, me.mdivSelector, me.intervalSpinner];
+        return [me.measureSpinner, me.mdivSelector, me.intervalSpinner, me.voiceFilter];
     },
 
     fitFacsimile: function() {

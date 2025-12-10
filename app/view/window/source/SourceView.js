@@ -462,13 +462,17 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             handler: Ext.bind(me.toggleAnnotations, me, [])
         });
 
+        // separator icon
+        me.separator = Ext.create('Ext.Component', { 
+            html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
+        });
+
         // add buttons to bottom bar
         me.bottomBar.add(me.pageBasedViewButton);
         me.bottomBar.add(me.measureBasedViewButton);
-        me.bottomBar.add(me.fitFacsimileButton);
-        me.bottomBar.add(me.toggleMeasureDisplay);
-        me.bottomBar.add(me.toggleAnnotationDisplay);
+        me.bottomBar.add(me.separator);
 
+        // add toolbar entries for page based view
         var entries = me.pageBasedView.createToolbarEntries();
 
 		var image_server = getPreference('image_server');
@@ -482,10 +486,17 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 			}      
         });
         
+        // add toolbar entries for measure based view
         entries = me.measureBasedView.createToolbarEntries();
         Ext.Array.each(entries, function(entry) {			
 				me.bottomBar.add(entry);     
         });
+
+        // add other buttons
+        me.bottomBar.add({xtype: 'tbfill'});
+        me.bottomBar.add(me.toggleMeasureDisplay);
+        me.bottomBar.add(me.toggleAnnotationDisplay);
+        me.bottomBar.add(me.fitFacsimileButton);
     },
 
     switchInternalView: function(viewId) {

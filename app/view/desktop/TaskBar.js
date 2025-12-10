@@ -91,6 +91,12 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                 }
             },
 
+            // separator icon
+            {
+                xtype: 'component', 
+                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
+            },
+
             // toggle measure numbers button
             {
                 xtype: 'component', 
