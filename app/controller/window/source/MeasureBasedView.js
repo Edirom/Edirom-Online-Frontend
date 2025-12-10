@@ -61,6 +61,12 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                 });
 				
                 me.partsLoaded(parts, view);
+
+                // count parts and disable voice filter if parts do not exist
+                if(parts.getTotalCount() > 0){
+                    var icon = document.getElementById('icon_voiceFilterDialog_'+view.id);
+                    icon.removeAttribute('color');
+                }
             }, me)
         );
     },

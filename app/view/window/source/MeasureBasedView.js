@@ -103,8 +103,13 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.intervalSpinner.on('change', me.measureSpinner.onIntervalChange, me.measureSpinner);
 
         // voice filter button
+
+        // count exisiting parts and set icon color accordingly
+
+
+
         me.voiceFilter = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_voiceFilterDialog" role="button" name="eo_voice_filter" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_voiceFilterDialog_'+me.id+'" color="#888" role="button" name="eo_voice_filter" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: function() {
                 me.showVoiceFilterDialog();
@@ -112,7 +117,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             disabled: true,
             hidden: true
         });
-
 
         return [me.voiceFilter, me.measureSpinner, me.mdivSelector, me.intervalSpinner];
     },
@@ -280,8 +284,9 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         var me = this;
 
         me.parts = parts;
-        if(me.parts.getTotalCount() > 0)
+        if(me.parts.getTotalCount() > 0){
             me.voiceFilter.enable();
+        }            
 
         me.setMdiv(me.mdivSelector);
     },
@@ -309,33 +314,35 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             modal: true,
             cls: 'ediromWindow voiceSelection',
             items: [
-            me.grid,
-            {
-                xtype: 'panel',
-                border: false,
-                flex: 0,
-                height: 35,
-                padding: '5 5 5 5',
-                align: 'right',
-                items: [
-                    {
-                        xtype: 'button',
-                        text: 'Cancel',
-                        handler: function() {
-                            me.partsDialog.close();
+                // 
+                me.grid,
+                // buttons for ok/cancel
+                {
+                    xtype: 'panel',
+                    border: false,
+                    flex: 0,
+                    height: 35,
+                    padding: '5 5 5 5',
+                    align: 'right',
+                    items: [
+                        {
+                            xtype: 'button',
+                            text: 'Cancel',
+                            handler: function() {
+                                me.partsDialog.close();
+                            }
+                        },
+                        {
+                            xtype: 'button',
+                            text: 'Ok',
+                            margin: '0 0 0 10',
+                            listeners:{
+                                scope: me,
+                                click: me.onPartsSelectionChange
+                            }
                         }
-                    },
-                    {
-                        xtype: 'button',
-                        text: 'Ok',
-                        margin: '0 0 0 10',
-                        listeners:{
-                             scope: me,
-                             click: me.onPartsSelectionChange
-                        }
-                    }
-                ]
-            }
+                    ]
+                }
             ]
         });
 
@@ -344,7 +351,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.grid.getSelectionModel().deselectAll(true);
 
         me.parts.each(function(record) {
-
             if(record.get('selected'))
                 me.grid.getSelectionModel().select(record, true, true);
         });
