@@ -580,43 +580,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         // fire event
         this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
 
-        /*
-        // if current button is pressed and measures are currently displayed -> switch to hiding measures
-        if(currentState && displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_measures_off');
-            iconElem.classList.remove('on');
-            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'false');
-        }
-
-        // if current button is pressed and measures are not displayed -> switch to unpressed and open measure display for global setting
-        if(currentState && !displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_measures');
-            iconElem.removeAttribute('pressed');
-            sessionStorage.removeItem('edirom-measures-visible-'+me.id);
-            scope = 'global';
-        }
-
-        // if current button is not pressed -> switch to pressed and display measures
-        if(!currentState) {
-            iconElem.setAttribute('pressed', '');
-            iconElem.classList.add('on');
-            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
-        }
-           
-
-        // update local variables
-        me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+scope) === 'true';
-        me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
-
-        // if locally shown then global must be hidden
-        if(me.measuresVisibilitySetLocaly && me.measuresVisible)
-            me.hideMeasures();
-        
-        // fire event
-        this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
-
-         
-        */
     },
 
     showMeasures: function(measures) {
@@ -666,6 +629,36 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     
     toggleAnnotations: function() {
 
+
+        var me = this;
+
+        // toggle attribute in DOM and save state in session storage
+        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
+        var currentState = iconElem.hasAttribute('pressed');
+
+        // if current button is pressed -> switch to hiding measures
+        if(currentState) {            
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
+        }
+        // if current button is not pressed -> switch to pressed and display measures
+        else {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
+        }
+
+        // update local variables
+        me.annotationsVisible = sessionStorage.getItem('edirom-annotations-visible-'+me.id) === 'true';
+        me.annotationsVisibilitySetLocaly = iconElem.hasAttribute('pressed');
+
+        // just hide measures first to avoid double display
+        me.hideAnnotations();
+
+        // fire event
+        this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
+
+        /*
+
         var me = this;
 
         // toggle attribute in DOM and save state in session storage
@@ -708,7 +701,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         
         // fire event
         this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
-
+*/
     },
 
     showAnnotations: function(annotations) {
