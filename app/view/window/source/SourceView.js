@@ -126,18 +126,29 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         
         var me = this;
 
-        // If: measures/annotations visibility was set locally, do nothing
-        if(me[type+'VisibilitySetLocaly']) 
+        // global visibility state
+        var globalVisible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+
+        // set visibility properties
+        me[type+'VisibilitySetLocaly'] = globalVisible;
+        me[type+'Visible'] = globalVisible;
+
+        // if global is visible and local is also set to visible, do nothing
+        if( globalVisible && sessionStorage.getItem('edirom-'+type+'-visible-' + me.id) === 'true') 
             return;
-        
-        // Otherwise: check local visibility state and decide on next visibility state        
-        // only if local state is null (case in which window does not override global) fire event with global visibility
-        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
-        if(localState === null) {
-            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
-            me[type+'Visible'] = visible;
-            me.fireEvent(type+'VisibilityChange', me, visible);
+
+        // update icon state
+        if(globalVisible){
+            document.getElementById('icon_display-'+type+'-window_'+me.id).setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-'+type+'-visible-' + me.id, 'true');
+            
+        } else {
+            document.getElementById('icon_display-'+type+'-window_'+me.id).removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-'+type+'-visible-' + me.id);
         }
+
+        // fire event
+        me.fireEvent(type+'VisibilityChange', me, globalVisible);
 
     },
     
@@ -547,11 +558,29 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         // toggle attribute in DOM and save state in session storage
         var iconElem = document.getElementById('icon_display-measures-window_'+me.id);
         var currentState = iconElem.hasAttribute('pressed');
-        var displayOn = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
 
-        // define scope for session storage (default is window id, changed to global in case of window display reset)
-        var scope = me.id;
+        // if current button is pressed -> switch to hiding measures
+        if(currentState) {            
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-measures-visible-'+me.id);
+        }
+        // if current button is not pressed -> switch to pressed and display measures
+        else {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
+        }
 
+        // update local variables
+        me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
+        me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
+
+        // just hide measures first to avoid double display
+        me.hideMeasures();
+
+        // fire event
+        this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
+
+        /*
         // if current button is pressed and measures are currently displayed -> switch to hiding measures
         if(currentState && displayOn) {
             iconElem.setAttribute('name', 'eo_toggle_measures_off');
@@ -573,6 +602,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             iconElem.classList.add('on');
             sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
         }
+           
 
         // update local variables
         me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+scope) === 'true';
@@ -584,6 +614,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         
         // fire event
         this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
+
+         
+        */
     },
 
     showMeasures: function(measures) {

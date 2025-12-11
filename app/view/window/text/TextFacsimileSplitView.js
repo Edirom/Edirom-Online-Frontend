@@ -118,6 +118,8 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
     checkGlobalVisibility: function(type) {
         
+        // TODO: align with checkGlobalVisibility in SourceView.js
+
         var me = this;
         
         // If: measures visibility was set locally, do nothing

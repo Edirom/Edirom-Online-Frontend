@@ -75,6 +75,8 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     checkGlobalVisibility: function(type) {
         
+        // TODO: align with checkGlobalVisibility in SourceView.js (there it's working)
+
         var me = this;
 
         // If: measures visibility was set locally, do nothing
