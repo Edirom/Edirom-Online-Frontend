@@ -85,7 +85,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         });
 
         me.measureSpinner = Ext.create('EdiromOnline.view.window.source.MeasureSpinner', {
-            width: 80,
+            width: 100,
             cls: 'pageSpinner', //TODO adjust class to measureSpinner and add in SCSS
             owner: me,
             hidden: true
@@ -744,17 +744,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
 
         me.removeAll();
 
-        me.combo = Ext.create('Ext.form.ComboBox', {
-            width: 35,
-            hideTrigger: true,
-            queryMode: 'local',
-            store: store,
-            displayField: 'name',
-            valueField: 'id',
-            cls: 'pageInputBox',
-            autoSelect: true
-        });
-
+        // add prev/next buttons and combo box
         me.add([
 
             // previous button
@@ -767,8 +757,17 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
                },
             }),
 
-            // combo box
-            me.combo,
+            // combo box for measure number (same like page number in page based view, see PageSpinner.js)
+            me.combo = Ext.create('Ext.form.ComboBox', {
+                width: 45,
+                hideTrigger: true,
+                queryMode: 'local',
+                store: store,
+                displayField: 'name',
+                valueField: 'id',
+                cls: 'pageInputBox',
+                autoSelect: true
+            }),
 
             // next button
             me.nextButton = Ext.create('Ext.button.Button', {
