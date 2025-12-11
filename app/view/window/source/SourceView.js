@@ -657,51 +657,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         // fire event
         this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
 
-        /*
-
-        var me = this;
-
-        // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
-        var currentState = iconElem.hasAttribute('pressed');
-        var displayOn = sessionStorage.getItem('edirom-annotations-visible-'+me.id) === 'true';
-
-        // define scope for session storage (default is window id, changed to global in case of window display reset)
-        var scope = me.id;
-
-        // if current button is pressed and annotations are currently displayed -> switch to hiding annotations
-        if(currentState && displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_annotations_off');
-            iconElem.classList.remove('on');
-            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'false');
-        }
-
-        // if current button is pressed and annotations are not displayed -> switch to unpressed and open annotation display for global setting
-        if(currentState && !displayOn) {
-            iconElem.setAttribute('name', 'eo_toggle_annotations');
-            iconElem.removeAttribute('pressed');
-            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
-            scope = 'global';
-        }
-
-        // if current button is not pressed -> switch to pressed and display annotations
-        if(!currentState) {
-            iconElem.setAttribute('pressed', '');
-            iconElem.classList.add('on');
-            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
-        }
-
-        // update local variables
-        me.annotationsVisible = sessionStorage.getItem('edirom-annotations-visible-'+scope) === 'true';
-        me.annotationsVisibilitySetLocaly = iconElem.hasAttribute('pressed');
-
-        // if locally shown then global must be hidden
-        if(me.annotationsVisibilitySetLocaly && me.annotationsVisible)
-            me.hideAnnotations();
-        
-        // fire event
-        this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
-*/
     },
 
     showAnnotations: function(annotations) {
