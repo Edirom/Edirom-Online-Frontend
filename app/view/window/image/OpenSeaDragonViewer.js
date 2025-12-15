@@ -28,7 +28,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     border: 0,
 
     viewer: null,
-    osdComponent: null,
 
     imageWidth: 0,
     imageHeight: 0,
@@ -52,66 +51,40 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.addEvents('zoomChanged',
                     'imageChanged');
 
-        // Create a container that will hold the web component
-        me.html = '<div id="' + me.id + '_osdContainer" style="width: 100%; height: 100%;"></div>';
+       var openseadragonEvents;
+
+        if (me.partLabel != null) {
+         openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents">' +
+            '<div  id="' + me.id + '_' + me.partLabel + '" class="part">' +
+              '<span class="partInner" id="' + me.id + '_' + me.partLabel + '_inner">' +
+              me.partLabel + '</span>' +
+            '</div>' +
+         '</div>';
+        }
+        else {
+          openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents"></div>';
+         };
+
+        me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;"></div>' + openseadragonEvents;
 
         me.shapes = new Ext.util.MixedCollection();
 
         me.callParent();
 
-        me.on('afterrender', me.initOpenSeadragonComponent, me, {single: true});
+        me.on('afterrender', me.initSurface, me, {single: true});
     },
 
-    initOpenSeadragonComponent: function() {
+    initSurface: function() {
         var me = this;
 
-        // Get the container element
-        var container = document.getElementById(me.id + '_osdContainer');
-
-        if (container) {
-            // Create the web component
-            me.osdComponent = document.createElement('edirom-openseadragon');
-            me.osdComponent.id = me.id + '_osd';
-
-            // Set initial attributes
-            me.osdComponent.setAttribute('shownavigator', 'false');
-            me.osdComponent.setAttribute('shownavigationcontrol', 'false');
-            me.osdComponent.setAttribute('clicktozoom', 'false');
-            me.osdComponent.setAttribute('tilesources', '[]');
-
-            // Append to container
-            container.appendChild(me.osdComponent);
-
-            // Wait for component to initialize and get the OpenSeadragon viewer instance
-            var checkViewer = function() {
-                if (me.osdComponent.openSeaDragon) {
-                    me.viewer = me.osdComponent.openSeaDragon;
-                    me.viewer.addHandler('zoom', function(event) {
-                        me.fireEvent('zoomChanged', event.zoom);
-                    });
-                } else {
-                    setTimeout(checkViewer, 100);
-                }
-            };
-            checkViewer();
-
-            // Handle resize
-            me.on('resize', function() {
-                me.updateComponentDimensions();
-            });
-        }
-    },
-
-    updateComponentDimensions: function() {
-        var me = this;
-        if (me.osdComponent && me.getEl()) {
-            var width = me.getEl().getWidth();
-            var height = me.getEl().getHeight();
-            // OpenSeadragon handles its own sizing, but we can ensure container is correct
-            if (me.viewer) {
-                me.viewer.viewport.resize();
-            }
-        }
+        me.viewer = OpenSeadragon({
+            id: me.id + '_openseadragon',
+            showNavigator:  false,
+            showNavigationControl: false,
+            tileSources:   []
+        });
+        me.viewer.addHandler('zoom', function(event){ me.fireEvent('zoomChanged', event.zoom);});
+        me.viewer.gestureSettingsMouse.clickToZoom = false;
     },
 
     clear: function() {
@@ -132,8 +105,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             iiifPath = me.imagePrefix + path.replace(new RegExp('\/', 'g'), '!');
         }
 
-        // Construct IIIF tile source
-        var tileSource = {
+        me.viewer.open({
             "@context": "http://iiif.io/api/image/2/context.json",
             "@id": iiifPath,
             "height": Number(height),
@@ -144,22 +116,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 "scaleFactors": [ 1, 2, 4, 8, 16, 32 ],
                 "width": 1024
             }]
-        };
-
-        // Set tile sources on the web component
-        if (me.osdComponent) {
-            me.osdComponent.setAttribute('tilesources', JSON.stringify([tileSource]));
-            
-            // Wait for viewer to be ready and tile to be drawn
-            if (me.viewer) {
-                me.viewer.addOnceHandler('tile-drawn', function() {
-                    if(me.rect && me.rect != null) {
-                        me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
-                    }
-                });
-            }
-        }
-
+        });
+        me.viewer.addOnceHandler('tile-drawn', function() {
+            if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
+        });
         me.fireEvent('imageChanged', me, path, pageId);
     },
 
@@ -237,17 +197,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 location: new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)
             });
 
-            // Use document.getElementById since measures are inside the web component (no Shadow DOM)
-            var textEl = document.getElementById(me.id + '_' + id + '_inner');
-            var textExtEl = textEl ? Ext.get(textEl) : null;
-            
-            if (textExtEl) {
-                textExtEl.on('mouseenter', me.highlightShape, me, measure, true);
-                textExtEl.on('mouseleave', me.deHighlightShape, me, measure, true);
-                textExtEl.setStyle({
-                    position: 'relative'
-                });
-            }
+            var text = me.el.getById(me.id + '_' + id + '_inner');
+            text.on('mouseenter', me.highlightShape, me, measure, true);
+            text.on('mouseleave', me.deHighlightShape, me, measure, true);
+            text.setStyle({
+                position: 'relative'
+            });
         });
     },
 
@@ -437,66 +392,59 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 }
 
                 // retrieve dom element of annotationIcon to bind actions
-                // Use document.getElementById since annotations are inside the web component (no Shadow DOM)
-                var annoIconEl = document.getElementById(annoIcon.id);
-                var annoIconExtEl = annoIconEl ? Ext.get(annoIconEl) : null;
+                var annoIcon = me.el.getById(annoIcon.id);
 
-                if (annoIconExtEl) {
-                    // bind onclick action to annotation icon
-                    annoIconExtEl.on('click', me.openShapeLink, me, {
-                        single: false,
-                        stopEvent : true,
-                        fn: fn
-                    });
+                // bind onclick action to annotation icon
+                annoIcon.on('click', me.openShapeLink, me, {
+                    single: false,
+                    stopEvent : true,
+                    fn: fn
+                });
 
-                    // create the tooltip for the annotation
-                    var tip = Ext.create('Ext.tip.ToolTip', {
-                        target: annoIcon.id,
-                        cls: 'annotationTip',
-                        width: me.annotTipWidth,
-                        maxWidth: me.annotTipMaxWidth,
-                        height: me.annotTipHeight,
-                        maxHeight: me.annotTipMaxHeight,
-                        dismissDelay: 0,
-                        hideDelay: 1000,
-                        anchor: 'left',
-                        html: getLangString('Annotation_plus_Title', name)
-                    });
+                // create the tooltip for the annotation
+                var tip = Ext.create('Ext.tip.ToolTip', {
+                    target: annoIcon.id,
+                    cls: 'annotationTip',
+                    width: me.annotTipWidth,
+                    maxWidth: me.annotTipMaxWidth,
+                    height: me.annotTipHeight,
+                    maxHeight: me.annotTipMaxHeight,
+                    dismissDelay: 0,
+                    hideDelay: 1000,
+                    anchor: 'left',
+                    html: getLangString('Annotation_plus_Title', name)
+                });
 
-                    // bind function to fetch the contents for the annotation tooltip
-                    tip.on('afterrender', function() {
-                        window.doAJAXRequest('data/xql/getAnnotation.xql',
-                            'GET',
-                            {
-                                uri: uri,
-                                target: 'tip',
-                                edition: EdiromOnline.getApplication().activeEdition
-                            },
-                            Ext.bind(function(response){
-                                this.update(response.responseText);
-                            }, this)
-                        );
-                        this.el.on('mouseover', function() {
-                            this.addCls('mouseOverAnnot');
-                        }, this);
-                        this.el.on('mouseout', function() {
-                            this.removeCls('mouseOverAnnot');
-                        }, this);
-                    }, tip);
+                // bind function to fetch the contents for the annotation tooltip
+                tip.on('afterrender', function() {
+                    window.doAJAXRequest('data/xql/getAnnotation.xql',
+                        'GET',
+                        {
+                            uri: uri,
+                            target: 'tip',
+                            edition: EdiromOnline.getApplication().activeEdition
+                        },
+                        Ext.bind(function(response){
+                            this.update(response.responseText);
+                        }, this)
+                    );
+                    this.el.on('mouseover', function() {
+                        this.addCls('mouseOverAnnot');
+                    }, this);
+                    this.el.on('mouseout', function() {
+                        this.removeCls('mouseOverAnnot');
+                    }, this);
+                }, tip);
 
-                    // delay hiding the annotation tooltip
-                    tip.on('beforehide', function() {
-                        if(this.el.hasCls('mouseOverAnnot')) {
-                            Ext.Function.defer(function(){
-                                this.hide();
-                            }, 1000, this);
-                            return false;
-                        }
-                    }, tip);
-
-                    annoIconExtEl.on('mouseenter', me.highlightShape, me, annoIcon, true);
-                    annoIconExtEl.on('mouseleave', me.deHighlightShape, me, annoIcon, true);
-                }
+                // delay hiding the annotation tooltip
+                tip.on('beforehide', function() {
+                    if(this.el.hasCls('mouseOverAnnot')) {
+                        Ext.Function.defer(function(){
+                            this.hide();
+                        }, 1000, this);
+                        return false;
+                    }
+                }, tip);
             });
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                 console.log('me.shapes annotations');
