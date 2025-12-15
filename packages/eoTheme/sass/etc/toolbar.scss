@@ -62,31 +62,7 @@ $label_baseFont: 'Open Sans', Arial, sans-serif;
 	}
 	
 */	
-	&.prev {
-		border: none;
-		@include background(url('pix/go-previous.png') no-repeat scroll center center transparent);
-	}
-	
-	&.next {
-		border: none;
-		@include background(url('pix/go-next.png') no-repeat scroll center center transparent);		
-	}
-	
-	&.openAll {
-		border: none;
-		@include background(url('pix/openAllWindows.png') no-repeat scroll center center transparent);		
-	}
-	
-	&.closeAll {
-		border: none;
-		@include background(url('pix/closeAllWindows.png') no-repeat scroll center center transparent);		
-	}
-	
-	&.list {
-		border: none;
-		@include background(url('pix/view-list-details-symbolic.png') no-repeat scroll center center transparent);		
-	}
-	
+		
 	&.over {
 		@include box-shadow(inset 0px 1px 3px rgba(60,60,60,0.4));
 	}

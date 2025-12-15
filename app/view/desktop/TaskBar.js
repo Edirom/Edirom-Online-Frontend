@@ -25,7 +25,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
     requires: [
         'Ext.button.Button',
-        'Ext.resizer.Splitter',
         'Ext.menu.Menu'
     ],
 
@@ -41,40 +40,167 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'sortGrid',
                     'sortHorizontally',
                     'sortVertically',
+                    'toggleMeasuresGlobally',
+                    'toggleAnnotationsGlobally',
                     'openConcordanceNavigator',
                     'openSearchWindow',
                     'openAboutWindow',
                     'switchLanguage');
 
-        me.windowSort = new Ext.toolbar.Toolbar(me.getWindowSortConfig());
-        me.globalTools = new Ext.toolbar.Toolbar(me.getGlobalToolsConfig());
         me.desktopSwitch = new Ext.toolbar.Toolbar(me.getDesktopSwitchConfig());
-        me.quickStart = new Ext.toolbar.Toolbar(me.getQuickStartConfig());
 
         me.windowBar1 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
         me.windowBar2 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
         me.windowBar3 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
         me.windowBar4 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
 
-        me.helpPrefs = new Ext.toolbar.Toolbar(me.getHelpPrefConfig());
         me.tray = new Ext.toolbar.Toolbar(me.getTrayConfig());
 
         me.items = [
-            me.windowSort,
-            me.globalTools,
-            //me.desktopSwitch,
-            me.quickStart,
+
+            // sortGrid button
             {
-                xtype: 'splitter', html: '&#160;',
-                height: 14, width: 2, // TODO - there should be a CSS way here
-                cls: 'x-toolbar-separator x-toolbar-separator-horizontal ediTaskBarSep'
+                xtype: 'component',
+                html: '<edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { me.fireEvent('sortGrid'); });
+                    }
+                }
             },
+
+            // sortVertically button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon role="button" name="eo_sort_vertical" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { me.fireEvent('sortVertically'); });
+                    }
+                }
+            },
+
+            // sortHorizontally button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon role="button" name="eo_sort_horizontal" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { me.fireEvent('sortHorizontally'); });
+                    }
+                }
+            },
+
+            // separator icon
+            {
+                xtype: 'component', 
+                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
+            },
+
+            // toggle measure numbers button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_showMeasures') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { 
+
+                            // toggle pressed state
+                            var iconElem = document.getElementById('icon_toggleMeasuresGlobally');
+                            var newState = iconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-measures-visible-global', newState);
+
+                            // fire event
+                            me.fireEvent('toggleMeasuresGlobally');
+
+                        });
+                    }
+                }
+            },
+
+            // toggle annotations button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_showAnnotations') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function() { 
+
+                            // toggle pressed state
+                            var iconElem = document.getElementById('icon_toggleAnnotationsGlobally');
+                            var newState = iconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-annotations-visible-global', newState);
+
+                            // fire event
+                            me.fireEvent('toggleAnnotationsGlobally');
+
+                        });
+                    }
+                }
+            },
+
+            // open concordance navigator button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function(e) { me.fireEvent('openConcordanceNavigator'); });
+                    }
+                }                
+            },
+
+
+            //me.desktopSwitch,
+
+            // separator icon
+            {
+                xtype: 'component', 
+                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
+            },
+
             me.windowBar1,
             me.windowBar2,
             me.windowBar3,
             me.windowBar4,
+
+            // adding space
             '-',
-            me.helpPrefs,
+
+            // open about window button
+            me.aboutButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="eo_about" title="' + getLangString('view.desktop.TaskBar_about') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
+                action: 'openAboutWindow'
+            }),
+
+
+            // open help window button
+            {
+                xtype: 'component', 
+                html: '<edirom-icon role="button" id="icon_openHelp" name="eo_help" title="' + getLangString('view.desktop.TaskBar_help') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function(e) { me.fireEvent('openHelp'); });
+                    }
+                }
+            },
+
+            // language switch button
+            /*{
+                xtype: 'component', 
+                html: '<edirom-icon role="button" name="eo_language_switch" title="' + getLangString('view.desktop.TaskBar_lang') + '"></edirom-icon>',
+                listeners: {
+                    afterrender: function(c) {
+                        c.getEl().on('click', function(e) { me.fireEvent('switchLanguage'); });
+                    }
+                }
+            },*/
+
             me.tray
         ];
 
@@ -92,60 +218,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         me.windowBar4.el.on('contextmenu', me.onButtonContextMenu, me);
     },
 
-    getWindowSortConfig: function () {
-        var me = this;
-        return {
-            width: 90,
-            items: [
-                {
-                    xtype: 'button',
-                    cls: 'taskSquareButton grid',
-                    tooltip: { text: getLangString('view.desktop.TaskBar_Sort_grid'), align: 'bl-tl' },
-                    handler: Ext.bind(this.fireEvent, me, ['sortGrid'], false)
-                },
-                {
-                    xtype: 'button',
-                    cls: 'taskSquareButton vertical',
-                    tooltip: { text: getLangString('view.desktop.TaskBar_Sort_vertical'), align: 'bl-tl' },
-                    handler: Ext.bind(this.fireEvent, me, ['sortVertically'], false)
-                },
-                {
-                    xtype: 'button',
-                    cls: 'taskSquareButton horizontal',
-                    tooltip: { text: getLangString('view.desktop.TaskBar_Sort_horizontal'), align: 'bl-tl' },
-                    handler: Ext.bind(this.fireEvent, me, ['sortHorizontally'], false)
-                }
-            ]
-        };
-    },
-
-    getGlobalToolsConfig: function() {
-        var me = this;
-
-        me.measureNumberButton = Ext.create('Ext.button.Button', {
-            id: 'measureNumberBtn',
-            cls: 'taskSquareButton measureNumbers',
-            enableToggle: true,
-            tooltip: { text: getLangString('view.desktop.TaskBar_measureNumbers'), align: 'bl-tl' },
-            action: 'toggleMeasureVisibility'
-        });
-
-        me.annotationsButton = Ext.create('Ext.button.Button', {
-            id: 'annotationsBtn',
-            cls: 'taskSquareButton annotations',
-            enableToggle: true,
-            tooltip: { text: getLangString('view.desktop.TaskBar_annotations'), align: 'bl-tl' },
-            action: 'toggleAnnotationVisibility'
-        });
-
-        return {
-            width: 60,
-            items: [
-                me.measureNumberButton,
-                me.annotationsButton
-            ]
-        };
-    },
 
     getDesktopSwitchConfig: function () {
         var me = this, ret = {
@@ -164,24 +236,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             );
 
         return ret;
-    },
-
-    getQuickStartConfig: function () {
-        var me = this;
-
-        me.concordanceButton = Ext.create('Ext.button.Button', {
-            id: 'taskbarConcordanceBtn',
-            cls: 'taskSquareButton concordance',
-            tooltip: { text: getLangString('view.desktop.TaskBar_concordanceNav'), align: 'bl-tl' },
-            handler: Ext.bind(me.fireEvent, me, ['openConcordanceNavigator'], false)
-        });
-
-        return {
-            width: 32,
-            items: [
-                me.concordanceButton
-            ]
-        };
     },
 
     getWindowBarConfig: function () {
@@ -209,41 +263,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
     getWindowBtnFromEl: function (el) {
         var c = this['windowBar' + this.activeWindowBar].getChildByElement(el);
         return c || null;
-    },
-
-    getHelpPrefConfig: function () {
-        var me = this;
-
-        me.prefButton = Ext.create('Ext.button.Button', {
-            id: 'prefBtn',
-            cls: 'taskSquareButton pref',
-            tooltip: { text: getLangString('view.desktop.TaskBar_pref'), align: 'bl-tl' }//,
-            //handler: Ext.bind(me.fireEvent, me, ['openConcordanceNavigator'], false)
-        });
-
-        me.langButton = Ext.create('Ext.button.Button', {
-            id: 'langBtn',
-            cls: 'taskSquareButton lang',
-            tooltip: { text: getLangString('view.desktop.TaskBar_lang'), align: 'bl-tl' },
-            handler: Ext.bind(me.fireEvent, me, ['switchLanguage'], false)
-        });
-
-    
-        me.helpButton = Ext.create('Ext.button.Button', {
-            id: 'helpBtn',
-            cls: 'taskSquareButton help',
-            tooltip: { text: getLangString('view.desktop.TaskBar_help'), align: 'bl-tl' },
-            handler: Ext.bind(me.fireEvent, me, ['openHelp'], false)
-        });
-
-        return {
-            width: 64,
-            items: [
-                me.helpButton/*,
-                me.langButton,
-                me.prefButton*/
-            ]
-        };
     },
 
     onButtonContextMenu: function (e) {
@@ -278,8 +297,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         var me = this;
 
-        var isConcWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator');
-        var isHelpWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.HelpWindow');
         var isSearchWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.search.SearchWindow');
 
         var config = {
@@ -298,20 +315,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             win: win
         };
 
-        if(isConcWin) {
-            Ext.apply(config, {hidden: true});
-            win.animateTarget = me.concordanceButton.el;
-            win.on('show', Ext.bind(me.updateConcordanceButton, me, [true], true));
-            win.on('hide', Ext.bind(me.updateConcordanceButton, me, [false], true));
-        }
-
-        if(isHelpWin) {
-            Ext.apply(config, {hidden: true});
-            win.animateTarget = me.helpButton.el;
-            win.on('show', Ext.bind(me.updateHelpButton, me, [true], true));
-            win.on('hide', Ext.bind(me.updateHelpButton, me, [false], true));
-        }
-
         if(isSearchWin) {
             Ext.apply(config, {hidden: true});
         }
@@ -319,16 +322,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         var cmp = this['windowBar' + this.activeWindowBar].add(config);
         cmp.toggle(true);
         return cmp;
-    },
-
-    updateConcordanceButton: function(win, args, visible) {
-        var me = this;
-        me.concordanceButton.toggle(visible);
-    },
-
-    updateHelpButton: function(win, args, visible) {
-        var me = this;
-        me.helpButton.toggle(visible);
     },
 
     removeTaskButton: function (btn) {
@@ -365,11 +358,8 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         this.windowBar2.setVisible(num == 2);
         this.windowBar3.setVisible(num == 3);
         this.windowBar4.setVisible(num == 4);
-    },
-    
-    setConcordanceNavigatorButtonToggleState: function(state, suppressEvent) {
-        this.concordanceButton.toggle(state, suppressEvent);
     }
+    
 });
 
 /**

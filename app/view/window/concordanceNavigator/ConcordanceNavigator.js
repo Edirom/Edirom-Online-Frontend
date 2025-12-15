@@ -84,6 +84,10 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
         ];
 
         me.callParent();
+
+        // set attribute pressed of button for opening concordance navigator in task bar
+        document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
+
     },
 
     createConcordanceSelector: function() {
@@ -325,6 +329,12 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     }, 
     
     close: function() {
+
+        // hide window instead of closing it (keeps position and state)
         this.hide();
+        
+        // unset attribute pressed of button for opening concordance navigator in task bar
+        document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+
     }
 });
