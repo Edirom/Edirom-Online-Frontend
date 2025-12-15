@@ -44,10 +44,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
 						crossorigin="anonymous"></script>
 					<script
-						src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>
-					<script
-						src="resources/js/he.js"></script>
-					
+						src="//code.iconify.design/1/1.0.6/icon ify.min.js"></script>
 				<!-- Edirom Verovio Renderer Component -->
 				<script
 					src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
