@@ -54,25 +54,29 @@ Ext.define('EdiromOnline.view.window.util.PageSpinner', {
         });
 
         me.add([
-            {
-                xtype: 'button',
-                cls : 'prev toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_PageBasedView_previousPage'), align: 'bl-tl' },
+
+            // previous button
+            me.prevButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="eo_previous" title="' + getLangString('view.window.source.SourceView_PageBasedView_previousPage') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.prev
-                }
-            },
+                    scope: me,
+                    click: me.prev
+               },
+            }),
+
+            // combo box
             me.combo,
-            {
-                xtype: 'button',
-                cls : 'next toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_PageBasedView_nextPage'), align: 'bl-tl' },
+
+            // next button
+            me.nextButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="eo_next" title="' + getLangString('view.window.source.SourceView_PageBasedView_nextPage') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.next
-                }
-            }
+                    scope: me,
+                    click: me.next
+               },
+            })
         ]);
 
         me.combo.on('select', me.owner.setPage, me.owner);
