@@ -201,6 +201,9 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
 
             me.itemSelection.blur();
 
+            // and show the selected connection
+            me.showConnection();
+
         } else if (e.getKey() == e.ESC) {
             me.itemSelection.setValue(me.itemSlider.getEnhancedValue());
         }
