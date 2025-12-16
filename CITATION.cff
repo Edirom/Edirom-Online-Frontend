@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: Edirom-Online Frontend
+title: Edirom Online Frontend
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -32,25 +32,16 @@ authors:
   - given-names: Dennis
     family-names: Friedl
     orcid: https://orcid.org/0009-0000-4410-4627
-  - given-names: Dennis
-    family-names: Ried
-    orcid: https://orcid.org/0000-0001-5545-2088
-  - given-names: Johannes
-    family-names: Kepper
-    orcid: https://orcid.org/0000-0003-4891-260X
-  - given-names: Silke
-    family-names: Reich
-    orcid: https://orcid.org/0009-0007-8817-0299
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.15294433
-    description: Edirom-Online Frontend
+    value: 10.5281/zenodo.17234728
+    description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
 abstract: >-
-  Edirom-Online Frontend is the frontend for the Edirom 
+  Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
   analysis of critical musical editions in a digital format,
   particularly in the fields of musicology and philology.
 license: GPL-3.0
-version: v1.0.1
-date-released: 2025-04-28
+version: v1.1.0
+date-released: 2025-10-01

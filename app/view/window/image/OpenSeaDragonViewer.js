@@ -396,7 +396,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
                 // bind onclick action to annotation icon
                 annoIcon.on('click', me.openShapeLink, me, {
-                    single: true,
+                    single: false,
                     stopEvent : true,
                     fn: fn
                 });
