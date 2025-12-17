@@ -47,6 +47,7 @@
         <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true">
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
+                <filter token="backend.path" value="${backend.path}"/>
             </filterset>
         </copy>
         <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js"  overwrite="true" preservelastmodified="true"/>
