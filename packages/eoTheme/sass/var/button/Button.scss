@@ -25,69 +25,6 @@ $edirom-taskbarWindowButton-background-color: #cccccc;
 	cursor: pointer;
 }
 
-.taskSquareButton.grid {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
-.taskSquareButton.vertical {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: -24px 0;
-
-	&:hover {
-		background-position: -24px -24px;
-	}
-}
-
-.taskSquareButton.horizontal {
-	background-image: url('pix/arrangeButtons.png');
-	background-position: -48px 0;
-
-	&:hover {
-		background-position: -48px -24px;
-	}
-}
-
-.taskSquareButton.annotations {
-	background-image: url('pix/annotations.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
-.taskSquareButton.measureNumbers {
-	background-image: url('pix/measureNumbers.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
-.taskSquareButton.concordance {
-	background-image: url('pix/concordanceNavigator.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
-.taskSquareButton.help {
-	background-image: url('pix/help.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
-	}
-}
-
 .taskSquareButton.lang {
 	background-image: url('pix/lang.png');
 	background-position: 0 0;
@@ -100,15 +37,6 @@ $edirom-taskbarWindowButton-background-color: #cccccc;
 	    font-size: 10px;
 	    color: #666;
 	    padding: 4px 3px;
-	}
-}
-
-.taskSquareButton.search {
-	background-image: url('pix/search.png');
-	background-position: 0 0;
-
-	&:hover {
-		background-position: 0 -24px;
 	}
 }
 
@@ -141,62 +69,6 @@ $edirom-taskbarWindowButton-background-color: #cccccc;
 	&.x-pressed {
 		box-shadow: 0 1px 1px #000000 inset;
 		background-color: #e1e1e1;
-	}
-}
-
-.toolButton.pageBasedView {
-	background-image: url('pix/pageView.png');
-	background-position: 0 -1px;
-
-	&:hover {
-		background-position: 0 -1px;
-	}
-}
-
-.toolButton.measureBasedView {
-	background-image: url('pix/barView.png');
-	background-position: 0 -1px;
-
-	&:hover {
-		background-position: 0 -1px;
-	}
-}
-
-.toolButton.prev {
-	background-image: url('pix/prevButton.png');
-	background-position: 3px 2px;
-	border: none;
-	background-color: transparent;
-
-	&:hover, &.x-pressed {
-		box-shadow: 0 1px 1px #000000 inset;
-		background-color: #e1e1e1;
-	}
-
-}
-
-.toolButton.next {
-	background-image: url('pix/nextButton.png');
-	background-position: 3px 2px;
-	border: none;
-	background-color: transparent;
-
-	&:hover, &.x-pressed {
-		box-shadow: 0 1px 1px #000000 inset;
-		background-color: #e1e1e1;
-	}
-}
-
-.toolButton.voiceFilter {
-	background-image: url('pix/selectVoices.png');
-	background-position: 0 0;
-	border: none;
-	background-color: transparent;
-
-	&:hover, &.pressed {
-		/*background-position: 0 -24px;*/
-		box-shadow: 0 1px 1px #000000 inset;
-		background-color: #e5e5e5;
 	}
 }
 

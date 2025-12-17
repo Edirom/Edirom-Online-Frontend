@@ -39,16 +39,34 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<title>Verovio</title>
 					<script
 						src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
-					
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/verovio-view.css"/>
+					<script
+						src="https://code.jquery.com/jquery-3.5.1.min.js"
+						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+						crossorigin="anonymous"></script>
+					<script
+						src="//code.iconify.design/1/1.0.6/icon ify.min.js"></script>
+				<!-- Edirom Verovio Renderer Component -->
+				<script
+					src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
+					type="text/javascript"></script>
 				
-				</head>
+				<link
+					rel="stylesheet"
+					type="text/css"
+					href="resources/css/verovio-view.css"/>				</head>
 				<body>
-					<div
-						id="output"></div>
+					<script>
+						var uri = "${uri}";
+						var edition = "${edition}";
+						var movementId = "";
+						var appBasePath = "@backend.url@";
+						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+						</script>
+					
+					<div id="output">
+						<!-- Loading spinner shown initially -->
+						<div class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+					</div>
 					<div
 						id="toolbar"
 						class="noselect">
@@ -69,12 +87,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<div
 						class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
 					
-					<script>
-						var uri = "${uri}";
-						var edition = "${edition}";
-						var movementId = "";
-						var appBasePath = "@backend.url@";
-					</script>
 					<script
 						src="resources/js/verovio-view.js"></script>
 				</body>
@@ -103,5 +115,26 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 	    var me = this;
 	    var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
 	    iframe.showMeasure(movementId, measureId);
+	},
+
+	/*
+	 * Navigate to a specific measure in a movement.
+	 * @param {string} measureNumber - The measure number to go to.
+	 * @param {string} movementId - The XML-ID of the movement.
+	 */
+	gotoMeasureByAttributes: function (measureNumber, movementId) {
+		var me = this;
+		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
+		
+		// First switch to the movement, then navigate to the measure
+		iframe.showMovement(movementId);
+		
+		// Wait a bit for the movement to load, then set the measure
+		setTimeout(function() {
+			var renderer = iframe.document.getElementById("verovio-renderer");
+			if (renderer) {
+				renderer.setAttribute("measurenumber", measureNumber);
+			}
+		}, 500);
 	}
 });

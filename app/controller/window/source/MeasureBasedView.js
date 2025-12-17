@@ -34,7 +34,7 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
             
             'horizontalMeasureViewer': {
                 showMeasure: this.onShowMeasure,
-                measureVisibilityChange: this.onMeasureVisibilityChange,
+                measuresVisibilityChange: this.onMeasuresVisibilityChange,
                 annotationsVisibilityChange: this.onAnnotationsVisibilityChange,
                 overlayVisiblityChange: this.onOverlayVisiblityChange
             }
@@ -61,6 +61,12 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                 });
 				
                 me.partsLoaded(parts, view);
+
+                // count parts and disable voice filter if parts do not exist
+                if(parts.getTotalCount() > 0){
+                    var icon = document.getElementById('icon_voiceFilterDialog_'+view.id);
+                    icon.removeAttribute('color');
+                }
             }, me)
         );
     },
@@ -115,14 +121,18 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         view.showMeasure(data);
     },
     
-    onMeasureVisibilityChange: function(viewer, visible, pageId, uri, args) {
+    onMeasuresVisibilityChange: function(viewer, visible, pageId, uri, sourceView, args) {
+
         var me = this;
+
+        // remove all measures first
+        viewer.removeShapes('measures');
         
-        if(visible) {
+        // fetch measures if global or local visibility is on (both can't be because of the logic above)
+        if(sourceView.measuresVisible) {
             me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
-        }else {
-            viewer.removeShapes('measures');
         }
+
     },
     
     fetchMeasures: function(uri, pageId, fn) {
@@ -153,19 +163,15 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         viewer.addMeasures(measures);
     },
     
+
     onAnnotationsVisibilityChange: function(viewer, visible, pageId, uri, sourceView, args) {
         var me = this;
+
+        // remove all annotations first
+        viewer.removeShapes('annotations');
         
-
-        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('controller: MeasureBasedView: onAnnotationsVisibilityChange');
-        }
-
-        if(visible) {
-
-            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                console.log('visible: ' + visible);
-            }
+        // fetch annotations if global or local visibility is on (both can't be because of the logic above)
+        if(sourceView.annotationsVisible) {
 
             window.doAJAXRequest('data/xql/getAnnotationsOnPage.xql',
                 'GET', 
@@ -185,14 +191,8 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                     me.annotationsLoaded(annotations, viewer, pageId, sourceView);
                 }, this)
             );
-        }else {
-
-            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                console.log('visible: ' + visible);
-            }
-
-            viewer.removeShapes('annotations');
         }
+            
     },
     
     annotationsLoaded: function(annotations, viewer, pageId, sourceView) {

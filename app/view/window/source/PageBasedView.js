@@ -192,11 +192,22 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.imageViewer.showImage(me.activePage.get('path'),
             me.activePage.get('width'), me.activePage.get('height'));
 
-        if(me.owner.measuresVisible)
-            me.owner.fireEvent('measureVisibilityChange', me.owner, true);
 
-        if(me.owner.annotationsVisible)
-            me.owner.fireEvent('annotationsVisibilityChange', me.owner, true);
+        // check global and local visibility settings for measures and annotations
+        var types = ['measures', 'annotations'];
+
+        // for each type, check visibility and fire event if visible
+        for(var i = 0; i < types.length; i++) {
+            var type = types[i];
+            var globalVisible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+            var localVisible = sessionStorage.getItem('edirom-'+type+'-visible-' + me.owner.id) === 'true';
+            var localBlocked = document.getElementById('icon_display-'+type+'-window_' + me.owner.id).hasAttribute('pressed') && !localVisible;
+
+            // decide whether to show measures/annotations
+            if(localVisible || (globalVisible && !localBlocked)){
+                me.owner.fireEvent(type+'VisibilityChange', me.owner, true);
+            }
+        }
 
         var layers = Object.keys(me.owner.overlaysVisible);
         Ext.Array.each(layers, function(layer) {
@@ -224,33 +235,23 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var me = this;
 
-       var image_server = getPreference('image_server');
+        var image_server = getPreference('image_server');
 
-    	if(image_server === 'digilib'){
-    		me.zoomSlider = Ext.create('Ext.slider.Single', {
-            width: 140,
-            value: 100,
-            increment: 5,
-            minValue: 10,
-            maxValue: 400,
-            checkChangeBuffer: 100,
-            useTips: true,
-            cls: 'zoomSlider',
-            tipText: function(thumb){
-                return Ext.String.format('{0}%', thumb.value);
-            },
-            listeners: {
-                change: Ext.bind(me.zoomChanged, me, [], 0)
-            }
+        // page selection bar
+        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
+            width: 100,
+            cls: 'pageSpinner',
+            owner: me
         });
-    	}
-    	if (image_server === 'openseadragon') {
+
+        // zoom slider (if applicable)
+        if (image_server === 'openseadragon' || image_server === 'digilib'){ 
             me.zoomSlider = Ext.create('Ext.slider.Single', {
-                width: 140,
+                width: 100,
                 value: 100,
                 increment: 5,
-                minValue: 90,
-                maxValue: 700,
+                minValue: ( image_server === 'openseadragon' ) ? 90 : 10,
+                maxValue: ( image_server === 'openseadragon' ) ? 700 : 400,
                 checkChangeBuffer: 100,
                 useTips: true,
                 cls: 'zoomSlider',
@@ -263,19 +264,13 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             });
         }
 
-        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
-            width: 121,
-            cls: 'pageSpinner',
-            owner: me
-        });
-
-        me.separator = Ext.create('Ext.toolbar.Separator');
-
+        // if image server (and zoomSlider) is defined, return zoom slider and page spinner
         if(image_server === 'digilib' || image_server === 'openseadragon'){
-        return [me.zoomSlider, me.separator, me.pageSpinner];
+            return [me.pageSpinner, me.zoomSlider];
         }
+        // otherwise return only page spinner
         else{
-        	 return [me.pageSpinner];
+        	return [me.pageSpinner];
         }
     },
 
@@ -285,9 +280,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         	me.zoomSlider.hide();
         }
         me.pageSpinner.hide();
-        if(typeof me.separator !== 'undefined'){
-        	me.separator.hide();
-        }
     },
 
     showToolbarEntries: function() {
@@ -296,9 +288,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         	me.zoomSlider.show();
         }
         me.pageSpinner.show();
-        if(typeof me.separator !== 'undefined'){
-        	 me.separator.show();
-        }
 
     },
 

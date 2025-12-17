@@ -26,12 +26,10 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     alias: 'widget.desktop',
 
     uses: [
-        'EdiromOnline.view.navigator.Navigator',
-        
+        'EdiromOnline.view.navigator.Navigator',        
         'Ext.util.MixedCollection',
         'Ext.menu.Menu',
         'Ext.window.Window',
-
         'Ext.ux.desktop.Wallpaper'
     ],
 
@@ -154,11 +152,24 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             me.addWindow(nav);
             nav.show();
 
-        }else if(nav != me.getActiveWindow())
+        }else if(nav != me.getActiveWindow()){
+
+            // show concordance navigator window
             nav.show();
 
-        else
+            // set attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
+        }
+
+        else{
+
+            // hide concordance navigator window
             nav.hide();
+
+            // unset attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+        }
+            
     },
 
     openHelp: function() {
@@ -174,13 +185,30 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         if(help == null) {
             help = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
             me.addWindow(help);
+
+            // show help window
             help.show();
 
-        }else if(help != me.getActiveWindow())
+            // set attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').setAttribute('pressed', '');
+
+        }else if(help != me.getActiveWindow()){
+
+            // show help window
             help.show();
 
-        else
+            // set attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').setAttribute('pressed', '');
+        
+        } else{
+
+            // hide help window
             help.hide();
+
+            // unset attribute pressed of button for opening help in task bar
+            document.getElementById('icon_openHelp').removeAttribute('pressed');
+        }
+
     },
 
     openSearchWindow: function(term) {

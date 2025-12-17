@@ -85,13 +85,14 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         });
 
         me.measureSpinner = Ext.create('EdiromOnline.view.window.source.MeasureSpinner', {
-            width: 121,
+            width: 100,
             cls: 'pageSpinner', //TODO adjust class to measureSpinner and add in SCSS
             owner: me,
             hidden: true
         });
 
         me.intervalSpinner = Ext.create('EdiromOnline.view.window.source.IntervalSpinner', {
+            width: 60,
             value: 1,
             maxValue: 99,
             minValue: 1,
@@ -101,26 +102,23 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
         me.intervalSpinner.on('change', me.measureSpinner.onIntervalChange, me.measureSpinner);
 
+        // voice filter button
+
+        // count exisiting parts and set icon color accordingly
+
+
+
         me.voiceFilter = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_voiceFilterDialog_'+me.id+'" color="#888" role="button" name="eo_voice_filter" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
             handler: function() {
                 me.showVoiceFilterDialog();
             },
-            cls : 'voiceFilter toolButton',
-            tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_selectVoices'), align: 'bl-tl' },
-            margin: '0 0 0 5',
             disabled: true,
             hidden: true
         });
 
-        var settingsContainer = Ext.create('Ext.container.Container', {
-            layout: 'hbox'
-        });
-        settingsContainer.add(me.voiceFilter);
-
-        me.separator1 = Ext.create('Ext.toolbar.Separator', {hidden: true});
-        me.separator2 = Ext.create('Ext.toolbar.Separator', {hidden: true});
-
-        return [me.mdivSelector, me.separator1, me.measureSpinner, me.intervalSpinner, me.separator2, settingsContainer];
+        return [me.measureSpinner, me.mdivSelector, me.intervalSpinner, me.voiceFilter];
     },
 
     fitFacsimile: function() {
@@ -134,8 +132,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.measureSpinner.hide();
         me.intervalSpinner.hide();
         me.voiceFilter.hide();
-        me.separator1.hide();
-        me.separator2.hide();
     },
 
     showToolbarEntries: function() {
@@ -144,8 +140,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.measureSpinner.show();
         me.intervalSpinner.show();
         me.voiceFilter.show();
-        me.separator1.show();
-        me.separator2.show();
     },
 
     setMdiv: function(combo, records, eOpts) {
@@ -290,8 +284,9 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         var me = this;
 
         me.parts = parts;
-        if(me.parts.getTotalCount() > 0)
+        if(me.parts.getTotalCount() > 0){
             me.voiceFilter.enable();
+        }            
 
         me.setMdiv(me.mdivSelector);
     },
@@ -319,33 +314,35 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             modal: true,
             cls: 'ediromWindow voiceSelection',
             items: [
-            me.grid,
-            {
-                xtype: 'panel',
-                border: false,
-                flex: 0,
-                height: 35,
-                padding: '5 5 5 5',
-                align: 'right',
-                items: [
-                    {
-                        xtype: 'button',
-                        text: 'Cancel',
-                        handler: function() {
-                            me.partsDialog.close();
+                // 
+                me.grid,
+                // buttons for ok/cancel
+                {
+                    xtype: 'panel',
+                    border: false,
+                    flex: 0,
+                    height: 35,
+                    padding: '5 5 5 5',
+                    align: 'right',
+                    items: [
+                        {
+                            xtype: 'button',
+                            text: 'Cancel',
+                            handler: function() {
+                                me.partsDialog.close();
+                            }
+                        },
+                        {
+                            xtype: 'button',
+                            text: 'Ok',
+                            margin: '0 0 0 10',
+                            listeners:{
+                                scope: me,
+                                click: me.onPartsSelectionChange
+                            }
                         }
-                    },
-                    {
-                        xtype: 'button',
-                        text: 'Ok',
-                        margin: '0 0 0 10',
-                        listeners:{
-                             scope: me,
-                             click: me.onPartsSelectionChange
-                        }
-                    }
-                ]
-            }
+                    ]
+                }
             ]
         });
 
@@ -354,7 +351,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.grid.getSelectionModel().deselectAll(true);
 
         me.parts.each(function(record) {
-
             if(record.get('selected'))
                 me.grid.getSelectionModel().select(record, true, true);
         });
@@ -389,7 +385,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
-
+        
         me.viewers.each(function(v) {
             v.annotationFilterChanged(visibleCategories, visiblePriorities);
         });
@@ -431,12 +427,12 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         var me = this;
 
         me.addEvents('showMeasure',
-            'measureVisibilityChange',
+            'measuresVisibilityChange',
             'annotationsVisibilityChange',
             'overlayVisibilityChange');
 
         // SourceView
-        me.owner.owner.on('measureVisibilityChange', me.onMeasureVisibilityChange, me);
+        me.owner.owner.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
         me.owner.owner.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         me.owner.owner.on('overlayVisiblityChange', me.onOverlayVisibilityChange, me);
 
@@ -459,12 +455,12 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         me.callParent();
     },
 
-    onMeasureVisibilityChange: function(view, state) {
+    onMeasuresVisibilityChange: function(view, state) {
         var me = this;
 
         Ext.Array.each(me.imageViewers, function(viewer) {
             if(viewer.isVisible()) {
-                me.fireEvent('measureVisibilityChange', viewer, state, viewer.imgId, me.owner.owner.uri);
+                me.fireEvent('measuresVisibilityChange', viewer, state, viewer.imgId, me.owner.owner.uri, me.owner.owner);
             }
         });
     },
@@ -491,7 +487,7 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
 
     onViewerImageChange: function(viewer, path, pageId) {
         var me = this;
-        me.fireEvent('measureVisibilityChange', viewer, me.owner.owner.measuresVisible, viewer.imgId, me.owner.owner.uri);
+        me.fireEvent('measuresVisibilityChange', viewer, me.owner.owner.measuresVisible, viewer.imgId, me.owner.owner.uri, me.owner.owner);
         me.fireEvent('annotationsVisibilityChange', viewer, me.owner.owner.annotationsVisible, viewer.imgId, me.owner.owner.uri, me.owner.owner);
         me.fireEvent('overlayVisiblityChange', viewer, me.owner.owner.overlaysVisible, viewer.imgId, me.owner.owner.uri, me.owner.owner);
     },
@@ -639,7 +635,7 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
 
-
+        
 		var image_server = getPreference('image_server');
 
         Ext.Array.each(me.imageViewers, function(viewer) {
@@ -748,37 +744,40 @@ Ext.define('EdiromOnline.view.window.source.MeasureSpinner', {
 
         me.removeAll();
 
-        me.combo = Ext.create('Ext.form.ComboBox', {
-            width: 35,
-            hideTrigger: true,
-            queryMode: 'local',
-            store: store,
-            displayField: 'name',
-            valueField: 'id',
-            cls: 'pageInputBox',
-            autoSelect: true
-        });
-
+        // add prev/next buttons and combo box
         me.add([
-            {
-                xtype: 'button',
-                cls : 'prev toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure'), align: 'bl-tl' },
+
+            // previous button
+            me.prevButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="eo_previous" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_previousMeasure') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.prev
-                }
-            },
-            me.combo,
-            {
-                xtype: 'button',
-                cls : 'next toolButton',
-                tooltip: { text: getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure'), align: 'bl-tl' },
+                    scope: me,
+                    click: me.prev
+               },
+            }),
+
+            // combo box for measure number (same like page number in page based view, see PageSpinner.js)
+            me.combo = Ext.create('Ext.form.ComboBox', {
+                width: 45,
+                hideTrigger: true,
+                queryMode: 'local',
+                store: store,
+                displayField: 'name',
+                valueField: 'id',
+                cls: 'pageInputBox',
+                autoSelect: true
+            }),
+
+            // next button
+            me.nextButton = Ext.create('Ext.button.Button', {
+                html: '<edirom-icon role="button" name="eo_next" title="' + getLangString('view.window.source.SourceView_MeasureBasedView_nextMeasure') + '"></edirom-icon>',
+                baseCls: 'edirom-icon-button',
                 listeners:{
-                     scope: me,
-                     click: me.next
-                }
-            }
+                    scope: me,
+                    click: me.next
+               },
+            })
         ]);
 
         this.combo.on('select', this.owner.setMeasure, this.owner);

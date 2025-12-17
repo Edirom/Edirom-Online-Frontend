@@ -34,7 +34,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             'topbar button[action=openSearchWindow]': {
                 click: this.onOpenSearchWindow
             },
-            'topbar button[action=openAboutWindow]': {
+            'taskbar button[action=openAboutWindow]': {
                 click: this.onOpenAboutWindow
             },
             'topbar #searchTextFieldTop': {
