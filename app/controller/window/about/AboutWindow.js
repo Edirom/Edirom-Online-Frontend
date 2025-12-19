@@ -61,16 +61,18 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             const license = citation.match(/^license: (.*)/m)[1];
             const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
             const doi = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/)[1];
+            const commit = citation.match(/^commit: (.*)/m)[1];
 
             const resultHTML = `                
                 <h1>About ${title}</h1>
                 <section class="teidiv0">
                     <p>${abstract}</p>
                     <p>Version: ${version}</p>
-                    <p>Release date: ${releaseDate}</p>
+                    <p>Date: ${releaseDate}</p>
                     <p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>
                     <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
                     <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
+                    <p>Revision: <a target="_blank" href="${repoUrl}/tree/${commit}">${commit.substring(0,7)}...</a></p>
                     <p>Contributors: <br/>
                         <a target="_blank" href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
                             <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
