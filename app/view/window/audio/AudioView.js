@@ -41,11 +41,23 @@ Ext.define('EdiromOnline.view.window.audio.AudioView', {
         var me = this;
 
         me.html = `
+            <div id="` + me.id + `_contentAudioPlayer" class="audio-player-container">
+                <!-- Audio player will be attached here -->
+            </div>
+        `;
+
+        me.callParent();
+    },
+
+    attachPlayer: function(tracks) {
+        var me = this;
+
+        const audioHTML = `
             <edirom-audio-player 
                 id="` + me.id + `_audioPlayer"
-                tracks="[]"
-                height="500px" 
-                width="500px" 
+                tracks='`+ tracks +`'
+                height="100%" 
+                width="100%" 
                 state="pause" 
                 track="0" 
                 start="0.0" 
@@ -57,13 +69,10 @@ Ext.define('EdiromOnline.view.window.audio.AudioView', {
             </edirom-audio-player>
         `;
 
-        me.callParent();
-    },
+        var contEl = me.el.getById(me.id + '_contentAudioPlayer');
+        contEl.setHTML(audioHTML);
 
-    setTracks: function(tracks) {
-        var me = this;
-        var contEl = me.el.getById(me.id + '_audioPlayer');
-        contEl.set({'tracks': tracks});
+
     },
     
     getContentConfig: function() {

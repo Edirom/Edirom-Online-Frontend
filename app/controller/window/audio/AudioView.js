@@ -61,7 +61,7 @@ Ext.define('EdiromOnline.controller.window.audio.AudioView', {
                 console.log('Audio tracks loaded from backend:', tracks);
 
                 // attach audio player custom element to DOM
-                view.setTracks(tracks);
+                view.attachPlayer(tracks);
 
             }, me)
         );
