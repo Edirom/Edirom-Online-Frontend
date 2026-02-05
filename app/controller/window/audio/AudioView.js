@@ -58,8 +58,6 @@ Ext.define('EdiromOnline.controller.window.audio.AudioView', {
                 // tracks into string format for audio player
                 tracks = JSON.stringify(tracks);
 
-                console.log('Audio tracks loaded from backend:', tracks);
-
                 // attach audio player custom element to DOM
                 view.attachPlayer(tracks);
 
