@@ -37,7 +37,7 @@ identifiers:
     value: 10.5281/zenodo.17977921
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
-commit: 65d6487474bb360ba17c6c645cd4e2c2f73bb516
+commit: c6694de70bc50e7789fcc85a23f18568adef4336
 abstract: >-
   Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
@@ -45,4 +45,4 @@ abstract: >-
   particularly in the fields of musicology and philology.
 license: GPL-3.0
 version: v1.2.0
-date-released: 2026-01-19
+date-released: 2026-02-05
