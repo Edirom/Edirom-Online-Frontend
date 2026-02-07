@@ -1,6 +1,9 @@
 // Component-based approach - store reference to component
 window.verovioRenderer = null;
 
+// Global variable to track the current break mode
+window.currentBreakMode = 'auto';
+
 // Helper functions for showing/hiding loader
 function showLoader() {
     var output = document.getElementById('output');
@@ -47,6 +50,7 @@ function initializeComponent() {
     renderer.setAttribute('pagewidth', initWidth);
     renderer.setAttribute('pageheight', initHeight);
     renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
+    renderer.setAttribute('verovio-breaks', 'auto'); // Default break mode
     renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
     renderer.style.display = 'none'; // Hidden until ready
     
@@ -134,6 +138,7 @@ function showMovement(movementId) {
         renderer.setAttribute('pagenumber', '1');
         renderer.setAttribute('zoom', '33');
         renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
+        renderer.setAttribute('verovio-breaks', 'auto'); // Default break mode
         renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
         
         // Add it to the output div
@@ -157,6 +162,11 @@ function showMovement(movementId) {
         renderer.setAttribute('meiurl', meiUrl);
         renderer.setAttribute('pagewidth', initWidth);
         renderer.setAttribute('pageheight', initHeight);
+        
+        // Restore the current break mode
+        if (window.currentBreakMode) {
+            renderer.setAttribute('verovio-breaks', window.currentBreakMode);
+        }
         
         // Store reference
         // TODO: replace " window.verovioRenderer = renderer;" global reference once iframe based windows are removed; the consumers should get the renderer via dependency injection or events instead.
@@ -397,4 +407,28 @@ function showMeasure(movementId, measureId) {
 function on_vrvToolkitDataInitialized(){
     if (window.measureId == undefined ) return; 
     showMeasure(window.movementId, window.measureId); //? set window.measureId to undefined ?
+}
+/**
+ * Switch between different break modes for Verovio rendering.
+ * @param {string} breakMode - The break mode to switch to: 'auto', 'none', 'line', 'smart', or 'encoded'
+ */
+function updateBreakMode(breakMode) {
+    if (window.verovioRenderer) {
+        window.verovioRenderer.setAttribute('verovio-breaks', breakMode);
+    }
+    // Store the selected break mode in a global variable to maintain it across movements
+    window.currentBreakMode = breakMode;
+}
+
+/**
+ * Sync the break mode dropdown with the current break mode setting.
+ */
+function syncBreakModeDropdown() {
+    var dropdown = document.getElementById('breakMode');
+    if (dropdown && window.currentBreakMode) {
+        dropdown.value = window.currentBreakMode;
+    } else if (dropdown) {
+        dropdown.value = 'auto';
+        window.currentBreakMode = 'auto';
+    }
 }

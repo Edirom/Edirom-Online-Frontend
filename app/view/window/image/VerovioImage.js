@@ -86,6 +86,16 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 							onclick="nextPage()">
 							<span style="font-size: 1.3em;">&gt;</span>
 						</span>
+						<span style="margin-left: 20px; display: inline-block;">
+							<label for="breakMode" style="margin-right: 8px;">Breaks:</label>
+							<select id="breakMode" onchange="updateBreakMode(this.value)" style="padding: 4px;">
+								<option value="auto">Auto</option>
+								<option value="none">None</option>
+								<option value="line">Line</option>
+								<option value="smart">Smart</option>
+								<option value="encoded">Encoded</option>
+							</select>
+						</span>
 					</div>
 					<div
 						class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
