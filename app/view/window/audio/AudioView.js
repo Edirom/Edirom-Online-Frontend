@@ -63,7 +63,6 @@ Ext.define('EdiromOnline.view.window.audio.AudioView', {
                 start="0.0" 
                 end="" 
                 playbackrate="1.0" 
-                playbackmode="repeat" 
                 playlist="true" 
                 progressbar="true">
             </edirom-audio-player>
