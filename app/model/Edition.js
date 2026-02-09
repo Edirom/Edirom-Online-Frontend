@@ -28,6 +28,15 @@ Ext.define('EdiromOnline.model.Edition', {
         url: '@backend.url@data/xql/getEdition.xql'
     },
 
+    statics: {
+        updateProxyUrl: function (backendURL) {
+            var model = Ext.ModelManager.getModel('EdiromOnline.model.Edition');
+            if (model) {
+                model.getProxy().url = backendURL + 'data/xql/getEdition.xql';
+            }
+        }
+    },
+
     /**
      * Concordances
      */

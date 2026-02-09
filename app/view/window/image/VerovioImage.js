@@ -34,6 +34,9 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 	setIFrameContent: function (uri, edition) {
 		var me = this;
 
+		var configController = EdiromOnline.getApplication().getController('ConfigController');
+		var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+
 		var html = `<html>
         		<head>
 					<title>Verovio</title>
@@ -59,7 +62,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						var uri = "${uri}";
 						var edition = "${edition}";
 						var movementId = "";
-						var appBasePath = "@backend.url@";
+						var appBasePath = "${backendURL}";
 						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
 						</script>
 					
@@ -106,15 +109,15 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		iframe.showMovement(movementId);
 	},
 
-    /*
-     * Call showMeasure of corresponding iframe.
-     * @param {string} movementId - The XML-ID of the selected movement.
-     * @param {string} measureId - The XML-ID of the selected measure.
-     */
+	/*
+	 * Call showMeasure of corresponding iframe.
+	 * @param {string} movementId - The XML-ID of the selected movement.
+	 * @param {string} measureId - The XML-ID of the selected measure.
+	 */
 	showMeasure: function (movementId, measureId) {
-	    var me = this;
-	    var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
-	    iframe.showMeasure(movementId, measureId);
+		var me = this;
+		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
+		iframe.showMeasure(movementId, measureId);
 	},
 
 	/*
@@ -125,10 +128,8 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 	gotoMeasureByAttributes: function (measureNumber, movementId) {
 		var me = this;
 		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
-		
 		// First switch to the movement, then navigate to the measure
 		iframe.showMovement(movementId);
-		
 		// Wait a bit for the movement to load, then set the measure
 		setTimeout(function() {
 			var renderer = iframe.document.getElementById("verovio-renderer");

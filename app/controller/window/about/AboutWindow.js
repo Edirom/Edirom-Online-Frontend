@@ -27,7 +27,7 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
     init: function() {
         this.control({
             'aboutWindow': {
-               afterlayout : this.onAfterLayout
+                afterlayout : this.onAfterLayout
             }
         });
     },
@@ -36,11 +36,13 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
         var me = this;
 
-        if(view.initialized) return;
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+        var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+
+        if (view.initialized) return;
         view.initialized = true;
 
         // Specify URLs of CITATION.cff files of frontend and backend
-        const backendURL = '@backend.url@';
         const frontendURL = location.origin + location.pathname.replaceAll("/index.html", "/");
         const frontendURLcitation = frontendURL + 'resources/CITATION.cff';
         const backendURLcitation = backendURL + 'resources/CITATION.cff';
