@@ -126,6 +126,13 @@ If you intend to cite unreleased branches or commits please use the commit hash 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/krHERO"><img src="https://avatars.githubusercontent.com/u/5928917?v=4?s=100" width="100px;" alt="krHERO"/><br /><sub><b>krHERO</b></sub></a><br /><a href="#doc-krHERO" title="Documentation">📖</a></td>
+    </tr>
+  </tbody>
+</table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
