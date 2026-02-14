@@ -126,6 +126,13 @@ If you intend to cite unreleased branches or commits please use the commit hash 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/daniel-jettka"><img src="https://avatars.githubusercontent.com/u/18614293?v=4?s=100" width="100px;" alt="Daniel Jettka"/><br /><sub><b>Daniel Jettka</b></sub></a><br /><a href="#bug-daniel-jettka" title="Bug reports">🐛</a> <a href="#code-daniel-jettka" title="Code">💻</a> <a href="#doc-daniel-jettka" title="Documentation">📖</a> <a href="#projectManagement-daniel-jettka" title="Project Management">📆</a> <a href="#eventOrganizing-daniel-jettka" title="Event Organizing">📋</a> <a href="#ideas-daniel-jettka" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-daniel-jettka" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-daniel-jettka" title="Maintenance">🚧</a> <a href="#review-daniel-jettka" title="Reviewed Pull Requests">👀</a> <a href="#test-daniel-jettka" title="Tests">⚠️</a></td>
+    </tr>
+  </tbody>
+</table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
