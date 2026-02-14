@@ -1,4 +1,21 @@
 {
   "projectName": "Edirom-Online-Frontend",
-  "projectOwner": "Edirom"
+  "projectOwner": "Edirom",
+  "files": [
+    "README.md"
+  ],
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributors": [
+    {
+      "login": "daniel-jettka",
+      "name": "Daniel Jettka",
+      "avatar_url": "https://avatars.githubusercontent.com/u/18614293?v=4",
+      "profile": "https://github.com/daniel-jettka",
+      "contributions": [
+        "code"
+      ]
+    }
+  ]
 }
