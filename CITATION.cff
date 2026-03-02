@@ -37,7 +37,7 @@ identifiers:
     value: 10.5281/zenodo.17977921
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
-commit: d16d8e671aa5755814c4c3c67b963cc8156119f7
+commit: f02e4bba4e436c0abbe12c23c4d3f9fac0b35f3a
 abstract: >-
   Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
