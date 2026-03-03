@@ -192,37 +192,25 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     annotationFilterChanged: function(item, event) {
         var me = this;
 
-        // if me.annotationsVisible is false do nothing
-        if(!me.annotationsVisible) return;
+        if (!me.annotationsVisible) return;
 
-        // set visible Priorities
-        var visiblePriorities = [];
-
-        // iterate over corresponding menu to get priorities
-        if(me.annotPrioritiesMenu != null && me.annotPrioritiesMenu.items.length != 0) {
-            me.annotPrioritiesMenu.items.each(function(item) {
-                if(item.checked)
-                    visiblePriorities.push(item.priorityId);
+        var visibleTaxonomies = {};
+        Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
+            var visibleIds = [];
+            menu.items.each(function(menuItem) {
+                if (menuItem.checked) visibleIds.push(menuItem.classId);
             });
-        } else {
-            visiblePriorities.push('undefined');
+            visibleTaxonomies[taxonomyId] = visibleIds;
+        });
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('View: SourceView: annotationFilterChanged');
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
         }
 
-        // set visible categories
-        var visibleCategories = [];
-
-        // iterate over corresponding menu to get categories
-        if(me.annotCategoriesMenu != null && me.annotCategoriesMenu.items.length != 0) {
-            me.annotCategoriesMenu.items.each(function(item) {
-                if(item.checked)
-                    visibleCategories.push(item.categoryId);
-            });
-        } else {
-            visibleCategories.push('undefined');
-        }
-
-        me.pageBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
-        me.measureBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
+        me.pageBasedView.annotationFilterChanged(visibleTaxonomies);
+        me.measureBasedView.annotationFilterChanged(visibleTaxonomies);
     },
 
     setMovements: function(movements) {
