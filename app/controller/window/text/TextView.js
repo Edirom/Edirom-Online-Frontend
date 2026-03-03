@@ -98,16 +98,29 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
 
                 data = Ext.JSON.decode(data);
 
-                var priorities = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['priorities']
-                });
-                var categories = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['categories']
-                });
+                // if taxonomies array is empty but categories and priorities are
+                // populated merge those to a taxonomies array
+                var taxonomies = data['taxonomies'] || [];
+                if (taxonomies.length === 0) {
+                    var categories = data['categories'] || [];
+                    var priorities = data['priorities'] || [];
+                    if (categories.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromCategory',
+                            label: 'ediromCategory',
+                            items: categories
+                        });
+                    }
+                    if (priorities.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromPriority',
+                            label: 'ediromPriority',
+                            items: priorities
+                        });
+                    }
+                }
 
-                me.annotInfosLoaded(priorities, categories, view);
+                me.annotInfosLoaded(taxonomies, view);
             }, this)
         );
     },
@@ -144,8 +157,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.showAnnotations(annotations);
     },
 
-    annotInfosLoaded: function(priorities, categories, view) {
-        view.setAnnotationFilter(priorities, categories);
+    annotInfosLoaded: function(taxonomies, view) {
+        view.setAnnotationFilter(taxonomies);
     },
 
     onGotoChapter: function(view, chapter) {
