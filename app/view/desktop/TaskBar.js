@@ -240,7 +240,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
     getWindowBarConfig: function () {
         return {
-            flex: 1,
             cls: 'ux-desktop-windowbar',
             items: [ '&#160;' ],
             layout: { overflowHandler: 'Scroller' }
