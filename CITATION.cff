@@ -34,14 +34,15 @@ authors:
     orcid: https://orcid.org/0009-0000-4410-4627
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.17234728
+    value: 10.5281/zenodo.17977921
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
+commit: 213d9b1af04920b6e5b3784f9cc5c415098f2bda
 abstract: >-
   Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
   analysis of critical musical editions in a digital format,
   particularly in the fields of musicology and philology.
 license: GPL-3.0
-version: v1.1.0
-date-released: 2025-10-01
+version: v1.2.0
+date-released: 2026-02-03

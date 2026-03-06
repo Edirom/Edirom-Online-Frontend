@@ -14,7 +14,7 @@
     <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
     <!-- other properties -->
-    <property name="project.version" value="1.1.0"/>
+    <property name="project.version" value="1.2.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
     <property name="project.title" value="Edirom Online Frontend"/>
     <property name="repo.target" value="${project.app}"/>
@@ -47,6 +47,7 @@
         <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true">
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
+                <filter token="backend.path" value="${backend.path}"/>
             </filterset>
         </copy>
         <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js"  overwrite="true" preservelastmodified="true"/>

@@ -29,6 +29,7 @@ Ext.Loader.addClassPathMappings({
 Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.Application": [],
   "EdiromOnline.controller.AJAXController": [],
+  "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
   "EdiromOnline.controller.LinkController": [],
@@ -941,6 +942,7 @@ Ext.ClassManager.addNameAlternateMappings({
 Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.Application": [],
   "EdiromOnline.controller.AJAXController": [],
+  "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
   "EdiromOnline.controller.LinkController": [],

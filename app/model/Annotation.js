@@ -40,5 +40,14 @@ Ext.define('EdiromOnline.model.Annotation', {
             root: 'annotations',
             totalProperty: 'total'
         }
+    },
+
+    statics: {
+        updateProxyUrl: function (backendURL) {
+            var model = Ext.ModelManager.getModel('EdiromOnline.model.Annotation');
+            if (model) {
+                model.getProxy().url = backendURL + 'data/xql/getAnnotations.xql';
+            }
+        }
     }
 });

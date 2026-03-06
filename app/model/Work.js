@@ -28,5 +28,14 @@ Ext.define('EdiromOnline.model.Work', {
     proxy: {
         type: 'ajax',
         url: '@backend.url@data/xql/getWorks.xql'
-    }
+    },
+
+    statics: {
+        updateProxyUrl: function (backendURL) {
+            var model = Ext.ModelManager.getModel('EdiromOnline.model.Work');
+            if (model) {
+                model.getProxy().url = backendURL + 'data/xql/getWorks.xql';
+            }
+        }
+    },
 });
