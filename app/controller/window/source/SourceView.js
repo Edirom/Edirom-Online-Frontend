@@ -96,7 +96,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                     console.log(data);
                 }
-
+                // hand over returned taxonomies array
                 me.annotInfosLoaded(data['taxonomies'] || [], view);
             }, this)
         );
@@ -124,6 +124,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
     },
 
     annotInfosLoaded: function(taxonomies, view) {
+        // delegate taxonomies array handling to the view
         view.setAnnotationFilter(taxonomies);
     },
 
