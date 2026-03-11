@@ -162,13 +162,18 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             console.log(taxonomies);
         }
 
+        // abort if taxonomies array is empty
         if (!taxonomies || taxonomies.length === 0) return;
 
         me.annotTaxonomyMenus = {};
 
+        // iterate over taonomies
         Ext.Array.each(taxonomies, function(taxonomy) {
+
+            // abort if taxonomy is empty
             if (!taxonomy.items || taxonomy.items.length === 0) return;
 
+            // process taxonomy items
             var items = Ext.Array.map(taxonomy.items, function(item) {
                 return {
                     text: item.name,
@@ -179,9 +184,13 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
                 };
             });
 
+            // create menu for taxonomy items
             var menu = Ext.create('Ext.menu.Menu', { items: items });
+
+            // push taxonomy menu to taxonomy menus array
             me.annotTaxonomyMenus[taxonomy.id] = menu;
 
+            // add entry for taxonomy to annotMenu
             me.annotMenu.menu.add({
                 // set button text to taxonomy.label if it doesn’t match taxonomy.id, else get from locale files
                 text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
