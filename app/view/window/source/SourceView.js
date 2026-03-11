@@ -183,7 +183,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.annotTaxonomyMenus[taxonomy.id] = menu;
 
             me.annotMenu.menu.add({
-                text: taxonomy.label,
+                // set button text to taxonomy.label if it doesn’t match taxonomy.id, else get from locale files
+                text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
                 menu: menu
             });
         });
