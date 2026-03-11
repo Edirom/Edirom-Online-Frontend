@@ -70,6 +70,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(visibleTaxonomies);
         }
 
+        // Fetched for potential use by callers/subclasses; not consumed directly in this function.
+        var image_server = getPreference('image_server');
 
         var annotations = me.imageViewer.getShapes('annotations');
 
