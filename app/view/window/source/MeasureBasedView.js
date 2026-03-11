@@ -428,11 +428,12 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }catch(e) {}
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies) {
         var me = this;
-        
+
+        // deegate annotationFilterChanged to individual viewers
         me.viewers.each(function(v) {
-            v.annotationFilterChanged(visibleCategories, visiblePriorities);
+            v.annotationFilterChanged(visibleTaxonomies);
         });
     }
 });
@@ -706,7 +707,7 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         }
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies) {
         var me = this;
 
         Ext.Array.each(me.imageViewers, function(viewer) {
