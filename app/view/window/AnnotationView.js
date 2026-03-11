@@ -309,7 +309,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 // create fieldObject
                 const fieldName = typeof field === 'string' ? field : field.name;
                 const fieldObject = {
-                    header: getLangString('view.window.AnnotationView_' + fieldName),
+                    header: getLangString(fieldName),
                     dataIndex: fieldName,
                     renderer: me.createFieldRenderer(fieldName),
                     flex: 1, //TODO evaluate filed content length to set more appropriate flex value
