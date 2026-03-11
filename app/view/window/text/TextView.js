@@ -25,7 +25,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     alias : 'widget.textView',
 
     layout: 'fit',
-    
+
     cls: 'textView',
 
     annotationsVisible: false,
@@ -74,15 +74,15 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     },
 
     checkGlobalVisibility: function(type) {
-        
+
         // TODO: align with checkGlobalVisibility in SourceView.js (there it's working)
 
         var me = this;
 
         // If: measures visibility was set locally, do nothing
         if(me[type+'VisibilitySetLocaly']) return;
-        
-        // Otherwise: check local visibility state and decide on next visibility state        
+
+        // Otherwise: check local visibility state and decide on next visibility state
         // only if local state is null (case in which window does not override global) fire event with global visibility
         var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
         if(localState === null) {
@@ -129,8 +129,8 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             });
 
             return;
-        }   
-        
+        }
+
         console.log("this is the annotation but it is hidden")
 
         // me.annotationsLoaded = true;
@@ -153,7 +153,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
                 var target = me.el.getById(me.id + '_' + targetId);
 
                 var shape = tpl.append(target, [me.id + '_' + p.id, categories, priority, annotation.get('id')], true);
-                
+
                 shape.on('mouseenter', me.highlightShape, me, shape, true);
                 shape.on('mouseleave', me.deHighlightShape, me, shape, true);
                 shape.on('mousedown', me.listenForShapeLink, me, {
@@ -175,7 +175,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
                 tip.on('afterrender', function() {
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
-                        'GET', 
+                        'GET',
                         {
                             uri: uri,
                             target: 'tip'
@@ -190,10 +190,10 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         }, me);
     },
-    
+
     highlightShape: function(event, owner, shape) {
         shape.addCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
@@ -201,7 +201,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     deHighlightShape: function(event, owner, shape) {
         shape.removeCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
@@ -339,10 +339,10 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     setContent: function(text) {
         var me = this;
-		
+
 		Ext.fly(me.id + '_textCont').update(text);
 		this.fireEvent('documentLoaded', me);
-		
+
 		Ext.Array.each(Ext.query('.scrollto'), function(dom, n, all) {
             var elem = Ext.get(dom);
             var scrollTo = elem.getAttribute('data-footnote');
@@ -393,16 +393,16 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     getWeightForInternalLink: function (uri, type, id) {
 		var me = this;
-		
+
 		if (me.uri != uri)
 		return 0;
-		
+
 		if (type == 'unknown' || type == 'graphic' || type == 'surface' || type == 'zone')
 		return 0;
-		
+
 		return 70;
 	},
-	
+
 	loadInternalId: function (internalId, internalIdType) {
 		var me = this;
 
@@ -415,18 +415,18 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     },
 
     scrollToId: function(id) {
-        
+
         var elem = Ext.get(this.id + '_' + id);
 
         var showHide = !elem.isVisible();
 
         if(showHide) elem.show();
-        
+
         Ext.getDom(elem).scrollIntoView(true);
-        
+
         if(showHide) elem.hide();
 	},
-	
+
 	getContentConfig: function() {
         var me = this;
         return {
