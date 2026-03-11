@@ -81,9 +81,12 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(me.imageViewer.shapes.get('annotations'));
         }
 
+        // Callback applied to each annotation child div: shows or hides it based on the active taxonomy filters.
+        // Bound to `me` so `this` refers to the view component inside the function body.
         var fn = Ext.bind(function(annotationId) {
 
             var annotDiv = Ext.get(annotationId);
+            // Get the raw DOM class list and convert it to a plain array for Ext manipulation
             var classList = annotDiv.dom.classList;
             var classes = Ext.Array.toArray(classList);
             // Strip structural/UI classes that are not taxonomy identifiers
@@ -126,6 +129,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         var annotationDivIds = [];
 
+        // Collect the ids of all child shape elements for each annotation
         Ext.Array.each(annotations, function(annotation) {
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -137,7 +141,9 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 console.log(me.owner.owner);
             }
 
+            // Retrieve the SVG/HTML shape element rendered for this annotation
             var annotDiv = me.imageViewer.getShapeElem(annotation.id);
+            // Each annotation shape has child elements (e.g. icon, label); collect their ids
             var children = Ext.Array.toArray(annotDiv.dom.childNodes);
             Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
         });
@@ -146,6 +152,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(annotationDivIds);
         }
 
+        // Apply the visibility filter function to every collected child div id
         Ext.Array.each(annotationDivIds, fn);
     },
 
@@ -234,7 +241,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         });
 
         // zoom slider (if applicable)
-        if (image_server === 'openseadragon' || image_server === 'digilib'){ 
+        if (image_server === 'openseadragon' || image_server === 'digilib'){
             me.zoomSlider = Ext.create('Ext.slider.Single', {
                 width: 100,
                 value: 100,
