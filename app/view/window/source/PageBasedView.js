@@ -60,16 +60,14 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies) {
 
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('View: PageBasedView: annotationFilterChanged');
-            console.log('visibleCategories');
-            console.log(visibleCategories);
-            console.log('visiblePriorities');
-            console.log(visiblePriorities);
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
         }
 
        	var image_server = getPreference('image_server');
@@ -87,46 +85,40 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
             var annotDiv = Ext.get(annotationId);
             var classList = annotDiv.dom.classList;
-            var prioritiesCategories = Ext.Array.toArray(classList);
-            Ext.Array.remove(prioritiesCategories, 'measure');
-            Ext.Array.remove(prioritiesCategories, 'annoIcon');
+            var classes = Ext.Array.toArray(classList);
+            // Strip structural/UI classes that are not taxonomy identifiers
+            Ext.Array.remove(classes, 'measure');
+            Ext.Array.remove(classes, 'annoIcon');
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                 console.log('View: PageBasedView: annotationFilterChanged: annotations fn');
                 console.log(annotationId);
                 console.log(annotDiv);
                 console.log(classList);
-                console.log(prioritiesCategories);
+                console.log(classes);
             }
 
-            // create category and priority match variables
-            var matchesCategoryFilter = false;
-            var matchesPriorityFilter = false;
-
-            // iterate over annotation class attribute values to see if they match visibleCategories or visiblePriorities
-            for(var i = 0; i < prioritiesCategories.length; i++) {
-                matchesCategoryFilter |= Ext.Array.contains(visibleCategories, prioritiesCategories[i]);
-
-                matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, prioritiesCategories[i]);
-            }
+            // An annotation is visible only if it matches at least one selected id in every active taxonomy
+            var visible = true;
+            Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                // Check whether any of the annotation's classes belong to this taxonomy's visible set
+                var matches = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(visibleIds, classes[i])) {
+                        matches = true;
+                        break;
+                    }
+                }
+                // If the annotation has no class from this taxonomy, it fails the filter
+                if (!matches) visible = false;
+            });
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                console.log(matchesCategoryFilter);
-                console.log(matchesPriorityFilter);
+                console.log(visible);
             }
 
-            // if filter results are false check if visibleCategories are undefined and if so assign true
-            if( matchesCategoryFilter == false && visibleCategories == 'undefined') {
-                matchesCategoryFilter = true;
-            }
-
-            // if filter results are falsey check if visibleCategories are undefined and if so assign true
-            if( matchesPriorityFilter == false && visiblePriorities == 'undefined') {
-                matchesPriorityFilter = true;
-            }
-
-            // depending on match results assign or remove class 'hidden'
-            if(matchesCategoryFilter & matchesPriorityFilter)
+            // Toggle visibility by adding/removing the 'hidden' CSS class
+            if (visible)
                 annotDiv.removeCls('hidden');
             else
                 annotDiv.addCls('hidden');
