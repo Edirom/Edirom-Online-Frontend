@@ -70,7 +70,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(visibleTaxonomies);
         }
 
-       	var image_server = getPreference('image_server');
 
         var annotations = me.imageViewer.getShapes('annotations');
 
@@ -80,7 +79,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(me.imageViewer.shapes.get('annotations'));
         }
 
-        // define function to apply to relevant element IDs
         var fn = Ext.bind(function(annotationId) {
 
             var annotDiv = Ext.get(annotationId);
@@ -124,7 +122,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 annotDiv.addCls('hidden');
         }, me);
 
-
         var annotationDivIds = [];
 
         Ext.Array.each(annotations, function(annotation) {
@@ -140,8 +137,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
             var annotDiv = me.imageViewer.getShapeElem(annotation.id);
             var children = Ext.Array.toArray(annotDiv.dom.childNodes);
-
-            // Ext.Array.push(annotationDivIds, annotation.id);
             Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
         });
 
