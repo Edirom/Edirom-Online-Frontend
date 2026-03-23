@@ -79,6 +79,22 @@ backend.port=9090
 project.version=2.0.0
 ```
 
+#### Setting Backend URL at Runtime
+
+You can override the backend URL at runtime by creating a `config.json` file in the application root directory. This allows you to change the backend endpoint after deployment without rebuilding.
+
+Create a `config.json` file:
+```json
+{
+  "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/"
+}
+```
+
+**How it works:**
+- On application startup, the `ConfigController` attempts to load `config.json`
+- If the file exists and is valid, the `backendURL` from `config.json` is used
+- If the file is missing or invalid, the application falls back to the backend URL configured at build time
+
 
 ### Starting an Edirom instance locally
 
