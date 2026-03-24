@@ -302,8 +302,15 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         const existingColumnNames = columns.map(column =>
             column.dataIndex);
 
+        // Legacy fields declared by the backend — skip them in favour of taxonomy map entries
+        // when the annotation_hide_legacy_fields preference is true (default).
+        // Falls back to [] for older backends that don't send this key, or when pref is false.
+        const hideLegacyFields = getPreference('annotation_hide_legacy_fields', true) === 'true';
+        const legacyFields = hideLegacyFields && me.data && me.data.legacyFields ? me.data.legacyFields : [];
+
         //iterate over storeFields to create missing grid columns
         storeFields.forEach(field => {
+            if (legacyFields.includes(typeof field === 'string' ? field : field.name)) return;
             if (!existingColumnNames.includes(typeof field === 'string' ? field : field.name)) {
                 // if existingColumnNames does not include the value of field or field.name
                 // create fieldObject
