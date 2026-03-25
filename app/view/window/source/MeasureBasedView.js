@@ -635,9 +635,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
 
-        
-		var image_server = getPreference('image_server');
-
         Ext.Array.each(me.imageViewers, function(viewer) {
             var annotations = viewer.getShapes('annotations');
 
