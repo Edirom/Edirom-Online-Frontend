@@ -638,43 +638,57 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         Ext.Array.each(me.imageViewers, function(viewer) {
             var annotations = viewer.getShapes('annotations');
 
-            var fn = Ext.bind(function(annotation) {
-                var annotDiv = viewer.getShapeElem(annotation.id);
+            // define function to apply to relevant element IDs
+            var fn = Ext.bind(function(annotationId) {
+                var annotDiv = Ext.get(annotationId);
+                var classList = annotDiv.dom.classList;
+                var prioritiesCategories = Ext.Array.toArray(classList);
+                Ext.Array.remove(prioritiesCategories, 'measure');
+                Ext.Array.remove(prioritiesCategories, 'annoIcon');
 
-                var className = annotDiv.dom.className.replace('annotIcon', '').trim();
-                var classes = className.split(' ');
-
+                // create category and priority match variables
                 var matchesCategoryFilter = false;
                 var matchesPriorityFilter = false;
 
                 // iterate over annotation class attribute values to see if they match visibleCategories or visiblePriorities
-                for(var i = 0; i < classes.length; i++) {
-                    matchesCategoryFilter |= Ext.Array.contains(visibleCategories, classes[i]);
-
-                    matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, classes[i]);
+                for(var i = 0; i < prioritiesCategories.length; i++) {
+                    matchesCategoryFilter |= Ext.Array.contains(visibleCategories, prioritiesCategories[i]);
+                    matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, prioritiesCategories[i]);
                 }
 
-                // if filter results are falsey check if visibleCategories are undefined and if so assign true
-                if( matchesCategoryFilter == false & visibleCategories == 'undefined') {
+                // if filter results are false check if visibleCategories are undefined and if so assign true
+                if(matchesCategoryFilter == false && visibleCategories == 'undefined') {
                     matchesCategoryFilter = true;
                 }
-                // if filter results are falsey check if visibleCategories are undefined and if so assign true
-                if( matchesPriorityFilter == false & visiblePriorities == 'undefined') {
+                // if filter results are false check if visiblePriorities are undefined and if so assign true
+                if(matchesPriorityFilter == false && visiblePriorities == 'undefined') {
                     matchesPriorityFilter = true;
                 }
 
+                // depending on match results assign or remove class 'hidden'
                 if(matchesCategoryFilter & matchesPriorityFilter)
                     annotDiv.removeCls('hidden');
                 else
                     annotDiv.addCls('hidden');
             }, me);
 
+            var annotationDivIds = [];
+
             if (typeof annotations !== 'undefined') {
+                // collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
+                var collectIds = function(annotation) {
+                    var annotDiv = viewer.getShapeElem(annotation.id);
+                    var children = Ext.Array.toArray(annotDiv.dom.childNodes);
+                    Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
+                };
+
                 if(annotations.each)
-                    annotations.each(fn);
+                    annotations.each(collectIds);
                 else
-                    Ext.Array.each(annotations, fn);
+                    Ext.Array.each(annotations, collectIds);
             }
+
+            Ext.Array.each(annotationDivIds, fn);
         });
 
     }
