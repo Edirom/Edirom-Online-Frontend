@@ -239,10 +239,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     removeSVGOverlay: function(overlayId) {
         var me = this;
         var svgId = me.id + '_' + overlayId;
-        var overlayOSD = me.viewer.getOverlayById(svgId);
-        if (overlayOSD !== null ) {
-            overlayOSD.destroy();
-        }
+        me.viewer.removeOverlay(svgId);
     },
 
     removeShapes: function(groupName) {
