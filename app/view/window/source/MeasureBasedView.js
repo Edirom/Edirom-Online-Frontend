@@ -40,6 +40,9 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     measures: null,
 
+    pendingMeasureId: null,
+    pendingMeasureCount: null,
+
     initComponent: function () {
 
         var me = this;
@@ -196,26 +199,41 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }else if(me.imageSet.getCount() > 0)
         */
 
-           me.measureSpinner.setMeasure(me.measures.getAt(0));
+        // If there's a pending measure to be set, use that; otherwise use the first measure
+        if (me.pendingMeasureId !== null) {
+            me.measureSpinner.setMeasure(me.pendingMeasureId, me.pendingMeasureCount);
+            me.pendingMeasureId = null;
+            me.pendingMeasureCount = null;
+        } else {
+            me.measureSpinner.setMeasure(me.measures.getAt(0));
+        }
     },
 
     showMeasure: function(movementId, measureId, measureCount) {
         var me = this;
 
+        // Store the pending measure info to be applied after measures are loaded
+        me.pendingMeasureId = measureId;
+        me.pendingMeasureCount = measureCount;
 
-      // if(me.mdivSelector.getValue() != movementId) {
+        // Check if we're changing the mdiv/movement
+        var mdivChanged = me.mdivSelector.getValue() != movementId;
 
         me.mdivSelector.setValue(movementId);
         me.setMdiv(me.mdivSelector);
-      //  }
 
-        if(typeof me.measures === 'undefined' || me.measures === null) {
+        // Only try to set the measure immediately if the mdiv hasn't changed
+        // If it changed, wait for setMeasures to be called (which handles loading new measures for the mdiv)
+        if (!mdivChanged) {
+            if(typeof me.measures === 'undefined' || me.measures === null) {
+                Ext.defer(me.showMeasure, 300, me, [movementId, measureId, measureCount], false);
+                return;
+            }
 
-            Ext.defer(me.showMeasure, 300, me, [movementId, measureId, measureCount], false);
-            return;
+            me.measureSpinner.setMeasure(measureId, measureCount);
+            me.pendingMeasureId = null;
+            me.pendingMeasureCount = null;
         }
-
-        me.measureSpinner.setMeasure(measureId, measureCount);
     },
 
     setMeasure: function(combo, store, measureCount) {
