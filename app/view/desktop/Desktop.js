@@ -189,24 +189,16 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             // show help window
             help.show();
 
-            // set attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').setAttribute('pressed', '');
-
         }else if(help != me.getActiveWindow()){
 
             // show help window
             help.show();
-
-            // set attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').setAttribute('pressed', '');
         
         } else{
 
             // hide help window
-            help.hide();
+            help.close();
 
-            // unset attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').removeAttribute('pressed');
         }
 
     },
@@ -252,7 +244,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             win.show();
 
         else
-            win.hide();
+            win.destroy();
     
     },
 

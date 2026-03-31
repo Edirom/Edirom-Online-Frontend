@@ -75,7 +75,7 @@ Ext.define('EdiromOnline.view.window.HelpWindow', {
     close: function() {
 
         // override close to just hide the window
-        this.hide();
+        this.destroy();
 
         // unset attribute pressed of button for opening help in task bar
         document.getElementById('icon_openHelp').removeAttribute('pressed');

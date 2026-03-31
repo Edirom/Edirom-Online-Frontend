@@ -79,6 +79,6 @@ Ext.define('EdiromOnline.view.window.about.AboutWindow', {
     },
 
     close: function() {
-        this.hide();
+        this.destroy();
     }
 });
