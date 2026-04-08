@@ -45,11 +45,10 @@ Checkout main branch: `git checkout main`
 Release on [github.com](https://github.com) 
 - [ ] Go to tag vX.Y.Z and click "Release from Tag"
 - [ ] auto-generate the release description
-- [ ] upload the tested Edirom-Online-X.Y.Z.xar (asset)
+- [ ] upload tested xar as Edirom-Online-Frontend-X.Y.Z.xar (as release asset)
 - [ ] publish the release on GitHub - *link GitHub release*
-
-Checkout develop branch: `git checkout develop`
-- [ ] `git merge --no-ff release/vX.Y.Z` (release branch into develop)
+- [ ] create PR to merge main branch back to develop
+- [ ] remove release/vX.Y.Z branch
 
 Publication on [zenodo.org](https://zenodo.org)
 - [ ] edit publication draft
