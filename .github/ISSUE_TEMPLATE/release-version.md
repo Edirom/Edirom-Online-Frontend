@@ -32,7 +32,7 @@ Checkout new release branch: `git checkout -b release/vX.Y.Z develop`
 - [ ] update CITATION.cff (date, contributors, version, DOI)
 - [ ] bump version number everywhere (find/replace in code), e.g. in build.xml
 - [ ] commit version release branch
-- [ ] build .xar and test it
+- [ ] build and test it
 
 Checkout main branch: `git checkout main`
 - [ ] `git merge --no-ff release/vX.Y.Z` (release branch into main)
