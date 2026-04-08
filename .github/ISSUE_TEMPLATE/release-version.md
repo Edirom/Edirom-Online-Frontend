@@ -18,7 +18,7 @@ Release preparation timeline
 Preparations on [zenodo.org](https://zenodo.org)
 - [ ] go to previous version and click "New version"
 - [ ] reserve a DOI -> *insert here*
-- [ ] update version and other metadata in publication form
+- [ ] update version
 - [ ] upload a placeholder file
 - [ ] save draft -> *link here*
 
@@ -27,8 +27,6 @@ Checkout develop branch: `git checkout develop`
 - [ ] check third party dependencies
   - [ ] Verovio
   - [ ] jQuery
-  - [ ] TEI stylesheets
-  - [ ] Euryanthe
 
 Checkout new release branch: `git checkout -b release/vX.Y.Z develop`
 - [ ] update CITATION.cff (date, contributors, version, DOI)
@@ -56,6 +54,7 @@ Checkout develop branch: `git checkout develop`
 Publication on [zenodo.org](https://zenodo.org)
 - [ ] edit publication draft
 - [ ] remove placeholder file and upload files copied from *GitHub release*
+- [ ] update description (take "What's changed" section from GitHub release info)
 - [ ] double-check metadata
 - [ ] publish on Zenodo (with updated files) -> *link publication DOI*
 
