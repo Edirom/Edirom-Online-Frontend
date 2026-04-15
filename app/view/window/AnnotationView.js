@@ -277,7 +277,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         me.bottomBar.add(me.openAllButton);
         
         me.closeAllButton =  Ext.create('Ext.button.Button', {
-            html: '<edirom-icon role="icon" name="eo_close_all" title="' + getLangString('view.window.AnnotationView_CloseAll') + '"></edirom-icon>',
+            html: '<edirom-icon role="button" name="eo_close_all" title="' + getLangString('view.window.AnnotationView_CloseAll') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             disabled: true,
             action: 'closeAll'

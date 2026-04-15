@@ -17,6 +17,11 @@ $content_baseFont_size: 14px;
 	
 }
 
+.annotationTip {
+	.x-tip-body {
+		overflow: auto;
+	}
+}
 
 .annotView {
 	margin: 10px;
@@ -155,10 +160,12 @@ $content_baseFont_size: 14px;
 
 .annotTip {
 	height: 100%;
-	
+	width: 100% !important; 
 	.metaBox {
 		display: none;
 		border: 1px solid #999999;
+		width: 100% !important;
+
 		
 		@include background(linear-gradient(top, $metaBox_bg, darken($metaBox_bg, 20%)));
 		@include border-radius(5px, 5px);
@@ -200,7 +207,7 @@ $content_baseFont_size: 14px;
 	
 	.contentBox {
 	
-		width: 100%;
+		width: 100% !important;
 		overflow: hidden;
 		
 		font-family: $content_baseFont;

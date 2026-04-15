@@ -38,13 +38,10 @@ Ext.define('EdiromOnline.view.window.HelpWindow', {
     maximizable: false,
     closable: true,
     shadow: false,
-
     layout: 'fit',
     border: 0,
     bodyBorder: false,
-
-    padding: 0,
-    
+    padding: 0,    
     bodyPadding: '0',
 
     cls: 'ediromWindow helpWindow',
@@ -73,11 +70,6 @@ Ext.define('EdiromOnline.view.window.HelpWindow', {
     }, 
     
     close: function() {
-
-        // override close to just hide the window
-        this.hide();
-
-        // unset attribute pressed of button for opening help in task bar
-        document.getElementById('icon_openHelp').removeAttribute('pressed');
+        this.destroy();
     }
 });

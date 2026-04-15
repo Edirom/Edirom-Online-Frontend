@@ -40,8 +40,29 @@ Ext.define('EdiromOnline.controller.window.audio.AudioView', {
         view.initialized = true;
 
         var uri = view.uri;
-        var type = view.type;
 
-        view.setIFrameURL(this.application.backendURL + 'data/xql/getAudioPlayer.xql?uri=' + uri);
+        // get tracks from backend
+        var tracks = '[{ "title": "Loading...", "src": "" }]';
+
+        // ajax request to get audio information
+        window.doAJAXRequest('data/xql/getAudio.xql',
+            'GET', 
+            {
+                uri: uri
+            },
+            Ext.bind(function(response){
+                // get tracks from response
+                var resp = Ext.decode(response.responseText);
+                tracks = resp.audios;
+
+                // tracks into string format for audio player
+                tracks = JSON.stringify(tracks);
+
+                // attach audio player custom element to DOM
+                view.attachPlayer(tracks);
+
+            }, me)
+        );
+
     }
 });

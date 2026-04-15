@@ -111,51 +111,51 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     switchDesktop: function(desk) {
         var me = this;
 
-        me.getActiveWindowsSet().each(function(win) {
-            win.hide();
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            activeWindow.hide();
         });
 
         me.activeDesktop = desk;
         me.taskbar.setActiveWindowBar(desk);
 
-        me.getActiveWindowsSet().each(function(win) {
-            if(win.hidden && !win.minimized)
-                win.show();
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            if(activeWindow.hidden && !activeWindow.minimized)
+                activeWindow.show();
         });
     },
 
     openConcordanceNavigator: function() {
 
         var me = this;
-        var nav = null;
+        var thisWindow = null;
 
-        me.getActiveWindowsSet().each(function(win) {
-            if(Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator')
-                nav = win;
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator')
+                thisWindow = activeWindow;
         });
 
-        if(nav == null) {
-            nav = new EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator();
+        if(thisWindow == null) {
+            thisWindow = new EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator();
             
             var bodyHeight = me.body.getHeight(true) - 70;
             
-            var x = me.body.getWidth(true) - nav.width - 5;
+            var x = me.body.getWidth(true) - thisWindow.width - 5;
             var y = me.navigator.getHeight() + 10;
             
-            if(bodyHeight - nav.height < y) {
-                x = me.body.getWidth(true) - me.navigator.getWidth() - nav.width - 10;
-                y = bodyHeight - nav.height - 5;
+            if(bodyHeight - thisWindow.height < y) {
+                x = me.body.getWidth(true) - me.navigator.getWidth() - thisWindow.width - 10;
+                y = bodyHeight - thisWindow.height - 5;
             }
             
-            Ext.apply(nav, {y: y, x: x});           
+            Ext.apply(thisWindow, {y: y, x: x});           
             
-            me.addWindow(nav);
-            nav.show();
+            me.addWindow(thisWindow);
+            thisWindow.show();
 
-        }else if(nav != me.getActiveWindow()){
+        }else if(thisWindow != me.getActiveWindow()){
 
             // show concordance navigator window
-            nav.show();
+            thisWindow.show();
 
             // set attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
@@ -164,7 +164,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         else{
 
             // hide concordance navigator window
-            nav.hide();
+            thisWindow.hide();
 
             // unset attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
@@ -175,38 +175,30 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     openHelp: function() {
 
         var me = this;
-        var help = null;
+        var thisWindow = null;
 
-        me.getActiveWindowsSet().each(function(win) {
-            if(Ext.getClassName(win) == 'EdiromOnline.view.window.HelpWindow')
-                help = win;
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.HelpWindow')
+                thisWindow = activeWindow;
         });
 
-        if(help == null) {
-            help = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
-            me.addWindow(help);
+        if(thisWindow == null) {
+            thisWindow = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
+            me.addWindow(thisWindow);
 
             // show help window
-            help.show();
+            thisWindow.show();
 
-            // set attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').setAttribute('pressed', '');
-
-        }else if(help != me.getActiveWindow()){
+        }else if(thisWindow != me.getActiveWindow()){
 
             // show help window
-            help.show();
-
-            // set attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').setAttribute('pressed', '');
+            thisWindow.show();
         
         } else{
 
             // hide help window
-            help.hide();
+            thisWindow.close();
 
-            // unset attribute pressed of button for opening help in task bar
-            document.getElementById('icon_openHelp').removeAttribute('pressed');
         }
 
     },
@@ -214,45 +206,45 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     openSearchWindow: function(term) {
 
         var me = this;
-        var win = null;
+        var thisWindow = null;
 
-        me.getActiveWindowsSet().each(function(window) {
-            if(Ext.getClassName(window) == 'EdiromOnline.view.window.search.SearchWindow')
-                win = window;
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.search.SearchWindow')
+                thisWindow = activeWindow;
         });
 
-        if(win == null) {
-            win = Ext.create('EdiromOnline.view.window.search.SearchWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(win);
-            win.show();
+        if(thisWindow == null) {
+            thisWindow = Ext.create('EdiromOnline.view.window.search.SearchWindow', me.getSizeAndPosition(700, 600));
+            me.addWindow(thisWindow);
+            thisWindow.show();
 
         }else {
-            win.show();
+            thisWindow.show();
         }
             
-        win.doSearch(term);
+        thisWindow.doSearch(term);
     },
 
     openAboutWindow: function() {
 
         var me = this;
-        var win = null;
+        var thisWindow = null;
 
-        me.getActiveWindowsSet().each(function(window) {
-            if(Ext.getClassName(window) == 'EdiromOnline.view.window.about.AboutWindow')
-                win = window;
+        me.getActiveWindowsSet().each(function(activeWindow) {
+            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.about.AboutWindow')
+                thisWindow = activeWindow;
         });
 
-        if(win == null) {
-            win = Ext.create('EdiromOnline.view.window.about.AboutWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(win);
-            win.show();
+        if(thisWindow == null) {
+            thisWindow = Ext.create('EdiromOnline.view.window.about.AboutWindow', me.getSizeAndPosition(700, 600));
+            me.addWindow(thisWindow);
+            thisWindow.show();
 
-        }else if(win != me.getActiveWindow())
-            win.show();
+        }else if(thisWindow != me.getActiveWindow())
+            thisWindow.show();
 
         else
-            win.hide();
+            thisWindow.destroy();
     
     },
 
@@ -288,16 +280,19 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         var set = new Ext.util.MixedCollection();
 
-        this.windows['desktop' + this.activeDesktop].each(function(win) {
+        // set of ignored windows (e.g. for tiling, cascading, ...)
+        var ignoredWindows = [
+            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
+            'EdiromOnline.view.window.HelpWindow',
+            'EdiromOnline.view.window.about.AboutWindow',
+            'EdiromOnline.view.window.search.SearchWindow'
+        ];
 
-            if(Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator')
-                ;
-            else if(Ext.getClassName(win) == 'EdiromOnline.view.window.HelpWindow')
-                ;
-            else if(Ext.getClassName(win) == 'EdiromOnline.view.window.search.SearchWindow')
-                ;
-            else
-                set.add(win);
+        // add windows of active desktop to set, except ignored windows
+        this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+            if(ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
+                set.add(activeWindow);
+            }   
         });
 
         return set;

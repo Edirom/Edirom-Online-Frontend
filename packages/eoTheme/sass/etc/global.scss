@@ -1,0 +1,161 @@
+/* possible workaround for explosiv edirom windows in rwa online. Does not work in Safari!!! but everywhere else.*/
+/* imported from todo.css */
+body {
+    overflow: clip !important;
+}
+.measure {
+    z-index: 5;
+}
+span.smufl {
+    font-family: 'Bravura';
+    font-size: 1.5em;
+    display: inline-block;
+    vertical-align: 4px;
+    padding-left: 2px;
+    line-height: 14px;
+}
+
+span.musicalSymbol {
+    font-family: Bravura;
+}
+
+span.searchResult {
+    background: -webkit-linear-gradient(center top , #FFE06B, #F39552) repeat scroll 0 0 transparent;
+}
+
+/* coppied from todo.css */
+.subProperty {
+    clear: both;
+    margin: 0 0 10px;
+    position: relative;
+    left: -190px;
+}
+
+.subProperty .subkey {
+    color: #737373;
+    float: left;
+    margin: 0 0 10px;
+    text-align: right;
+    width: 180px;
+    font-size: 14px;
+}
+
+.subProperty .subvalue {
+    margin-left: 190px;
+    display: block;
+    width:100%;
+}
+
+.subProperty .subvalue p{
+    margin: 4px 0px;
+}
+
+
+.subProperty .subkey .date, .subProperty .subkey .unit, .subProperty .subkey .label {
+    color: #a6a6a6;
+    display: block;
+    font-size: 12px;
+    font-weight: 100;
+    line-height: 12px;
+}
+
+.property .key .date, .property .key .unit, .property .key .label {
+    color: #a6a6a6;
+    display: block;
+    font-size: 12px;
+    font-weight: 100;
+    line-height: 12px;
+}
+
+.address.plain {
+    margin: 0.5em 0 0 0;
+}
+
+span.underline {
+    text-decoration:underline;
+}
+
+span.dblunderline {
+    border-bottom: 3px double;
+}
+
+span.latintype {
+    /*@JOA wie sol das aussehen, ist ja schon latin?*/
+}
+
+span.smcaps {
+    font-variant: small-caps;
+}
+
+span.italic {
+    font-style: italic;
+}
+
+#navigator .navigatorCategory2 {
+    padding: 0 0 2px 10px;
+}
+
+#navigator .navigatorCategoryTitle2 {
+    color: #4d4d4d;
+    cursor: pointer;
+    font-variant: inherit;
+    padding: 0 0 2px;
+}
+#navigator .navigatorItem2 {
+    color: black;
+    cursor: pointer;
+    padding: 0 0 2px 10px;
+}
+.hidden {
+    display: none;
+}
+
+/* part label in horizontalMeasureViewer */
+
+.part {
+z-index: 1;
+}
+.partInner {
+font-size: 13px;
+font-weight: bold;
+background-image: -moz-linear-gradient(top, rgba(255, 255, 255,0.9),rgba(255, 255, 255,0.8)) !important;
+background-image: -webkit-linear-gradient(top, rgba(255, 255, 255,0.9),rgba(255, 255, 255,0.8)) !important;
+box-shadow: 3px 3px 5px rgba(0,0,0,0.7);
+padding: 2px 5px;
+border-radius: 5px;
+color: rgba(0,0,0,0.75);
+position: absolute;
+top: 5px;
+left: 10px;
+}
+
+
+div.annotation.combinedHighlight div.annotIcon {
+    border: 1px solid white;
+}
+#workSwitch {
+	padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 5px !important;
+    top: 9px !important;
+    font-size: 14px;
+    /*color: rgb(23, 94, 160);*/
+}
+
+#workSwitch:hover {
+	box-shadow: 1px 2px 4px rgb(23, 94, 160);
+	border-radius: 20px;
+	}
+
+span#workSwitch-btnInnerEl:before {
+	color: rgb(23, 94, 160);
+	font-family: FontAwesome;
+	content: '\f054 ';
+	padding-right: 5px;
+	font-size: 10px;
+}
+
+.x-menu-item-active {
+    background-color: rgb(36, 145, 235) !important;
+    color: rgb(161, 209, 247) !important;
+}
