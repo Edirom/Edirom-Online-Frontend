@@ -17,6 +17,9 @@ authors:
   - given-names: Daniel
     family-names: Jettka
     orcid: https://orcid.org/0000-0002-2375-2227
+  - given-names: Silke
+    family-names: Reich
+    orcid: https://orcid.org/0009-0007-8817-0299
   - given-names: Kristin
     family-names: Herold
     orcid: https://orcid.org/0000-0003-2915-353X
@@ -34,15 +37,15 @@ authors:
     orcid: https://orcid.org/0009-0000-4410-4627
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.17977921
+    value: 10.5281/zenodo.19450761
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
-commit: 7f533b1d65a8b120ed3a5d4aaacac8d1c4a4a606
+commit: 6c790a3d02680976f319ab4ce3efb218a5601588
 abstract: >-
   Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
   analysis of critical musical editions in a digital format,
   particularly in the fields of musicology and philology.
 license: GPL-3.0
-version: v1.2.0
-date-released: 2026-03-06
+version: v1.3.1
+date-released: 2026-04-14
