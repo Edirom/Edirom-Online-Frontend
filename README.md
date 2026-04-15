@@ -11,7 +11,7 @@
 
 ## Get started
 
-Edirom-Online Frontend is the frontend for the [Edirom-Online](https://github.com/Edirom/Edirom-Online) software. It is a web application written in JavaScript, and is designed for deployment in [eXist-db]. Its development is closely connected to the [Edirom-Online Frontend](https://github.com/Edirom/Edirom-Online-Frontend) and the Edirom-Online as a whole. Please see the GitHub repository for [Edirom-Online](https://github.com/Edirom/Edirom-Online) for planning information, issue listings, and further documentation. 
+Edirom-Online Frontend is the frontend for the [Edirom-Online](https://github.com/Edirom/Edirom-Online) software. It is a web application written in JavaScript, and is designed for deployment in [eXist-db]. Its development is closely connected to the [Edirom-Online Frontend](https://github.com/Edirom/Edirom-Online-Frontend) and the Edirom-Online as a whole. Please see the GitHub repository for [Edirom-Online](https://github.com/Edirom/Edirom-Online) for planning information, issue listings, and further documentation.
 
 ### Cloning this repository
 
@@ -21,18 +21,36 @@ git clone <project url>
 
 ### Building locally
 
-For building Edirom Online you need *ant* installed on your system. 
+For building Edirom Online you need *ant* installed on your system.
 Alternatively, you can use a Docker container image for building, e.g. [bwbohl/sencha-cmd]
 
 ```bash
 docker run --rm -it -v /ABSOLUTE/PATH/TO/YOUR/LOCAL/EDIROM-ONLINE-FRONTEND/CLONE:/app --name ediBuild ghcr.io/bwbohl/sencha-cmd:latest
 ```
 
-When you have your system prepared with all prerequisites or you have your docker container running you are now set up to execute the build command. Do this by calling the build script included in this repository, either in your native shell or in the container shell, e.g.:
+When you have your system prepared with all prerequisites or you have your docker container running you are now set up to execute the build. You can use either [Sencha Cmd] or [Apache Ant][apache-ant] directly — both are equivalent:
 
 ```bash
-./build.sh
+# Using Sencha Cmd
+sencha app build
+
+# Using Ant (default target is `build`)
+ant
+# or explicitly
+ant build
 ```
+
+For other build outputs as defined in the [Sencha Cmd CLI reference] you can run the respective commands, e.g., for a testing build (unminified output, useful during development):
+
+```bash
+# Using Sencha Cmd
+sencha app build testing
+
+# Using Ant
+ant build-testing
+```
+
+If you are interested in the deeper structure of the build process, please refer to the [Sencha Cmd: Inside The App Build Process].
 
 #### Overriding build properties locally
 
@@ -43,7 +61,7 @@ Available properties for override:
 - `backend.host` (default: `localhost`)
 - `backend.port` (default: `8080`)
 - `backend.path` (default: `/exist/apps/Edirom-Online-Backend/`)
-- `project.version` (default: `1.2.0`)
+- `project.version` (default: `1.3.1`)
 - `project.app` (default: `Edirom-Online-Frontend`)
 - `project.title` (default: `Edirom-Online Frontend`)
 - `repo.target` (default: `Edirom-Online-Frontend`)
@@ -61,6 +79,22 @@ backend.port=9090
 project.version=2.0.0
 ```
 
+#### Setting Backend URL at Runtime
+
+You can override the backend URL at runtime by creating a `config.json` file in the application root directory. This allows you to change the backend endpoint after deployment without rebuilding.
+
+Create a `config.json` file:
+```json
+{
+  "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/"
+}
+```
+
+**How it works:**
+- On application startup, the `ConfigController` attempts to load `config.json`
+- If the file exists and is valid, the `backendURL` from `config.json` is used
+- If the file is missing or invalid, the application falls back to the backend URL configured at build time
+
 
 ### Starting an Edirom instance locally
 
@@ -71,10 +105,10 @@ project.version=2.0.0
   * Login with "admin:[empty]"
 * build and deploy **xar of Edirom-Online Backend**
   * also see [building locally] above
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.2.0-[TIMESTAMP].xar`
+  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.3.1-[TIMESTAMP].xar`
 * build and deploy **xar of Edirom-Online Frontend**
   * for building the frontend module please see https://github.com/Edirom/Edirom-Online-Frontend
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.2.0-[TIMESTAMP].xar`
+  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.3.1-[TIMESTAMP].xar`
 * build **xar of sample data** for deploying at exist-db
   * also see [building sample data]
   * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_EDITION_EXAMPLE_REPO/build/EditionExample-0.1.1.xar`
@@ -97,7 +131,7 @@ Edirom-Online Frontend depends on the following libraries:
 
 ## Roadmap
 
-Versions of this software are planned in [Edirom-Online milestones](https://github.com/Edirom/Edirom-Online/milestones). 
+Versions of this software are planned in [Edirom-Online milestones](https://github.com/Edirom/Edirom-Online/milestones).
 
 ## Contributing
 
@@ -107,7 +141,7 @@ If you encounter a security issue in the code, please see the [Security Policy](
 
 ## Get in touch
 
-Even if you are not ready (yet) to contribute to this wonderful project, maybe instead you just have a question or want to get to know the people involved in the project a little better, here are some ideas for you: 
+Even if you are not ready (yet) to contribute to this wonderful project, maybe instead you just have a question or want to get to know the people involved in the project a little better, here are some ideas for you:
 * there is an [Edirom mailinglist] with the option for selfsubscription, we send invitations to the community meetings via this list and we have Edirom related discussions on this list
 * the edirom community is meeting regularly every month at the first wednesday of a month, see the [wiki] for more information and meeting minutes
 * start a discussion at [GitHub Discussions]
@@ -119,7 +153,7 @@ Please note that this project is released with a [Contributor Code of Conduct]. 
 ## Citation
 
 Please cite the software/repository using the information provided under "Cite this repository" on the right hand side. The APA and BIBTeX citations are fed by information from the CITATION.cff file in this repository which you can also use as a source.
-If you intend to cite unreleased branches or commits please use the commit hash in the citation. 
+If you intend to cite unreleased branches or commits please use the commit hash in the citation.
 
 ## Contributors
 
@@ -140,6 +174,10 @@ Edirom-Online Frontend is released to the public under the terms of the [MIT] op
 [Edirom-Online milestones]: https://github.com/Edirom/Edirom-Online/milestones
 [CONTRIBUTING]: CONTRIBUTING.md
 [bwbohl/sencha-cmd]: https://github.com/bwbohl/sencha-cmd/pkgs/container/sencha-cmd
+[Sencha Cmd]: https://docs.sencha.com/cmd/7.0.0/index.html
+[Sencha Cmd CLI reference]: https://docs.sencha.com/cmd/7.0.0/guides/cli_reference.html
+[Sencha Cmd: Inside The App Build Process]: https://docs.sencha.com/cmd/7.0.0/guides/advanced_cmd/cmd_build.html
+[apache-ant]: https://ant.apache.org/
 [exist-db via Docker]: https://exist-db.org/exist/apps/doc/docker
 [building sample data]: https://github.com/Edirom/EditionExample?tab=readme-ov-file#building
 [Edirom mailinglist]: https://lists.uni-paderborn.de/mailman/listinfo/edirom-l

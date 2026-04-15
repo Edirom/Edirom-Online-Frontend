@@ -38,16 +38,10 @@ Ext.define('EdiromOnline.view.window.about.AboutWindow', {
     maximizable: false,
     closable: true,
     shadow: false,
-
-    layout: {
-        type: 'vbox',
-        align: 'stretch'
-    },
+    layout: 'fit',
     border: 0,
     bodyBorder: false,
-
-    padding: 0,
-    
+    padding: 0,    
     bodyPadding: '0',
 
     cls: 'ediromWindow aboutWindow',
@@ -63,11 +57,8 @@ Ext.define('EdiromOnline.view.window.about.AboutWindow', {
 
         me.items = [
             {
-                xtype: 'panel',
-                flex: 1,
                 html: '<div id="' + this.id + '_textCont" class="textViewContent"></div>'
-            }
-            
+            }            
         ];
 
         me.callParent();
@@ -79,6 +70,6 @@ Ext.define('EdiromOnline.view.window.about.AboutWindow', {
     },
 
     close: function() {
-        this.hide();
+        this.destroy();
     }
 });

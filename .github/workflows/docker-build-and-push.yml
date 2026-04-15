@@ -1,26 +1,59 @@
 name: Docker Build and Push
 
 on:
-  release:
-    types: [published]  # Triggers only when a release is published (not created or edited)
-
+  push:
+    tags: [ v** ]
+    
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+  build-test-and-push:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # fetch all history to include latest tags for build metadata
+          submodules: 'recursive'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v4
         with:
           username: vifebot
           password: ${{ secrets.VIFEBOT_DOCKERHUB_TOKEN }}
 
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: edirom/edirom-online-frontend
+          flavor: |
+            latest=auto
+          # on push output branch name as tag
+          # on tag output git-tag-name as dockerimage-tag, e.g.: v1.2.3
+          # on tag output v+major.minor dockerimage tag, e.g.: v1.2
+          # on tag output major version at dockerimage-tag, e.g.: v1
+          tags: |
+            type=ref,event=pr
+            type=ref,event=branch
+            type=semver,pattern={{raw}}
+            type=semver,prefix=v,pattern={{major}}.{{minor}}
+            type=semver,prefix=v,pattern={{major}}
+            
+      # Build and push to Dockerhub
       - name: Build and push Docker image
-        run: |
-          IMAGE_NAME="edirom/edirom-online-frontend"
-          TAG=${GITHUB_REF#refs/tags/}
-          
-          docker build -t $IMAGE_NAME:$TAG .
-          docker push $IMAGE_NAME:$TAG
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
