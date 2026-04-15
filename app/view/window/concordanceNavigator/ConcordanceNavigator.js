@@ -84,6 +84,10 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
         ];
 
         me.callParent();
+
+        // set attribute pressed of button for opening concordance navigator in task bar
+        document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
+
     },
 
     createConcordanceSelector: function() {
@@ -153,7 +157,9 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
             fieldCls: 'textCentered borderless',
             anchor: '100%',
             listeners: {
+                // on focus loss
                 blur: Ext.bind(me.blurOnInput, me),
+                // on enter, try to set the slider to the entered value. If it fails, reset the text field to the current slider value. In case of success, show the selected connection
                 specialkey: Ext.bind(me.specialKeyOnInput, me)
             }
         });
@@ -196,6 +202,9 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
                 me.itemSelection.setValue(me.itemSlider.getEnhancedValue());
 
             me.itemSelection.blur();
+
+            // and show the selected connection
+            me.showConnection();
 
         } else if (e.getKey() == e.ESC) {
             me.itemSelection.setValue(me.itemSlider.getEnhancedValue());
@@ -240,6 +249,12 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
 
     showConnection: function() {
         var me = this;
+        // if the text in the item selection field is different from the current slider value, try to set the slider to the entered value. If it fails, reset the text field to the current slider value. In case of success, show the selected connection
+        if(me.itemSelection.getValue() != me.itemSlider.getEnhancedValue()) {
+            var success = me.itemSlider.setEnhancedValue(me.itemSelection.getValue());
+            if(!success)
+                me.itemSelection.setValue(me.itemSlider.getEnhancedValue());
+        }
         me.fireEvent('showConnection', me, me.itemSlider.getRawValue()['plist']);
     },
 
@@ -325,6 +340,12 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     }, 
     
     close: function() {
+
+        // hide window instead of closing it (keeps position and state)
         this.hide();
+        
+        // unset attribute pressed of button for opening concordance navigator in task bar
+        document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+
     }
 });

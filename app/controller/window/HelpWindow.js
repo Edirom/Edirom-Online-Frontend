@@ -24,6 +24,9 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
         'window.HelpWindow'
     ],
 
+    backendPath: '@backend.path@',
+    backendURL: '@backend.url@',
+
     init: function() {
         this.control({
             'helpWindow': {
@@ -46,7 +49,15 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
                 idPrefix: win.id
             },
             Ext.bind(function(response){
-                win.setContent(response.responseText);
+
+                var windowContent = response.responseText;
+
+                // replace image paths (relative backendPath to absolute backendURL)            
+                var replacee = new RegExp('src="' + me.backendPath.replace(/\/, '\/'/g), "g");
+                windowContent = windowContent.replace(replacee, 'src="' + me.backendURL);
+
+                // set window content
+                win.setContent(windowContent);
             }, me)
         );
     }

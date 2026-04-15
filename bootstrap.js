@@ -29,6 +29,7 @@ Ext.Loader.addClassPathMappings({
 Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.Application": [],
   "EdiromOnline.controller.AJAXController": [],
+  "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
   "EdiromOnline.controller.LinkController": [],
@@ -505,7 +506,6 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.grid.RowEditor": [],
   "Ext.grid.RowEditorButtons": [],
-  "Ext.grid.Scroller": [],
   "Ext.grid.View": [],
   "Ext.grid.ViewDropZone": [],
   "Ext.grid.column.Action": [
@@ -942,6 +942,7 @@ Ext.ClassManager.addNameAlternateMappings({
 Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.Application": [],
   "EdiromOnline.controller.AJAXController": [],
+  "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
   "EdiromOnline.controller.LinkController": [],
@@ -1509,7 +1510,6 @@ Ext.ClassManager.addNameAliasMappings({
   "Ext.grid.RowEditorButtons": [
     "widget.roweditorbuttons"
   ],
-  "Ext.grid.Scroller": [],
   "Ext.grid.View": [
     "widget.gridview"
   ],

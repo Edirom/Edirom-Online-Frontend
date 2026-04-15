@@ -34,6 +34,9 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 	setIFrameContent: function (uri, edition) {
 		var me = this;
 
+		var configController = EdiromOnline.getApplication().getController('ConfigController');
+		var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+
 		var html = `<html>
         		<head>
 					<title>Verovio</title>
@@ -44,36 +47,36 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
 						crossorigin="anonymous"></script>
 					<script
-						src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>
-					<script
-						src="resources/js/he.js"></script>
-					
-					<script
-						src="resources/js/tipped/tipped.js"></script>
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/tipped/tipped.css"/>
-					
-					<link
-						rel="stylesheet"
-						type="text/css"
-						href="resources/css/verovio-view.css"/>
+						src="//code.iconify.design/1/1.0.6/icon ify.min.js"></script>
+				<!-- Edirom Verovio Renderer Component -->
+				<script
+					src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"
+					type="text/javascript"></script>
 				
-				</head>
+				<link
+					rel="stylesheet"
+					type="text/css"
+					href="resources/css/verovio-view.css"/>				</head>
 				<body>
-					<div
-						id="output"></div>
+					<script>
+						var uri = "${uri}";
+						var edition = "${edition}";
+						var movementId = "";
+						var appBasePath = "${backendURL}";
+						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+						</script>
+					
+					<div id="output">
+						<!-- Loading spinner shown initially -->
+						<div class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+					</div>
 					<div
 						id="toolbar"
 						class="noselect">
 						<span
 							class="button"
 							onclick="prevPage()">
-							<span
-								class="iconify"
-								data-icon="mdi-chevron-left"
-								style="font-size: 1.3em;"></span>
+							<span style="font-size: 1.3em;">&lt;</span>
 						</span>
 						<span
 							id="page">1</span> / <span
@@ -81,21 +84,12 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						<span
 							class="button"
 							onclick="nextPage()">
-							<span
-								class="iconify"
-								data-icon="mdi-chevron-right"
-								style="font-size: 1.3em;"></span>
+							<span style="font-size: 1.3em;">&gt;</span>
 						</span>
 					</div>
 					<div
 						class='lds-roller'><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
 					
-					<script>
-						var uri = "${uri}";
-						var edition = "${edition}";
-						var movementId = "";
-						var appBasePath = "@backend.url@";
-					</script>
 					<script
 						src="resources/js/verovio-view.js"></script>
 				</body>
@@ -115,14 +109,33 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		iframe.showMovement(movementId);
 	},
 
-    /*
-     * Call showMeasure of corresponding iframe.
-     * @param {string} movementId - The XML-ID of the selected movement.
-     * @param {string} measureId - The XML-ID of the selected measure.
-     */
+	/*
+	 * Call showMeasure of corresponding iframe.
+	 * @param {string} movementId - The XML-ID of the selected movement.
+	 * @param {string} measureId - The XML-ID of the selected measure.
+	 */
 	showMeasure: function (movementId, measureId) {
-	    var me = this;
-	    var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
-	    iframe.showMeasure(movementId, measureId);
+		var me = this;
+		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
+		iframe.showMeasure(movementId, measureId);
+	},
+
+	/*
+	 * Navigate to a specific measure in a movement.
+	 * @param {string} measureNumber - The measure number to go to.
+	 * @param {string} movementId - The XML-ID of the movement.
+	 */
+	gotoMeasureByAttributes: function (measureNumber, movementId) {
+		var me = this;
+		var iframe = Ext.fly(me.id + '_rendContIFrame').dom.contentWindow;
+		// First switch to the movement, then navigate to the measure
+		iframe.showMovement(movementId);
+		// Wait a bit for the movement to load, then set the measure
+		setTimeout(function() {
+			var renderer = iframe.document.getElementById("verovio-renderer");
+			if (renderer) {
+				renderer.setAttribute("measurenumber", measureNumber);
+			}
+		}, 500);
 	}
 });

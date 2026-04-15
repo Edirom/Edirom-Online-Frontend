@@ -51,14 +51,6 @@ Ext.define('EdiromOnline.view.window.TopBar', {
             menu: me.viewSwitchMenu
         });
 
-        me.helpButton = Ext.create('Ext.button.Button', {
-            id: this.id + '_helpButton',
-            text: '?',
-            //indent: false,
-            enableToggle: true,
-            handler: Ext.bind(me.showViewSpecificHelp, me)
-        });
-
         me.spaceAfterGenItems = Ext.create('Ext.toolbar.Spacer',{ xtype: 'tbspacer',
             id: me.id+'_spaceAfterGenItems',
             width: 0 });
@@ -71,10 +63,10 @@ Ext.define('EdiromOnline.view.window.TopBar', {
             me.viewSwitch,
             me.spaceAfterGenItems/*, TODO
             me.spaceAfterViewItems,
-            '->',
-            me.helpButton*/
+            '->'*/
         ];
 
+        me.viewSwitch.hide();
         me.callParent();
     },
 
@@ -90,6 +82,10 @@ Ext.define('EdiromOnline.view.window.TopBar', {
 
         me.viewToMenuItem.add(view.view.id, item);
         me.viewSwitchMenu.add(item);
+
+        if(me.viewSwitchMenu.items.length > 1) {
+            me.viewSwitch.show();
+        }
     },
 
     switchView: function(view) {

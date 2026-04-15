@@ -23,6 +23,7 @@ Ext.define('EdiromOnline.Application', {
     
     controllers: [
         'AJAXController',
+        'ConfigController',
         'CookieController',
         'LanguageController',
         'PreferenceController',
@@ -65,10 +66,33 @@ Ext.define('EdiromOnline.Application', {
     activeEdition: '',
     activeWork: '', 
     backendURL: '@backend.url@',
+    
+    init: function () {
+        
+        Ext.Error.handle = function(err) {
+            if (err.level === 'warn') {
+                Ext.log({msg:err.msg, level:'warn', dump:err, stack:true});
+                return true;
+            }
+        }
+        
+    },
 
     launch: function() {
         var me = this;
-        
+
+        me.getController('ConfigController').loadConfig(function (config) {
+            me.backendURL = config.backendURL || me.backendURL;
+            EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
+            EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
+            EdiromOnline.model.Annotation.updateProxyUrl(me.backendURL);
+            me.initializeApplication();
+        }, me);
+    },
+
+    initializeApplication: function () {
+        var me = this;
+
         window.getActiveEdition = Ext.bind(this.getActiveEdition, this);
 
         me.addEvents('workSelected');
@@ -97,12 +121,12 @@ Ext.define('EdiromOnline.Application', {
                     // If there is only one edition in the backend load it directly
                     }else if(!Array.isArray(editions)) {
                         this.activeEdition = editions.id;
-                        this.loadEdiromForEdition();
+                        me.loadEdiromForEdition();
 
                     // If there is only one edition in the backend load it directly
                     }else if(editions.length == 1) {
                         this.activeEdition = editions[0].id;
-                        this.loadEdiromForEdition();
+                        me.loadEdiromForEdition();
 
                     // If there are multiple editions in the backend show a selection screen
                     }else {
@@ -177,7 +201,7 @@ Ext.define('EdiromOnline.Application', {
             2, // retries
             false // async
         );
-        
+
         me.getController('PreferenceController').initPreferences(me.activeEdition);
         me.getController('LanguageController').initLangFile(me.activeEdition, 'de');
         me.getController('LanguageController').initLangFile(me.activeEdition, 'en');
@@ -211,7 +235,6 @@ Ext.define('EdiromOnline.Application', {
             editionCssLink.href = this.backendURL.split('apps/')[0] + me.getController('PreferenceController').getPreference('additional_css_path', true).split("xmldb:exist:///db/")[1];
             document.getElementsByTagName("head")[0].appendChild(editionCssLink);
         }
-
     },
     
     initDataStores: function() {
