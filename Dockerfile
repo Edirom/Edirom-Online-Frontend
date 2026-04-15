@@ -14,6 +14,7 @@ FROM eclipse-temurin:8-jdk-focal as builder
 
 ARG ANT_VERSION=1.10.12
 ARG BE_PORT=8080
+ARG SENCHA_BUILD_ENV=production
 
 
 # Install wget and unzip and ruby and other dependencies
@@ -66,7 +67,7 @@ RUN echo "Writing backend.port=$BE_PORT to local.properties…"; \
         echo "backend.port=$BE_PORT" >> local.properties; \
     fi && \
     echo "Building Frontend XAR..." && \
-    ./build.sh
+    sencha app build ${SENCHA_BUILD_ENV}
 
 #########################
 # 3. Run/deploy nginx
