@@ -1,0 +1,40 @@
+/*
+ * Self-hosted Material Symbols Outlined font (resources/fonts/MaterialSymbolsOutlined.woff2)
+ *
+ * Source: https://github.com/google/material-design-icons
+ * File:   variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].woff2
+ * Commit: 481507587f1bdfe712939398c4dc0ecc2079ea7c (2026-04-24)
+ * Fetched from: https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.woff2
+ *
+ * The font file (resources/fonts/MaterialSymbolsOutlined.woff2) is distributed
+ * under the Apache License, Version 2.0:
+ * Copyright 2024 Google LLC — https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Loaded by index.html with data-edirom-material-icons="1" so that edirom-icon.js
+ * skips injecting the Google Fonts stylesheet at runtime. Required for offline /
+ * Docker deployments where fonts.googleapis.com is not reachable.
+ */
+
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 100 700;
+    font-display: block;
+    src: url('../fonts/material-design-icons/MaterialSymbolsOutlined.woff2') format('woff2');
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
