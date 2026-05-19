@@ -375,8 +375,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
+            /* TODO make classes idenpendent */
             var categories = annotation.get('categories');
             var priority = annotation.get('priority');
+            var taxonomyClasses = annotation.get('taxonomyClasses');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
 
@@ -393,32 +395,36 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 var height = shape.lry - shape.uly;
                 var partType = shape.type;
 
-                var anno = me.viewer.getOverlayById(me.id + '_' + id);
+                // get existing annotation icon container
+                var anno = document.getElementById(me.id + '_' + id);
+                
                 if(anno === null) {
-
+                    
+                    // no pre-existing annotation icon container
+                    // create container
                     var anno = document.createElement('div');
                     anno.id = me.id + '_' + id;
                     anno.className = 'annotation';
 
-                    // annoIcon: has to be nearly identical to annoIcon in else
+                    //create icon
                     var annoIcon = document.createElement('div');
                     annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
+                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + taxonomyClasses + ' ' + partType;
                     anno.append(annoIcon);
 
+                    // determine coordinates for placing the annotation icon container
                     var point = me.viewer.viewport.imageToViewportCoordinates(x, y);
                     var rect = me.viewer.viewport.imageToViewportRectangle(x, y, width, height);
 
+                    // add the annotation icon container (with nested icon) to the viewer
                     me.viewer.addOverlay({element:anno, location:new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)});
 
                 }else {
 
-                    // annoIcon: has to be nearly identical to annoIcon in if
-                    var anno = me.el.getById(me.id + '_' + id);
                     var annoIcon = document.createElement('div');
                     annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
-                    anno.dom.append(annoIcon);
+                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + taxonomyClasses + ' ' + partType;
+                    anno.append(annoIcon);
                 }
 
                 // retrieve dom element of annotationIcon to bind actions
