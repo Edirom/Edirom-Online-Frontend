@@ -205,12 +205,16 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         if (!me.annotationsVisible) return;
 
         var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
         Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
             var visibleIds = [];
+            var allIds = [];
             menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
                 if (menuItem.checked) visibleIds.push(menuItem.classId);
             });
             visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
         });
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -219,8 +223,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             console.log(visibleTaxonomies);
         }
 
-        me.pageBasedView.annotationFilterChanged(visibleTaxonomies);
-        me.measureBasedView.annotationFilterChanged(visibleTaxonomies);
+        me.pageBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
+        me.measureBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
     },
 
     setMovements: function(movements) {

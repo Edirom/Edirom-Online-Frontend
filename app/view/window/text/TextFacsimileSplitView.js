@@ -204,7 +204,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -363,12 +363,16 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         if (!me.annotationsVisible) return;
 
         var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
         Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
             var visibleIds = [];
+            var allIds = [];
             menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
                 if (menuItem.checked) visibleIds.push(menuItem.classId);
             });
             visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
         });
 
         var annotations = Ext.query('#' + this.id + '_textCont span.annotation');
@@ -378,6 +382,18 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
             var visible = true;
             Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = allTaxonomyIds[taxonomyId] || [];
+
+                // Skip this taxonomy if the annotation has no class from it
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
+
                 var matches = false;
                 for (var i = 0; i < classes.length; i++) {
                     if (Ext.Array.contains(visibleIds, classes[i])) {

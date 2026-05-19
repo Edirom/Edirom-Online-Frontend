@@ -401,12 +401,12 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }catch(e) {}
     },
 
-    annotationFilterChanged: function(visibleTaxonomies) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
         var me = this;
 
-        // deegate annotationFilterChanged to individual viewers
+        // delegate annotationFilterChanged to individual viewers
         me.viewers.each(function(v) {
-            v.annotationFilterChanged(visibleTaxonomies);
+            v.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
         });
     }
 });
@@ -651,23 +651,36 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         }
     },
 
-    annotationFilterChanged: function(visibleTaxonomies) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
         var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('View: MeasureBasedView: annotationFilterChanged');
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
+        }
 
         // MeasureBasedView renders each measure in its own viewer instance, so we must
         // apply the filter across all of them (contrast: PageBasedView has a single imageViewer).
         Ext.Array.each(me.imageViewers, function(viewer) {
             var annotations = viewer.getShapes('annotations');
+            var annotationDivIds = [];
 
-            // Callback applied to each annotation shape object: shows or hides it based on the active taxonomy filters.
-            // Receives the annotation object directly (contrast: PageBasedView works on child div ids).
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log('View: MeasureBasedView: annotationFilterChanged: annotations');
+                console.log(annotations);
+            }
+
+            // Callback applied to each annotation child div id: shows or hides it based on the active taxonomy filters.
+            // Receives a child div id string (contrast: old version received the annotation object directly).
             // Bound to `me` so `this` refers to the view component inside the function body.
-            var fn = Ext.bind(function(annotation) {
+            var fn = Ext.bind(function(annotationId) {
 
-                var annotDiv = viewer.getShapeElem(annotation.id);
-                // Convert the DOM class list to a plain array, then strip the 'annotIcon' UI class
-                // so only taxonomy identifier classes remain for filter matching.
+                var annotDiv = Ext.get(annotationId);
+                // Get the raw DOM class list and convert it to a plain array for Ext manipulation
                 var classes = Ext.Array.toArray(annotDiv.dom.classList);
+                // Strip structural/UI classes that are not taxonomy identifiers
+                Ext.Array.remove(classes, 'measure');
                 Ext.Array.remove(classes, 'annotIcon');
 
                 if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -681,6 +694,18 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
                 // An annotation is visible only if it matches at least one selected id in every active taxonomy
                 var visible = true;
                 Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                    var allIds = (allTaxonomyIds || {})[taxonomyId] || [];
+
+                    // If the annotation has no class from this taxonomy, skip this taxonomy's check
+                    var hasAnyFromTaxonomy = false;
+                    for (var i = 0; i < classes.length; i++) {
+                        if (Ext.Array.contains(allIds, classes[i])) {
+                            hasAnyFromTaxonomy = true;
+                            break;
+                        }
+                    }
+                    if (!hasAnyFromTaxonomy) return;
+
                     // Check whether any of the annotation's classes belong to this taxonomy's visible set
                     var matches = false;
                     for (var i = 0; i < classes.length; i++) {
@@ -689,7 +714,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
                             break;
                         }
                     }
-                    // If the annotation has no class from this taxonomy, it fails the filter
                     if (!matches) visible = false;
                 });
 
@@ -708,19 +732,24 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             // `getShapes` may return an Ext MixedCollection (has `.each`) or a plain array,
             // so we handle both cases.
             if (typeof annotations !== 'undefined') {
-                // collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
+                // Collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
                 var collectIds = function(annotation) {
                     var annotDiv = viewer.getShapeElem(annotation.id);
                     var children = Ext.Array.toArray(annotDiv.dom.childNodes);
                     Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
                 };
 
-                if(annotations.each)
+                if (annotations.each)
                     annotations.each(collectIds);
                 else
                     Ext.Array.each(annotations, collectIds);
             }
 
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log(annotationDivIds);
+            }
+
+            // Apply the visibility filter function to every collected child div id
             Ext.Array.each(annotationDivIds, fn);
         });
 
