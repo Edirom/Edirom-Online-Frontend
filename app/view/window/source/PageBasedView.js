@@ -60,7 +60,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
     },
 
-    annotationFilterChanged: function(visibleTaxonomies) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
 
         var me = this;
 
@@ -104,6 +104,18 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             // An annotation is visible only if it matches at least one selected id in every active taxonomy
             var visible = true;
             Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = (allTaxonomyIds || {})[taxonomyId] || [];
+
+                // If the annotation has no class from this taxonomy, skip this taxonomy's check
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
+
                 // Check whether any of the annotation's classes belong to this taxonomy's visible set
                 var matches = false;
                 for (var i = 0; i < classes.length; i++) {
@@ -112,7 +124,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                         break;
                     }
                 }
-                // If the annotation has no class from this taxonomy, it fails the filter
                 if (!matches) visible = false;
             });
 
