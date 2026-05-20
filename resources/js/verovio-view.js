@@ -36,7 +36,7 @@ function initializeComponent() {
     var initWidth = Math.floor($(document).width() * 100.0 / 33.0);
     
     // Build initial MEI URL (without movementId)
-    var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml";
     
     // Create the component element
     var renderer = document.createElement('edirom-verovio-renderer');
@@ -119,7 +119,7 @@ function showMovement(movementId) {
     var initWidth = Math.floor(width * 100.0 / 33.0);
 
     // Build MEI URL with movementId
-    var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition + "&movementId=" + movementId;
+    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml&ref=" + movementId;
     
     // Get or create the component
     var renderer = document.getElementById('verovio-renderer');
