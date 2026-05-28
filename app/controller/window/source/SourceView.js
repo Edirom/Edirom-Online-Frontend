@@ -96,8 +96,31 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                     console.log(data);
                 }
+                
+                // if taxonomies array is empty but categories and priorities are
+                // populated merge those to a taxonomies array
+                var taxonomies = data['taxonomies'] || [];
+                if (taxonomies.length === 0) {
+                    var categories = data['categories'] || [];
+                    var priorities = data['priorities'] || [];
+                    if (categories.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromCategory',
+                            label: 'ediromCategory',
+                            items: categories
+                        });
+                    }
+                    if (priorities.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromPriority',
+                            label: 'ediromPriority',
+                            items: priorities
+                        });
+                    }
+                }
+
                 // hand over returned taxonomies array
-                me.annotInfosLoaded(data['taxonomies'] || [], view);
+                me.annotInfosLoaded(taxonomies, view);
             }, this)
         );
 
