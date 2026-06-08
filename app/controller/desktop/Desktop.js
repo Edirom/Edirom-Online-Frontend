@@ -56,6 +56,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         }
         
         this.desktop.taskbar.addListener('openHelp', this.openHelp, this);
+        this.desktop.taskbar.addListener('openTest', this.openTest, this);
         //TODO: Suchfenster einbauen
         /*this.desktop.taskbar.addListener('openSearchWindow', this.openSearchWindow, this);*/
 
@@ -80,6 +81,147 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     openHelp: function() {
         var me = this;
         me.desktop.openHelp();
+    },
+
+    openTest: function() {
+        var me = this;
+        var desktop = me.desktop;
+
+        // Toggle: close if already open
+        var existing = document.getElementById('test-window');
+        if (existing) {
+            existing.remove();
+            return;
+        }
+
+        // Ensure WinBox is loaded via the web component
+        var host = document.getElementById('ediromWindowsHost');
+        if (!host) {
+            host = document.createElement('edirom-windows');
+            host.id = 'ediromWindowsHost';
+            document.body.appendChild(host);
+        }
+
+        var doOpen = function() {
+            window.doAJAXRequest('data/xql/getHelp.xql',
+                'GET',
+                { lang: window.getLanguage(), idPrefix: 'testWin' },
+                function(response) {
+                    var winTitle = 'Test';
+                    var proxy = {
+                        isWindow: true,
+                        isExtWindowProxy: true,
+                        hidden: false,
+                        minimized: false,
+                        maximized: false,
+                        title: winTitle,
+                        iconCls: undefined,
+                        taskButton: null,
+                        animateTarget: null,
+                        on: function() { return this; },
+                        un: function() { return this; },
+                        hide: function() {
+                            var el = document.getElementById('test-window');
+                            if (el) el.style.display = 'none';
+                            this.hidden = true;
+                        },
+                        show: function(animTarget, callback) {
+                            var el = document.getElementById('test-window');
+                            if (el) {
+                                el.style.display = '';
+                                el.style.zIndex = 100000;
+                            }
+                            if (proxy._winbox) proxy._winbox.restore();
+                            this.hidden = false;
+                            this.minimized = false;
+                            this.active = true;
+                            if (this.taskButton) {
+                                this.taskButton.toggle(true);
+                                this.taskButton.enable();
+                            }
+                            if (typeof callback === 'function') callback();
+                        },
+                        restore: function() {
+                            this.show();
+                            this.minimized = false;
+                        },
+                        minimize: function() {
+                            var el = document.getElementById('test-window');
+                            if (el) el.style.display = 'none';
+                            this.hidden = true;
+                            this.minimized = true;
+                            this.active = false;
+                            if (this.taskButton) {
+                                this.taskButton.toggle(false);
+                                this.taskButton.enable();
+                            }
+                        },
+                        maximize: function() {},
+                        toFront: function() {
+                            var el = document.getElementById('test-window');
+                            if (el) el.style.zIndex = 100001;
+                        },
+                        close: function() {
+                            var el = document.getElementById('test-window');
+                            if (el) el.remove();
+                            if (desktop && this.taskButton) {
+                                desktop.getActiveWindowsSet().remove(this);
+                                desktop.taskbar.removeTaskButton(this.taskButton);
+                                desktop.updateActiveWindow();
+                            }
+                        },
+                        destroy: function() { this.close(); }
+                    };
+
+                    var winbox = new WinBox({
+                        id: 'test-window',
+                        title: winTitle,
+                        html: '<div style="overflow:auto;height:100%;"><div class="textViewContent" style="padding:10px;">' + response.responseText + '</div></div>',
+                        width: 750,
+                        height: 600,
+                        x: 10,
+                        y: 5,
+                        background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
+                        root: document.body,
+                        index: 100000,
+                        onfocus: function() {
+                            proxy.active = true;
+                            if (proxy.taskButton) proxy.taskButton.toggle(true);
+                        },
+                        onblur: function() {
+                            proxy.active = false;
+                            if (proxy.taskButton) proxy.taskButton.toggle(false);
+                        },
+                        onminimize: function() {
+                            // Cancel WinBox native minimize — we handle it ourselves
+                            var el = document.getElementById('test-window');
+                            if (el) el.style.display = 'none';
+                            proxy.hidden = true;
+                            proxy.minimized = true;
+                            proxy.active = false;
+                            if (proxy.taskButton) proxy.taskButton.toggle(false);
+                            return false; // prevent WinBox default minimize (strip at bottom)
+                        },
+                        onclose: function() {
+                            proxy.close();
+                        }
+                    });
+
+                    proxy._winbox = winbox;
+                    desktop.addWebComponentWindow(proxy);
+                }            );
+        };
+
+        if (typeof WinBox !== 'undefined') {
+            doOpen();
+        } else {
+            var poll = setInterval(function() {
+                if (typeof WinBox !== 'undefined') {
+                    clearInterval(poll);
+                    doOpen();
+                }
+            }, 100);
+        }
     },
     
     onSpecialKey: function(field, e) {
@@ -363,7 +505,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 			}
 
 		}
-    	return true;
+    	return true; 
     }
 });
 
+ 

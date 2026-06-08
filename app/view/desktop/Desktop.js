@@ -432,12 +432,20 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.getActiveWindowsSet().remove(win);
         me.taskbar.removeTaskButton(win.taskButton);
 
-        me.getActiveWindowsSet().each(function(win) {
-            this.addWindowListeners(win);
-        }, me);
-
+        if (typeof me.addWindowListeners === 'function') {
+            me.getActiveWindowsSet().each(function(w) {
+                me.addWindowListeners(w);
+            });
+        }
 
         me.updateActiveWindow();
+    },
+
+    addWebComponentWindow: function(proxy) {
+        var me = this;
+        me.getActiveWindowsSet().add(proxy);
+        proxy.taskButton = me.taskbar.addTaskButton(proxy);
+        proxy.animateTarget = proxy.taskButton ? proxy.taskButton.el : null;
     },
 
     onWindowTitleChange: function(win, title) {
