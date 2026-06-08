@@ -7,3 +7,4 @@ build-euryanthe
 local.properties
 .env
 sencha-error-*
+.existdb.json
