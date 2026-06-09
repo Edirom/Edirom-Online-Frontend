@@ -479,8 +479,8 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             }catch(e) {
                 id = shape.id;
             }
-			//console.log(shapeDiv.getById(me.id + '_' + id));
-            Ext.removeNode(shapeDiv.getById(me.id + '_' + id).dom);
+            var shapeEl = shapeDiv.getById(me.id + '_' + id);
+            if (shapeEl) Ext.removeNode(shapeEl.dom);
         };
 
         if(me.shapes.get(groupName).each)
