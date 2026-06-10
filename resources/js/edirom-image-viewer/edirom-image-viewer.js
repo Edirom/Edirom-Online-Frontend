@@ -57,7 +57,7 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     constructor() {
         super();
-        // Don't use Shadow DOM to allow external overlays (annotations, measures) to work
+        this.attachShadow({ mode: 'open' });
         console.log("Constructor called");
 
         /** @type {OpenSeadragon.Viewer} OpenSeadragon viewer instance */
@@ -117,27 +117,49 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     connectedCallback() {
         console.log("Connected to DOM");
-        const osdScript = document.createElement('script');
-        osdScript.src = "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/openseadragon.min.js";
-        osdScript.defer = true;
-        this.appendChild(osdScript);
-       
+
+        // Inject stylesheet links so overlay styles (measures, annotations) work inside the shadow root
+        const cssFiles = [
+            'resources/css/todo.css',
+            'resources/css/annotation-style.css'
+        ];
+        cssFiles.forEach(href => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            this.shadowRoot.appendChild(link);
+        });
 
         // Create a div for the OpenSeadragon viewer
         this.viewerDiv = document.createElement('div');
         this.viewerDiv.id = 'viewer';
         this.viewerDiv.style.width = '100%';
         this.viewerDiv.style.height = '100%';
-        this.appendChild(this.viewerDiv);
-        
-        
-        // Callback when the script is loaded
-        osdScript.onload = () => {
-            if (window.OpenSeadragon) {
-                this.set('tilesources', this.getAttribute('tilesources'));
-            }
-            
-        };
+        this.shadowRoot.appendChild(this.viewerDiv);
+
+        // Load OSD script into document.head so it runs in the global scope
+        // (scripts appended to shadow root do not execute)
+        if (!document.getElementById('osd-script')) {
+            const osdScript = document.createElement('script');
+            osdScript.id = 'osd-script';
+            osdScript.src = "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/openseadragon.min.js";
+            osdScript.onload = () => {
+                if (window.OpenSeadragon) {
+                    this.set('tilesources', this.getAttribute('tilesources'));
+                }
+            };
+            document.head.appendChild(osdScript);
+        } else if (window.OpenSeadragon) {
+            // Script already loaded
+            this.set('tilesources', this.getAttribute('tilesources'));
+        } else {
+            // Script tag exists but not yet loaded — wait for it
+            document.getElementById('osd-script').addEventListener('load', () => {
+                if (window.OpenSeadragon) {
+                    this.set('tilesources', this.getAttribute('tilesources'));
+                }
+            });
+        }
     }
 
     /**
@@ -272,7 +294,7 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     initializeViewer(tileSources) {
         this.openSeaDragon = OpenSeadragon({
-            element: this.querySelector('#viewer'),
+            element: this.shadowRoot.querySelector('#viewer'),
             preserveViewport: this.preserveviewport === 'true',
             visibilityRatio: parseFloat(this.visibilityratio) || 1.0,
             minZoomLevel: parseFloat(this.minzoomlevel) || 0.5,
