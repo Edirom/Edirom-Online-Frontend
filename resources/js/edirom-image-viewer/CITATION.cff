@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+title: Edirom Image Viewer Component
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Hizkiel
+    family-names: Alemayehu
+    email: hizkiel.alemayehu@uni-paderborn.de
+    affiliation: Universität Paderborn
+repository-code: 'https://github.com/Edirom/edirom-image-viewer'
+abstract: >-
+  This web component displays IIIF tile sources using the OpenSeadragon library (https://openseadragon.github.io). It is intended to be used in tbe Edirom Online, but can also be (re-)used in other web applications. No compilation or building is necessary to use the web component. 
+license: MIT
