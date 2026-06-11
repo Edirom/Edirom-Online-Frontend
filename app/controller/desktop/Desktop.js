@@ -56,7 +56,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         }
         
         this.desktop.taskbar.addListener('openHelp', this.openHelp, this);
-        this.desktop.taskbar.addListener('openTest', this.openTest, this);
         //TODO: Suchfenster einbauen
         /*this.desktop.taskbar.addListener('openSearchWindow', this.openSearchWindow, this);*/
 
@@ -78,23 +77,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         me.desktop.openConcordanceNavigator();
     },
 
-    openHelp: function() {
-        var me = this;
-        me.desktop.openHelp();
-    },
+    openHelp: function() { 
+        var me = this; 
+        var desktop = me.desktop; 
 
-    openTest: function() {
-        var me = this;
-        var desktop = me.desktop;
-
-        // Toggle: close if already open
-        var existing = document.getElementById('test-window');
-        if (existing) {
-            existing.remove();
-            return;
-        }
-
-        // Ensure WinBox is loaded via the web component
+        // Ensure the web component host exists first so shadow root is available
         var host = document.getElementById('ediromWindowsHost');
         if (!host) {
             host = document.createElement('edirom-windows');
@@ -102,18 +89,27 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             document.body.appendChild(host);
         }
 
+        // Each click opens a fresh window with a unique id
+        var winId = 'help-window-' + Date.now();
+
+        // Helper: look up a window element inside the component's shadow root
+        function getShadowEl(id) {
+            return host.shadowRoot && host.shadowRoot.getElementById(id);
+        }
+
         var doOpen = function() {
             window.doAJAXRequest('data/xql/getHelp.xql',
                 'GET',
-                { lang: window.getLanguage(), idPrefix: 'testWin' },
+                { lang: window.getLanguage(), idPrefix: 'helpWin' },
                 function(response) {
-                    var winTitle = 'Test';
+                    var winTitle = getLangString('view.window.HelpWindow_Title');
                     var proxy = {
                         isWindow: true,
                         isExtWindowProxy: true,
                         hidden: false,
                         minimized: false,
                         maximized: false,
+                        active: true,
                         title: winTitle,
                         iconCls: undefined,
                         taskButton: null,
@@ -121,12 +117,12 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         on: function() { return this; },
                         un: function() { return this; },
                         hide: function() {
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) el.style.display = 'none';
                             this.hidden = true;
                         },
                         show: function(animTarget, callback) {
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) {
                                 el.style.display = '';
                                 el.style.zIndex = 100000;
@@ -146,7 +142,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                             this.minimized = false;
                         },
                         minimize: function() {
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) el.style.display = 'none';
                             this.hidden = true;
                             this.minimized = true;
@@ -158,11 +154,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         },
                         maximize: function() {},
                         toFront: function() {
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) el.style.zIndex = 100001;
                         },
                         close: function() {
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) el.remove();
                             if (desktop && this.taskButton) {
                                 desktop.getActiveWindowsSet().remove(this);
@@ -174,7 +170,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     };
 
                     var winbox = new WinBox({
-                        id: 'test-window',
+                        id: winId,
                         title: winTitle,
                         html: '<div style="overflow:auto;height:100%;"><div class="textViewContent" style="padding:10px;">' + response.responseText + '</div></div>',
                         width: 750,
@@ -182,19 +178,22 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         x: 10,
                         y: 5,
                         background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
-                        root: document.body,
+                        root: host.shadowRoot.getElementById('winbox-container'),
                         index: 100000,
                         onfocus: function() {
                             proxy.active = true;
                             if (proxy.taskButton) proxy.taskButton.toggle(true);
                         },
                         onblur: function() {
-                            proxy.active = false;
-                            if (proxy.taskButton) proxy.taskButton.toggle(false);
+                            // Do NOT set proxy.active = false here.
+                            // WinBox blur means another WinBox window was focused,
+                            // but from the taskbar's perspective this window is still
+                            // open/visible — the taskbar button should stay pressed
+                            // and the next click should minimize, not toFront.
                         },
                         onminimize: function() {
                             // Cancel WinBox native minimize — we handle it ourselves
-                            var el = document.getElementById('test-window');
+                            var el = getShadowEl(winId);
                             if (el) el.style.display = 'none';
                             proxy.hidden = true;
                             proxy.minimized = true;
@@ -209,7 +208,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
                     proxy._winbox = winbox;
                     desktop.addWebComponentWindow(proxy);
-                }            );
+                }
+            );
         };
 
         if (typeof WinBox !== 'undefined') {

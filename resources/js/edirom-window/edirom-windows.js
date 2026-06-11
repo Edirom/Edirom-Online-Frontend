@@ -15,6 +15,39 @@ class EdiromWindows extends HTMLElement {
         // Create shadow DOM
         this.attachShadow({ mode: 'open' });
 
+        // :host must be a block-level fixed layer covering the viewport.
+        // The inner _container div is the actual WinBox root; ShadowRoot itself
+        // is not an HTMLElement and lacks offsetLeft/clientWidth that WinBox needs.
+        const hostStyle = document.createElement('style');
+        hostStyle.textContent = `:host {
+            display: block;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 99999;
+        }
+        #winbox-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        .winbox {
+            pointer-events: auto;
+            /* Override WinBox's async-loaded CSS: position relative to
+               #winbox-container (which covers the full viewport), so the
+               window is visible immediately without waiting for the CDN link. */
+            position: absolute !important;
+        }`;
+        this.shadowRoot.appendChild(hostStyle);
+
+        // Real HTMLElement container — passed as WinBox `root` so dimension
+        // queries (offsetLeft, clientWidth, etc.) resolve correctly.
+        this._container = document.createElement('div');
+        this._container.id = 'winbox-container';
+        this.shadowRoot.appendChild(this._container);
+
         this._ensureWinboxAssets();
     }
 
@@ -36,8 +69,8 @@ class EdiromWindows extends HTMLElement {
         switch (property) {
             case "set":
                 // Remove all managed winbox windows from DOM
-                this.windows.forEach(function(w) {
-                    var el = document.getElementById(w.id);
+                this.windows.forEach((w) => {
+                    var el = this.shadowRoot.getElementById(w.id);
                     if (el) el.remove();
                 });
                 this.windows = [];
@@ -92,8 +125,8 @@ class EdiromWindows extends HTMLElement {
                 continue;
             }
 
-            // Append window to document.body so it is not clipped by the component
-            windows[i].root = document.body;
+            // Render window inside the shadow DOM container
+            windows[i].root = this._container;
             new WinBox(windows[i]);
         }
     }
@@ -105,7 +138,7 @@ class EdiromWindows extends HTMLElement {
 
         while (this.pendingWindows.length > 0) {
             const winConfig = this.pendingWindows.shift();
-            winConfig.root = document.body;
+            winConfig.root = this._container;
             new WinBox(winConfig);
         }
     }
@@ -114,6 +147,18 @@ class EdiromWindows extends HTMLElement {
         const scriptSrc = "https://rawcdn.githack.com/daniel-jettka/winbox/0.2.82/dist/js/winbox.min.js";
         const cssHref = "https://rawcdn.githack.com/daniel-jettka/winbox/0.2.82/dist/css/winbox.min.css";
         const ediromStyleId = "edirom-winbox-overrides";
+
+        // Mirror all Edirom compiled stylesheets from the document into the shadow root
+        // so that classes like .textViewContent are available inside the shadow DOM.
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((docLink) => {
+            const href = docLink.getAttribute('href');
+            if (href && !this.shadowRoot.querySelector(`link[href='${href}']`)) {
+                const shadowLink = document.createElement('link');
+                shadowLink.rel = 'stylesheet';
+                shadowLink.href = href;
+                this.shadowRoot.appendChild(shadowLink);
+            }
+        });
 
         if (!document.querySelector(`script[src='${scriptSrc}']`)) {
             const winboxScript = document.createElement('script');
@@ -139,15 +184,16 @@ class EdiromWindows extends HTMLElement {
             }
         }
 
-        if (!document.querySelector(`link[href='${cssHref}']`)) {
+        // WinBox CSS must live inside the shadow root so it can style shadow-DOM nodes
+        if (!this.shadowRoot.querySelector(`link[href='${cssHref}']`)) {
             const winboxCss = document.createElement('link');
             winboxCss.rel = 'stylesheet';
             winboxCss.href = cssHref;
-            document.head.appendChild(winboxCss);
+            this.shadowRoot.appendChild(winboxCss);
         }
 
-        // Inject Edirom-matching overrides for WinBox appearance
-        if (!document.getElementById(ediromStyleId)) {
+        // Inject Edirom-matching overrides for WinBox appearance into the shadow root
+        if (!this.shadowRoot.getElementById(ediromStyleId)) {
             const style = document.createElement('style');
             style.id = ediromStyleId;
             style.textContent = `
@@ -160,7 +206,7 @@ class EdiromWindows extends HTMLElement {
                 .winbox .textViewContent p { margin: 0.5em 0; line-height: 1.5; }
                 .winbox .textViewContent a { color: #336699; }
             `;
-            document.head.appendChild(style);
+            this.shadowRoot.appendChild(style);
         }
     }
 
@@ -171,8 +217,8 @@ class EdiromWindows extends HTMLElement {
             return obj.id !== id;
         });
 
-        // Remove the window from the DOM (appended to body)
-        const element = document.getElementById(id);
+        // Remove the window from the shadow root
+        const element = this.shadowRoot.getElementById(id);
         if (element) {
             element.remove();
         }
@@ -217,8 +263,8 @@ class EdiromWindows extends HTMLElement {
     }
 
     arrange(type){
-            // Get all managed winbox windows from the body
-            var topLevelDivs = this.windows.map(function(w) { return document.getElementById(w.id); }).filter(Boolean);
+            // Get all managed winbox windows from the shadow root
+            var topLevelDivs = this.windows.map((w) => { return this.shadowRoot.getElementById(w.id); }).filter(Boolean);
             var screenWidth = screen.width;
             var screenHeight = screen.height;
 

@@ -45,7 +45,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'openConcordanceNavigator',
                     'openSearchWindow',
                     'openAboutWindow',
-                    'openTest',
                     'switchLanguage');
 
         me.desktopSwitch = new Ext.toolbar.Toolbar(me.getDesktopSwitchConfig());
@@ -187,17 +186,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                 listeners: {
                     afterrender: function(c) {
                         c.getEl().on('click', function(e) { me.fireEvent('openHelp'); });
-                    }
-                }
-            },
-
-            // test button
-            {
-                xtype: 'component',
-                html: '<edirom-icon role="button" id="icon_test" name="eo_about" title="Test"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('openTest'); });
                     }
                 }
             },
