@@ -526,7 +526,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
     
                     elems.push(shape);
     
-                    var imgData = Ext.JSON.decode(hiddenData);
+                    var imgData = hiddenData;
     
                     if(imgData.height / imgData.width > 2.0)
                         tall |= true;
