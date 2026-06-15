@@ -295,7 +295,20 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 dataIndex: 'title',
                 flex: 4,
                 filter: true
+            },
+            {
+                header: getLangString('ediromPriority') + ' (legacy)',
+                dataIndex: 'priority',
+                flex: 1,
+                filter: true
+            },
+            {
+                header: getLangString('ediromCategory') + ' (legacy)',
+                dataIndex: 'categories',
+                flex: 2,
+                filter: true
             }
+            
         ];
 
         // save existing dataIndex entries as column names
