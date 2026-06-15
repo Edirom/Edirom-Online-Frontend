@@ -521,7 +521,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
 				if (me.image_server === 'digilib') {
 
-                    var shape = tplImg.append(div, [id, digilibBaseParams + "dw=600&amp;amp;dh=600" + digilibSizeParams, hiddenData, label], true);
+                    var shape = tplImg.append(div, [id, digilibBaseParams + "dw=600&amp;dh=600" + digilibSizeParams, hiddenData, label], true);
                     shape.on('dblclick', me.participantClickedGrid, me, {participant: id});
     
                     elems.push(shape);
@@ -638,7 +638,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
             }else{
 				if (me.image_server === 'digilib') {
-                    shape = tplImg.append(div, [digilibBaseParams + "dw=600&amp;amp;dh=600" + digilibSizeParams, hiddenData, label], true);
+                    shape = tplImg.append(div, [digilibBaseParams + "dw=600&amp;dh=600" + digilibSizeParams, hiddenData, label], true);
     
                 	shape.setWidth('100%');
                 	shape.setHeight('100%');
