@@ -172,37 +172,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             
     },
 
-    openHelp: function() {
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.HelpWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
-            me.addWindow(thisWindow);
-
-            // show help window
-            thisWindow.show();
-
-        }else if(thisWindow != me.getActiveWindow()){
-
-            // show help window
-            thisWindow.show();
-        
-        } else{
-
-            // hide help window
-            thisWindow.close();
-
-        }
-
-    },
-
     openSearchWindow: function(term) {
 
         var me = this;
@@ -283,7 +252,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         // set of ignored windows (e.g. for tiling, cascading, ...)
         var ignoredWindows = [
             'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
-            'EdiromOnline.view.window.HelpWindow',
             'EdiromOnline.view.window.about.AboutWindow',
             'EdiromOnline.view.window.search.SearchWindow'
         ];
@@ -432,12 +400,20 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.getActiveWindowsSet().remove(win);
         me.taskbar.removeTaskButton(win.taskButton);
 
-        me.getActiveWindowsSet().each(function(win) {
-            this.addWindowListeners(win);
-        }, me);
-
+        if (typeof me.addWindowListeners === 'function') {
+            me.getActiveWindowsSet().each(function(w) {
+                me.addWindowListeners(w);
+            });
+        }
 
         me.updateActiveWindow();
+    },
+
+    addWebComponentWindow: function(proxy) {
+        var me = this;
+        me.getActiveWindowsSet().add(proxy);
+        proxy.taskButton = me.taskbar.addTaskButton(proxy);
+        proxy.animateTarget = proxy.taskButton ? proxy.taskButton.el : null;
     },
 
     onWindowTitleChange: function(win, title) {
