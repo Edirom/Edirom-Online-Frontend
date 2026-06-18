@@ -40,7 +40,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         this.items = [
             {
-                html: '<div id="' + this.id + '_textCont" class="textViewContent"></div>'
+                html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
             }
         ];
 

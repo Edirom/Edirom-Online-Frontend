@@ -37,7 +37,7 @@ Ext.define('EdiromOnline.view.window.TopBar', {
         me.viewSpecificItems = new Ext.util.MixedCollection();
         me.viewToMenuItem = new Ext.util.MixedCollection();
 
-        var initViewText = getLangString('view.window.TobBar_View');
+        var initViewText = getLangString('view.window.TopBar_View');
         var views = [];
 
         me.viewSwitchMenu = Ext.create('Ext.menu.Menu', {
