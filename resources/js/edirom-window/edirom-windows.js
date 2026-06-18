@@ -300,3 +300,4 @@ class EdiromWindows extends HTMLElement {
 // Define the custom element
 customElements.define('edirom-windows', EdiromWindows);
 
+

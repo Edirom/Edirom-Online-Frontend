@@ -42,22 +42,21 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
         if(win.initialized) return;
         win.initialized = true;
 
-        window.doAJAXRequest('data/xql/getHelp.xql',
+        var lang = window.getLanguage();
+        var dbPath = me.backendPath.replace('/exist', '/db');
+        var resource = 'xmldb:exist://' + dbPath + 'help/help_' + lang + '.xml';
+
+        window.doAJAXRequest('api/document',
             'GET', 
             {
-                lang: window.getLanguage(),
-                idPrefix: win.id
+                resource: resource,
+                mediaType: 'text/html',
+                lang: lang,
+                idPrefix: win.id + '-'
             },
             Ext.bind(function(response){
-
-                var windowContent = response.responseText;
-
-                // replace image paths (relative backendPath to absolute backendURL)            
-                var replacee = new RegExp('src="' + me.backendPath.replace(/\/, '\/'/g), "g");
-                windowContent = windowContent.replace(replacee, 'src="' + me.backendURL);
-
                 // set window content
-                win.setContent(windowContent);
+                win.setContent(response.responseText);
             }, me)
         );
     }

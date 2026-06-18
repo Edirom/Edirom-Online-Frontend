@@ -89,6 +89,42 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             document.body.appendChild(host);
         }
 
+        // Coordinate stacking between the WinBox host overlay and the ExtJS window
+        // manager. The host's :host rule pins z-index to 99999, so without this it
+        // would always float above every ExtJS window. We install a single
+        // document-level mousedown listener that:
+        //   - raises the host above the topmost ExtJS window when the user clicks
+        //     inside a WinBox window, and
+        //   - lowers the host just below the topmost ExtJS window when the user
+        //     clicks anything else (an ExtJS window, the navigator, the desktop).
+        // The work is deferred with setTimeout(0) so ExtJS has already restacked
+        // the clicked window before we read the maximum z-index.
+        var maxExtZ = function() {
+            var maxZ = 0;
+            desktop.getActiveWindowsSet().each(function(w) {
+                if (w && w.el && w.el.dom) {
+                    var z = parseInt(w.el.getStyle('z-index'), 10);
+                    if (!isNaN(z) && z > maxZ) maxZ = z;
+                }
+            });
+            return maxZ;
+        };
+        if (!host._zIndexCoordInstalled) {
+            host._zIndexCoordInstalled = true;
+            document.addEventListener('mousedown', function(e) {
+                var h = document.getElementById('ediromWindowsHost');
+                if (!h) return;
+                var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
+                var inWinbox = path.some(function(n) {
+                    return n && n.classList && n.classList.contains('winbox');
+                });
+                setTimeout(function() {
+                    var maxZ = maxExtZ();
+                    h.style.zIndex = inWinbox ? (maxZ + 100) : Math.max(0, maxZ - 1);
+                }, 0);
+            }, true);
+        }
+
         // Each click opens a fresh window with a unique id
         var winId = 'help-window-' + Date.now();
 
@@ -102,6 +138,32 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 'GET',
                 { lang: window.getLanguage(), idPrefix: 'helpWin' },
                 function(response) {
+                    // Constrain the WinBox host to Edirom's usable content area
+                    // (below the topbar, left of the navigator) so the window can
+                    // not cover and block the topbar, taskbar or navigator.
+                    var usable = desktop.getUsableSize();
+                    var bodyXY = desktop.body.getXY();
+                    host.style.position = 'fixed';
+                    host.style.top = bodyXY[1] + 'px';
+                    host.style.left = bodyXY[0] + 'px';
+                    host.style.width = usable.width + 'px';
+                    host.style.height = usable.height + 'px';
+                    host.style.right = 'auto';
+                    host.style.bottom = 'auto';
+
+                    // Coordinate stacking with the ExtJS window manager. The host
+                    // overlay would otherwise sit at a fixed z-index above every
+                    // ExtJS window. raiseHostAboveExt() lifts it above the topmost
+                    // ExtJS window when the help window is focused; the document
+                    // mousedown coordinator lowers it again when an ExtJS window is
+                    // clicked.
+                    var raiseHostAboveExt = function() {
+                        host.style.zIndex = (maxExtZ() + 100);
+                    };
+
+                    var winWidth = Math.max(320, Math.min(750, usable.width - 20));
+                    var winHeight = Math.max(240, Math.min(600, usable.height - 20));
+
                     var winTitle = getLangString('view.window.HelpWindow_Title');
                     var proxy = {
                         isWindow: true,
@@ -116,6 +178,16 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         animateTarget: null,
                         on: function() { return this; },
                         un: function() { return this; },
+                        getPosition: function() {
+                            if (this._winbox) {
+                                return [this._winbox.x || 0, this._winbox.y || 0];
+                            }
+                            var el = getShadowEl(winId);
+                            if (el) {
+                                return [parseInt(el.style.left, 10) || 0, parseInt(el.style.top, 10) || 0];
+                            }
+                            return [0, 0];
+                        },
                         hide: function() {
                             var el = getShadowEl(winId);
                             if (el) el.style.display = 'none';
@@ -127,6 +199,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                                 el.style.display = '';
                                 el.style.zIndex = 100000;
                             }
+                            raiseHostAboveExt();
                             if (proxy._winbox) proxy._winbox.restore();
                             this.hidden = false;
                             this.minimized = false;
@@ -156,6 +229,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         toFront: function() {
                             var el = getShadowEl(winId);
                             if (el) el.style.zIndex = 100001;
+                            raiseHostAboveExt();
                         },
                         close: function() {
                             var el = getShadowEl(winId);
@@ -173,8 +247,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         id: winId,
                         title: winTitle,
                         html: '<div style="overflow:auto;height:100%;"><div class="textViewContent" style="padding:10px;">' + response.responseText + '</div></div>',
-                        width: 750,
-                        height: 600,
+                        width: winWidth,
+                        height: winHeight,
                         x: 10,
                         y: 5,
                         background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
@@ -182,6 +256,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         index: 100000,
                         onfocus: function() {
                             proxy.active = true;
+                            raiseHostAboveExt();
                             if (proxy.taskButton) proxy.taskButton.toggle(true);
                         },
                         onblur: function() {
@@ -207,7 +282,30 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
 
                     proxy._winbox = winbox;
+
+                    // Wire up in-page TOC anchor navigation. The help content
+                    // lives inside the WinBox shadow DOM, so native href="#id"
+                    // fragment navigation can not reach the target headings
+                    // (the browser only searches the main document). Intercept
+                    // clicks on in-page anchors and scroll the matching element
+                    // into view within the shadow root.
+                    var winboxEl = getShadowEl(winId);
+                    if (winboxEl) {
+                        winboxEl.addEventListener('click', function(e) {
+                            var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+                            if (!a) return;
+                            var targetId = a.getAttribute('href').substring(1);
+                            if (!targetId) return;
+                            var target = host.shadowRoot.getElementById(targetId);
+                            if (target) {
+                                e.preventDefault();
+                                target.scrollIntoView({ block: 'start' });
+                            }
+                        });
+                    }
+
                     desktop.addWebComponentWindow(proxy);
+                    raiseHostAboveExt();
                 }
             );
         };
