@@ -321,7 +321,326 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             }, 100);
         }
     },
-    
+
+    // About window — mirrors openHelp exactly, but renders the CITATION.cff
+    // based "About" content inside the same WinBox web component.
+    openAbout: function() {
+        var me = this;
+        var desktop = me.desktop;
+
+        // Ensure the web component host exists first so shadow root is available
+        var host = document.getElementById('ediromWindowsHost');
+        if (!host) {
+            host = document.createElement('edirom-windows');
+            host.id = 'ediromWindowsHost';
+            document.body.appendChild(host);
+        }
+
+        var maxExtZ = function() {
+            var maxZ = 0;
+            desktop.getActiveWindowsSet().each(function(w) {
+                if (w && w.el && w.el.dom) {
+                    var z = parseInt(w.el.getStyle('z-index'), 10);
+                    if (!isNaN(z) && z > maxZ) maxZ = z;
+                }
+            });
+            return maxZ;
+        };
+        if (!host._zIndexCoordInstalled) {
+            host._zIndexCoordInstalled = true;
+            document.addEventListener('mousedown', function(e) {
+                var h = document.getElementById('ediromWindowsHost');
+                if (!h) return;
+                var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
+                var inWinbox = path.some(function(n) {
+                    return n && n.classList && n.classList.contains('winbox');
+                });
+                setTimeout(function() {
+                    var maxZ = maxExtZ();
+                    h.style.zIndex = inWinbox ? (maxZ + 100) : Math.max(0, maxZ - 1);
+                }, 0);
+            }, true);
+        }
+
+        // Each click opens a fresh window with a unique id
+        var winId = 'about-window-' + Date.now();
+
+        function getShadowEl(id) {
+            return host.shadowRoot && host.shadowRoot.getElementById(id);
+        }
+
+        var doOpen = function() {
+            me.buildAboutHtml(function(htmlContent) {
+                var usable = desktop.getUsableSize();
+                var bodyXY = desktop.body.getXY();
+                host.style.position = 'fixed';
+                host.style.top = bodyXY[1] + 'px';
+                host.style.left = bodyXY[0] + 'px';
+                host.style.width = usable.width + 'px';
+                host.style.height = usable.height + 'px';
+                host.style.right = 'auto';
+                host.style.bottom = 'auto';
+
+                var raiseHostAboveExt = function() {
+                    host.style.zIndex = (maxExtZ() + 100);
+                };
+
+                var winWidth = Math.max(320, Math.min(700, usable.width - 20));
+                var winHeight = Math.max(240, Math.min(600, usable.height - 20));
+
+                var winTitle = getLangString('view.window.about.AboutWindow_Title');
+                var proxy = {
+                    isWindow: true,
+                    isExtWindowProxy: true,
+                    hidden: false,
+                    minimized: false,
+                    maximized: false,
+                    active: true,
+                    title: winTitle,
+                    iconCls: undefined,
+                    taskButton: null,
+                    animateTarget: null,
+                    on: function() { return this; },
+                    un: function() { return this; },
+                    getPosition: function() {
+                        if (this._winbox) {
+                            return [this._winbox.x || 0, this._winbox.y || 0];
+                        }
+                        var el = getShadowEl(winId);
+                        if (el) {
+                            return [parseInt(el.style.left, 10) || 0, parseInt(el.style.top, 10) || 0];
+                        }
+                        return [0, 0];
+                    },
+                    hide: function() {
+                        var el = getShadowEl(winId);
+                        if (el) el.style.display = 'none';
+                        this.hidden = true;
+                    },
+                    show: function(animTarget, callback) {
+                        var el = getShadowEl(winId);
+                        if (el) {
+                            el.style.display = '';
+                            el.style.zIndex = 100000;
+                        }
+                        raiseHostAboveExt();
+                        if (proxy._winbox) proxy._winbox.restore();
+                        this.hidden = false;
+                        this.minimized = false;
+                        this.active = true;
+                        if (this.taskButton) {
+                            this.taskButton.toggle(true);
+                            this.taskButton.enable();
+                        }
+                        if (typeof callback === 'function') callback();
+                    },
+                    restore: function() {
+                        this.show();
+                        this.minimized = false;
+                    },
+                    minimize: function() {
+                        var el = getShadowEl(winId);
+                        if (el) el.style.display = 'none';
+                        this.hidden = true;
+                        this.minimized = true;
+                        this.active = false;
+                        if (this.taskButton) {
+                            this.taskButton.toggle(false);
+                            this.taskButton.enable();
+                        }
+                    },
+                    maximize: function() {},
+                    toFront: function() {
+                        var el = getShadowEl(winId);
+                        if (el) el.style.zIndex = 100001;
+                        raiseHostAboveExt();
+                    },
+                    close: function() {
+                        var el = getShadowEl(winId);
+                        if (el) el.remove();
+                        if (desktop && this.taskButton) {
+                            desktop.getActiveWindowsSet().remove(this);
+                            desktop.taskbar.removeTaskButton(this.taskButton);
+                            desktop.updateActiveWindow();
+                        }
+                    },
+                    destroy: function() { this.close(); }
+                };
+
+                var winbox = new WinBox({
+                    id: winId,
+                    title: winTitle,
+                    html: htmlContent,
+                    width: winWidth,
+                    height: winHeight,
+                    x: 10,
+                    y: 5,
+                    background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
+                    root: host.shadowRoot.querySelector('winbox-container'),
+                    index: 100000,
+                    onfocus: function() {
+                        proxy.active = true;
+                        raiseHostAboveExt();
+                        if (proxy.taskButton) proxy.taskButton.toggle(true);
+                    },
+                    onblur: function() {
+                        // Do NOT set proxy.active = false here.
+                        // WinBox blur means another WinBox window was focused,
+                        // but from the taskbar's perspective this window is still
+                        // open/visible — the taskbar button should stay pressed
+                        // and the next click should minimize, not toFront.
+                    },
+                    onminimize: function() {
+                        // Cancel WinBox native minimize — we handle it ourselves
+                        var el = getShadowEl(winId);
+                        if (el) el.style.display = 'none';
+                        proxy.hidden = true;
+                        proxy.minimized = true;
+                        proxy.active = false;
+                        if (proxy.taskButton) proxy.taskButton.toggle(false);
+                        return false; // prevent WinBox default minimize (strip at bottom)
+                    },
+                    onclose: function() {
+                        proxy.close();
+                    }
+                });
+
+                proxy._winbox = winbox;
+
+                // In-page anchor navigation inside the WinBox shadow DOM (same
+                // handling as the help window).
+                var winboxEl = getShadowEl(winId);
+                if (winboxEl) {
+                    winboxEl.addEventListener('click', function(e) {
+                        var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+                        if (!a) return;
+                        var targetId = a.getAttribute('href').substring(1);
+                        if (!targetId) return;
+                        var target = host.shadowRoot.getElementById(targetId);
+                        if (target) {
+                            e.preventDefault();
+                            target.scrollIntoView({ block: 'start' });
+                        }
+                    });
+                }
+
+                desktop.addWebComponentWindow(proxy);
+                raiseHostAboveExt();
+            });
+        };
+
+        if (typeof WinBox !== 'undefined') {
+            doOpen();
+        } else {
+            var poll = setInterval(function() {
+                if (typeof WinBox !== 'undefined') {
+                    clearInterval(poll);
+                    doOpen();
+                }
+            }, 100);
+        }
+    },
+
+    // Builds the "About" HTML from the frontend & backend CITATION.cff files
+    // and passes the finished markup (wrapped for scrolling) to the callback.
+    buildAboutHtml: function(cb) {
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+        var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+
+        // Specify URLs of CITATION.cff files of frontend and backend
+        var frontendURL = location.origin + location.pathname.replaceAll('/index.html', '/');
+        var frontendURLcitation = frontendURL + 'resources/CITATION.cff';
+        var backendURLcitation = backendURL + 'resources/CITATION.cff';
+
+        var wrap = function(inner) {
+            return '<div style="overflow:auto;height:100%;"><div class="textViewContent" style="padding:10px;">' + inner + '</div></div>';
+        };
+
+        // Fetching content of CITATION.cff files and turn into HTML
+        async function fetchContent(url) {
+            console.log('Fetching ' + url);
+
+            const response = await fetch(url);
+            const citation = await response.text();
+
+            const title = citation.match(/^title: (.*)/m)[1];
+            const abstract = String(citation.match(/^abstract:\s>-\n(\s+.*\n)+/gm)).replace(/^abstract:\s>-\n/, '');
+            const version = citation.match(/^version: (.*)/m)[1];
+            const releaseDate = citation.match(/^date\-released: (.*)/m)[1];
+            const license = citation.match(/^license: (.*)/m)[1];
+            const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
+            const doi = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/)[1];
+            const commit = citation.match(/^commit: (.*)/m)[1];
+
+            return `
+                <h1>About ${title}</h1>
+                <section class="teidiv0">
+                    <p>${abstract}</p>
+                    <p>Version: ${version}</p>
+                    <p>Date: ${releaseDate}</p>
+                    <p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>
+                    <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
+                    <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
+                    <p>Revision: <a target="_blank" href="${repoUrl}/tree/${commit}">${commit.substring(0,7)}...</a></p>
+                    <p>Contributors: <br/>
+                        <a target="_blank" href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
+                            <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
+                        </a>
+                    </p>
+                </section>
+            `;
+        }
+
+        // Fetching content of CITATION.cff files and set result
+        Promise.all([
+            fetchContent(frontendURLcitation),
+            fetchContent(backendURLcitation)
+        ]).then(function(parts) {
+            var frontend = parts[0];
+            var backend = parts[1];
+            cb(wrap(`
+                <div class="tei_body">
+                    <h1>About Edirom-Online</h1>
+                    <section class="teidiv0">
+                        <p>
+                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions.
+                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media.
+                            Edirom-Online is developed by the Edirom Project.
+                        </p>
+                        <p>
+                            The software consists of two main modules: the frontend and the backend.
+                            Information about the parts of the software can be found below.
+                        </p>
+                    </section>
+                    ${frontend}
+                    ${backend}
+                </div>`));
+        }).catch(function(error) {
+            console.error('Error fetching CITATION.cff files:', error);
+            cb(wrap(`
+                <div class="tei_body">
+                    <h1>About Edirom-Online</h1>
+                    <section class="teidiv0">
+                        <p>
+                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions.
+                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media.
+                            Edirom-Online is developed by the Edirom Project.
+                        </p>
+                        <p>
+                            The software consists of two main modules: the frontend and the backend.
+                            Information about the parts of the software can be found below.
+                        </p>
+                    </section>
+                    <section class="teidiv0">
+                        <p>Error fetching content from CITATION.cff files.</p>
+                        <p>URL of backend CITATION.cff file: ${backendURLcitation}</p>
+                        <p>URL of frontend CITATION.cff file: ${frontendURLcitation}</p>
+                        <p>When encountering this or other issues persistently, please create a report on <a href="https://github.com/Edirom/Edirom-Online/issues/new/choose">https://github.com/Edirom/Edirom-Online/issues/new/choose</a></p>
+                    </section>
+                </div>`));
+        });
+    },
+
     onSpecialKey: function(field, e) {
         var me = this;
         
@@ -339,7 +658,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
     onOpenAboutWindow: function(button, event, args) {
         var me = this;
-        me.desktop.openAboutWindow();
+        me.openAbout();
     },
 
     switchDesktop: function(desk) {
