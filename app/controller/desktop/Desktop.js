@@ -252,7 +252,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         x: 10,
                         y: 5,
                         background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
-                        root: host.shadowRoot.getElementById('winbox-container'),
+                        root: host.shadowRoot.querySelector('winbox-container'),
                         index: 100000,
                         onfocus: function() {
                             proxy.active = true;

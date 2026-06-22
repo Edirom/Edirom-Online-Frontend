@@ -7,4 +7,8 @@ build-euryanthe
 local.properties
 .env
 sencha-error-*
+
+# --- local deployment & eXist-db connection ---
+build-dev
+deploy-dev.sh
 .existdb.json
