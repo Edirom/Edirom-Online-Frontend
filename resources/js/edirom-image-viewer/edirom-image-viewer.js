@@ -295,6 +295,8 @@ class EdiromOpenseadragon extends HTMLElement {
     initializeViewer(tileSources) {
         this.openSeaDragon = OpenSeadragon({
             element: this.shadowRoot.querySelector('#viewer'),
+            // Load the navigation control icons from the CDN that hosts the OSD library
+            prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/images/',
             preserveViewport: this.preserveviewport === 'true',
             visibilityRatio: parseFloat(this.visibilityratio) || 1.0,
             minZoomLevel: parseFloat(this.minzoomlevel) || 0.5,
@@ -373,12 +375,19 @@ class EdiromOpenseadragon extends HTMLElement {
     
     goToPage(pageNumber) {
         if(this.openSeaDragon && !isNaN(pageNumber)) {
-            this.openSeaDragon.goToPage(pageNumber);
+            // pagenumber is 1-based, but OpenSeadragon's goToPage expects a 0-based index
+            const targetIndex = pageNumber - 1;
+            const totalPages = this.openSeaDragon.tileSources ?
+                this.openSeaDragon.tileSources.length : this.openSeaDragon.world.getItemCount();
+            if(targetIndex >= 0 && targetIndex < totalPages) {
+                this.openSeaDragon.goToPage(targetIndex);
+            }
         }
     }
     
     getCurrentPage() {
-        return this.openSeaDragon ? this.openSeaDragon.currentPage() : 0;
+        // OpenSeadragon's currentPage is 0-based; expose it as 1-based
+        return this.openSeaDragon ? this.openSeaDragon.currentPage() + 1 : 0;
     }
     
     getTotalPages() {
