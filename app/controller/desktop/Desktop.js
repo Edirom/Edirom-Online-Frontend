@@ -115,12 +115,43 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 var h = document.getElementById('ediromWindowsHost');
                 if (!h) return;
                 var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
-                var inWinbox = path.some(function(n) {
-                    return n && n.classList && n.classList.contains('winbox');
-                });
+                var winboxEl = null;
+                for (var i = 0; i < path.length; i++) {
+                    var n = path[i];
+                    if (n && n.classList && n.classList.contains('winbox')) { winboxEl = n; break; }
+                }
+                var inWinbox = !!winboxEl;
+                // Raise the clicked WinBox window above its siblings. WinBox's own
+                // mousedown->focus binding is unreliable inside the shadow DOM, so
+                // focus the matching window explicitly here; otherwise clicking a
+                // window sitting below an explicitly-focused one (e.g. clicking
+                // Help while Search was raised) would not bring it to the front.
+                if (winboxEl) {
+                    desktop.getActiveWindowsSet().each(function(w) {
+                        if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
+                            w._winbox.focus();
+                            return false;
+                        }
+                    });
+                }
                 setTimeout(function() {
                     var maxZ = maxExtZ();
-                    h.style.zIndex = inWinbox ? (maxZ + 100) : Math.max(0, maxZ - 1);
+                    if (inWinbox) {
+                        h.style.zIndex = (maxZ + 100);
+                    } else {
+                        // Only an actual ExtJS window click (a document viewer
+                        // etc.) lowers the host below the ExtJS stack. Clicks on
+                        // Edirom chrome (taskbar buttons, topbar, navigator, empty
+                        // desktop) leave the host untouched, so minimizing one
+                        // WinBox window via its taskbar button does not drag the
+                        // other WinBox windows behind the ExtJS windows.
+                        var inExtWindow = false;
+                        for (var k = 0; k < path.length; k++) {
+                            var en = path[k];
+                            if (en && en.classList && en.classList.contains('x-window')) { inExtWindow = true; break; }
+                        }
+                        if (inExtWindow) h.style.zIndex = Math.max(0, maxZ - 1);
+                    }
                 }, 0);
             }, true);
         }
@@ -159,6 +190,13 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     // clicked.
                     var raiseHostAboveExt = function() {
                         host.style.zIndex = (maxExtZ() + 100);
+                        // Re-assert on the next tick so this raise wins against the
+                        // document mousedown coordinator. The topbar/taskbar buttons
+                        // that open or re-focus a WinBox window are OUTSIDE any
+                        // .winbox, so that same click queues a host-lowering
+                        // (setTimeout 0) which would otherwise drop the window behind
+                        // the ExtJS windows right after this synchronous raise.
+                        setTimeout(function() { host.style.zIndex = (maxExtZ() + 100); }, 0);
                     };
 
                     var winWidth = Math.max(320, Math.min(750, usable.width - 20));
@@ -195,12 +233,12 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         },
                         show: function(animTarget, callback) {
                             var el = getShadowEl(winId);
-                            if (el) {
-                                el.style.display = '';
-                                el.style.zIndex = 100000;
-                            }
+                            if (el) el.style.display = '';
                             raiseHostAboveExt();
-                            if (proxy._winbox) proxy._winbox.restore();
+                            if (proxy._winbox) {
+                                proxy._winbox.restore();
+                                if (proxy._winbox.focus) proxy._winbox.focus();
+                            }
                             this.hidden = false;
                             this.minimized = false;
                             this.active = true;
@@ -228,8 +266,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         maximize: function() {},
                         toFront: function() {
                             var el = getShadowEl(winId);
-                            if (el) el.style.zIndex = 100001;
+                            if (el) el.style.display = '';
                             raiseHostAboveExt();
+                            if (proxy._winbox && proxy._winbox.focus) proxy._winbox.focus();
                         },
                         close: function() {
                             var el = getShadowEl(winId);
@@ -252,7 +291,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         x: 10,
                         y: 5,
                         background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
-                        root: host.shadowRoot.querySelector('winbox-container'),
+                        root: host.shadowRoot.getElementById('winbox-container'),
                         index: 100000,
                         onfocus: function() {
                             proxy.active = true;
@@ -282,6 +321,16 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
 
                     proxy._winbox = winbox;
+
+                    // Bring the freshly opened window to the front above any
+                    // already-focused WinBox window (all are created with the
+                    // same base z-index, so a new one would otherwise open
+                    // beneath a previously raised sibling). WinBox auto-marks a
+                    // freshly created window as focused, so focus() alone is a
+                    // no-op; blur() first to clear that flag, then focus() bumps
+                    // its z-index above every other WinBox window.
+                    if (winbox.focused && winbox.blur) winbox.blur();
+                    if (winbox.focus) winbox.focus();
 
                     // Wire up in-page TOC anchor navigation. The help content
                     // lives inside the WinBox shadow DOM, so native href="#id"
@@ -352,12 +401,43 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 var h = document.getElementById('ediromWindowsHost');
                 if (!h) return;
                 var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
-                var inWinbox = path.some(function(n) {
-                    return n && n.classList && n.classList.contains('winbox');
-                });
+                var winboxEl = null;
+                for (var i = 0; i < path.length; i++) {
+                    var n = path[i];
+                    if (n && n.classList && n.classList.contains('winbox')) { winboxEl = n; break; }
+                }
+                var inWinbox = !!winboxEl;
+                // Raise the clicked WinBox window above its siblings. WinBox's own
+                // mousedown->focus binding is unreliable inside the shadow DOM, so
+                // focus the matching window explicitly here; otherwise clicking a
+                // window sitting below an explicitly-focused one (e.g. clicking
+                // Help while Search was raised) would not bring it to the front.
+                if (winboxEl) {
+                    desktop.getActiveWindowsSet().each(function(w) {
+                        if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
+                            w._winbox.focus();
+                            return false;
+                        }
+                    });
+                }
                 setTimeout(function() {
                     var maxZ = maxExtZ();
-                    h.style.zIndex = inWinbox ? (maxZ + 100) : Math.max(0, maxZ - 1);
+                    if (inWinbox) {
+                        h.style.zIndex = (maxZ + 100);
+                    } else {
+                        // Only an actual ExtJS window click (a document viewer
+                        // etc.) lowers the host below the ExtJS stack. Clicks on
+                        // Edirom chrome (taskbar buttons, topbar, navigator, empty
+                        // desktop) leave the host untouched, so minimizing one
+                        // WinBox window via its taskbar button does not drag the
+                        // other WinBox windows behind the ExtJS windows.
+                        var inExtWindow = false;
+                        for (var k = 0; k < path.length; k++) {
+                            var en = path[k];
+                            if (en && en.classList && en.classList.contains('x-window')) { inExtWindow = true; break; }
+                        }
+                        if (inExtWindow) h.style.zIndex = Math.max(0, maxZ - 1);
+                    }
                 }, 0);
             }, true);
         }
@@ -383,6 +463,13 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
                 var raiseHostAboveExt = function() {
                     host.style.zIndex = (maxExtZ() + 100);
+                    // Re-assert on the next tick so this raise wins against the
+                    // document mousedown coordinator. The topbar/taskbar buttons
+                    // that open or re-focus a WinBox window are OUTSIDE any
+                    // .winbox, so that same click queues a host-lowering
+                    // (setTimeout 0) which would otherwise drop the window behind
+                    // the ExtJS windows right after this synchronous raise.
+                    setTimeout(function() { host.style.zIndex = (maxExtZ() + 100); }, 0);
                 };
 
                 var winWidth = Math.max(320, Math.min(700, usable.width - 20));
@@ -419,12 +506,12 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     },
                     show: function(animTarget, callback) {
                         var el = getShadowEl(winId);
-                        if (el) {
-                            el.style.display = '';
-                            el.style.zIndex = 100000;
-                        }
+                        if (el) el.style.display = '';
                         raiseHostAboveExt();
-                        if (proxy._winbox) proxy._winbox.restore();
+                        if (proxy._winbox) {
+                            proxy._winbox.restore();
+                            if (proxy._winbox.focus) proxy._winbox.focus();
+                        }
                         this.hidden = false;
                         this.minimized = false;
                         this.active = true;
@@ -452,8 +539,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     maximize: function() {},
                     toFront: function() {
                         var el = getShadowEl(winId);
-                        if (el) el.style.zIndex = 100001;
+                        if (el) el.style.display = '';
                         raiseHostAboveExt();
+                        if (proxy._winbox && proxy._winbox.focus) proxy._winbox.focus();
                     },
                     close: function() {
                         var el = getShadowEl(winId);
@@ -476,7 +564,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     x: 10,
                     y: 5,
                     background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
-                    root: host.shadowRoot.querySelector('winbox-container'),
+                    root: host.shadowRoot.getElementById('winbox-container'),
                     index: 100000,
                     onfocus: function() {
                         proxy.active = true;
@@ -506,6 +594,16 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 });
 
                 proxy._winbox = winbox;
+
+                // Bring the freshly opened window to the front above any
+                // already-focused WinBox window (all are created with the
+                // same base z-index, so a new one would otherwise open
+                // beneath a previously raised sibling). WinBox auto-marks a
+                // freshly created window as focused, so focus() alone is a
+                // no-op; blur() first to clear that flag, then focus() bumps
+                // its z-index above every other WinBox window.
+                if (winbox.focused && winbox.blur) winbox.blur();
+                if (winbox.focus) winbox.focus();
 
                 // In-page anchor navigation inside the WinBox shadow DOM (same
                 // handling as the help window).
@@ -641,19 +739,341 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         });
     },
 
+    // Search window — rendered with the WinBox web component (mirrors openHelp /
+    // openAbout), but hosts an interactive search bar (text field + button) and a
+    // results area. The window behaves as a singleton: a second search request
+    // reuses the existing window, updates the term and re-runs the query.
+    openSearch: function(term) {
+        var me = this;
+        var desktop = me.desktop;
+
+        term = term || '';
+
+        // Ensure the web component host exists first so the shadow root is available
+        var host = document.getElementById('ediromWindowsHost');
+        if (!host) {
+            host = document.createElement('edirom-windows');
+            host.id = 'ediromWindowsHost';
+            document.body.appendChild(host);
+        }
+
+        var maxExtZ = function() {
+            var maxZ = 0;
+            desktop.getActiveWindowsSet().each(function(w) {
+                if (w && w.el && w.el.dom) {
+                    var z = parseInt(w.el.getStyle('z-index'), 10);
+                    if (!isNaN(z) && z > maxZ) maxZ = z;
+                }
+            });
+            return maxZ;
+        };
+        if (!host._zIndexCoordInstalled) {
+            host._zIndexCoordInstalled = true;
+            document.addEventListener('mousedown', function(e) {
+                var h = document.getElementById('ediromWindowsHost');
+                if (!h) return;
+                var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
+                var winboxEl = null;
+                for (var i = 0; i < path.length; i++) {
+                    var n = path[i];
+                    if (n && n.classList && n.classList.contains('winbox')) { winboxEl = n; break; }
+                }
+                var inWinbox = !!winboxEl;
+                // Raise the clicked WinBox window above its siblings. WinBox's own
+                // mousedown->focus binding is unreliable inside the shadow DOM, so
+                // focus the matching window explicitly here; otherwise clicking a
+                // window sitting below an explicitly-focused one (e.g. clicking
+                // Help while Search was raised) would not bring it to the front.
+                if (winboxEl) {
+                    desktop.getActiveWindowsSet().each(function(w) {
+                        if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
+                            w._winbox.focus();
+                            return false;
+                        }
+                    });
+                }
+                setTimeout(function() {
+                    var maxZ = maxExtZ();
+                    if (inWinbox) {
+                        h.style.zIndex = (maxZ + 100);
+                    } else {
+                        // Only an actual ExtJS window click (a document viewer
+                        // etc.) lowers the host below the ExtJS stack. Clicks on
+                        // Edirom chrome (taskbar buttons, topbar, navigator, empty
+                        // desktop) leave the host untouched, so minimizing one
+                        // WinBox window via its taskbar button does not drag the
+                        // other WinBox windows behind the ExtJS windows.
+                        var inExtWindow = false;
+                        for (var k = 0; k < path.length; k++) {
+                            var en = path[k];
+                            if (en && en.classList && en.classList.contains('x-window')) { inExtWindow = true; break; }
+                        }
+                        if (inExtWindow) h.style.zIndex = Math.max(0, maxZ - 1);
+                    }
+                }, 0);
+            }, true);
+        }
+
+        function getShadowEl(id) {
+            return host.shadowRoot && host.shadowRoot.getElementById(id);
+        }
+
+        // Singleton: if a search window already exists, reuse it.
+        var existing = null;
+        desktop.getActiveWindowsSet().each(function(w) {
+            if (w && w.isSearchProxy) { existing = w; return false; }
+        });
+        if (existing) {
+            existing.show();
+            if (term && existing.runSearch) existing.runSearch(term);
+            if (existing.focusSearchField) existing.focusSearchField();
+            return;
+        }
+
+        var winId = 'search-window-' + Date.now();
+
+        var doOpen = function() {
+            var usable = desktop.getUsableSize();
+            var bodyXY = desktop.body.getXY();
+            host.style.position = 'fixed';
+            host.style.top = bodyXY[1] + 'px';
+            host.style.left = bodyXY[0] + 'px';
+            host.style.width = usable.width + 'px';
+            host.style.height = usable.height + 'px';
+            host.style.right = 'auto';
+            host.style.bottom = 'auto';
+
+            var raiseHostAboveExt = function() {
+                host.style.zIndex = (maxExtZ() + 100);
+                // Re-assert on the next tick so this raise wins against the
+                // document mousedown coordinator. The topbar/taskbar buttons
+                // that open or re-focus a WinBox window are OUTSIDE any
+                // .winbox, so that same click queues a host-lowering
+                // (setTimeout 0) which would otherwise drop the window behind
+                // the ExtJS windows right after this synchronous raise.
+                setTimeout(function() { host.style.zIndex = (maxExtZ() + 100); }, 0);
+            };
+
+            var winWidth = Math.max(320, Math.min(700, usable.width - 20));
+            var winHeight = Math.max(240, Math.min(600, usable.height - 20));
+
+            var winTitle = getLangString('view.window.search.SearchWindow_Title');
+            var searchLabel = getLangString('view.desktop.TaskBar_search');
+
+            var html = ''
+                + '<div class="searchWindow" style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+                +     '<div class="searchBar" style="display:flex;align-items:center;gap:4px;padding:4px 6px;">'
+                +         '<input type="text" class="searchTextField" style="flex:1;min-width:0;" />'
+                +         '<button type="button" class="doSearchBtn edirom-icon-button" title="' + searchLabel + '">'
+                +             '<edirom-icon role="button" name="eo_search" title="' + searchLabel + '"></edirom-icon>'
+                +         '</button>'
+                +     '</div>'
+                +     '<div class="searchResults" style="flex:1;overflow:auto;padding:0 6px 6px 6px;">'
+                +         '<div id="' + winId + '_textCont" class="textViewContent"></div>'
+                +     '</div>'
+                + '</div>';
+
+            var proxy = {
+                isWindow: true,
+                isExtWindowProxy: true,
+                isSearchProxy: true,
+                hideTaskButton: true,
+                hidden: false,
+                minimized: false,
+                maximized: false,
+                active: true,
+                title: winTitle,
+                iconCls: undefined,
+                taskButton: null,
+                animateTarget: null,
+                on: function() { return this; },
+                un: function() { return this; },
+                getPosition: function() {
+                    if (this._winbox) {
+                        return [this._winbox.x || 0, this._winbox.y || 0];
+                    }
+                    var el = getShadowEl(winId);
+                    if (el) {
+                        return [parseInt(el.style.left, 10) || 0, parseInt(el.style.top, 10) || 0];
+                    }
+                    return [0, 0];
+                },
+                hide: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = 'none';
+                    this.hidden = true;
+                },
+                show: function(animTarget, callback) {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = '';
+                    raiseHostAboveExt();
+                    if (proxy._winbox) {
+                        proxy._winbox.restore();
+                        if (proxy._winbox.focus) proxy._winbox.focus();
+                    }
+                    this.hidden = false;
+                    this.minimized = false;
+                    this.active = true;
+                    if (this.taskButton) {
+                        this.taskButton.toggle(true);
+                        this.taskButton.enable();
+                    }
+                    if (typeof callback === 'function') callback();
+                },
+                restore: function() {
+                    this.show();
+                    this.minimized = false;
+                },
+                minimize: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = 'none';
+                    this.hidden = true;
+                    this.minimized = true;
+                    this.active = false;
+                    if (this.taskButton) {
+                        this.taskButton.toggle(false);
+                        this.taskButton.enable();
+                    }
+                },
+                maximize: function() {},
+                toFront: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = '';
+                    raiseHostAboveExt();
+                    if (proxy._winbox && proxy._winbox.focus) proxy._winbox.focus();
+                },
+                close: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.remove();
+                    if (desktop && this.taskButton) {
+                        desktop.getActiveWindowsSet().remove(this);
+                        desktop.taskbar.removeTaskButton(this.taskButton);
+                        desktop.updateActiveWindow();
+                    }
+                },
+                destroy: function() { this.close(); }
+            };
+
+            var winbox = new WinBox({
+                id: winId,
+                title: winTitle,
+                html: html,
+                width: winWidth,
+                height: winHeight,
+                x: 10,
+                y: 5,
+                background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
+                root: host.shadowRoot.getElementById('winbox-container'),
+                index: 100000,
+                onfocus: function() {
+                    proxy.active = true;
+                    raiseHostAboveExt();
+                    if (proxy.taskButton) proxy.taskButton.toggle(true);
+                },
+                onblur: function() {
+                    // Keep taskbar state; WinBox blur only means another window
+                    // gained focus, not that this window was closed/minimized.
+                },
+                onminimize: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = 'none';
+                    proxy.hidden = true;
+                    proxy.minimized = true;
+                    proxy.active = false;
+                    if (proxy.taskButton) proxy.taskButton.toggle(false);
+                    return false; // prevent WinBox default minimize (strip at bottom)
+                },
+                onclose: function() {
+                    proxy.close();
+                }
+            });
+
+            proxy._winbox = winbox;
+
+            // Bring the freshly opened window to the front above any
+            // already-focused WinBox window (all are created with the same
+            // base z-index, so a new one would otherwise open beneath a
+            // previously raised sibling). WinBox auto-marks a freshly created
+            // window as focused, so focus() alone is a no-op; blur() first to
+            // clear that flag, then focus() bumps its z-index above every other
+            // WinBox window.
+            if (winbox.focused && winbox.blur) winbox.blur();
+            if (winbox.focus) winbox.focus();
+
+            // Wire up the interactive search bar living inside the shadow DOM.
+            var wbEl = getShadowEl(winId);
+            var inputEl = wbEl ? wbEl.querySelector('.searchTextField') : null;
+            var btnEl = wbEl ? wbEl.querySelector('.doSearchBtn') : null;
+
+            var runSearch = function(searchTerm) {
+                if (inputEl) inputEl.value = searchTerm || '';
+                var contEl = host.shadowRoot.getElementById(winId + '_textCont');
+                if (contEl) contEl.innerHTML = '';
+                window.doAJAXRequest('data/xql/search.xql',
+                    'GET',
+                    {
+                        term: searchTerm || '',
+                        lang: window.getPreference('application_language')
+                    },
+                    function(response) {
+                        var c = host.shadowRoot.getElementById(winId + '_textCont');
+                        if (c) c.innerHTML = response.responseText;
+                    }
+                );
+            };
+
+            proxy.runSearch = runSearch;
+            proxy.focusSearchField = function() {
+                var el = getShadowEl(winId);
+                var inp = el ? el.querySelector('.searchTextField') : null;
+                if (inp) inp.focus();
+            };
+
+            if (inputEl) {
+                inputEl.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        runSearch(inputEl.value);
+                    }
+                });
+            }
+            if (btnEl) {
+                btnEl.addEventListener('click', function() {
+                    runSearch(inputEl ? inputEl.value : '');
+                });
+            }
+
+            desktop.addWebComponentWindow(proxy);
+            raiseHostAboveExt();
+
+            runSearch(term);
+            if (inputEl) inputEl.focus();
+        };
+
+        if (typeof WinBox !== 'undefined') {
+            doOpen();
+        } else {
+            var poll = setInterval(function() {
+                if (typeof WinBox !== 'undefined') {
+                    clearInterval(poll);
+                    doOpen();
+                }
+            }, 100);
+        }
+    },
+
     onSpecialKey: function(field, e) {
         var me = this;
         
         if (e.getKey() == e.ENTER) {
             var term = field.getValue();
-            me.desktop.openSearchWindow(term);
+            me.openSearch(term);
         }
     },
 
     onOpenSearchWindow: function(button, event, args) {
         var me = this;
         var term = button.textField.getValue();
-        me.desktop.openSearchWindow(term);
+        me.openSearch(term);
     },
 
     onOpenAboutWindow: function(button, event, args) {

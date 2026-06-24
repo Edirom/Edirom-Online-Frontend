@@ -297,7 +297,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         var me = this;
 
-        var isSearchWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.search.SearchWindow');
+        var isSearchWin = win.hideTaskButton === true;
 
         var config = {
             iconCls: win.iconCls,

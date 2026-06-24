@@ -41,16 +41,13 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.navigator.Navigator": [],
   "EdiromOnline.controller.window.AnnotationView": [],
   "EdiromOnline.controller.window.HeaderView": [],
-  "EdiromOnline.controller.window.HelpWindow": [],
   "EdiromOnline.controller.window.SingleWindowController": [],
   "EdiromOnline.controller.window.SummaryView": [],
   "EdiromOnline.controller.window.WindowController": [],
   "EdiromOnline.controller.window.XmlView": [],
-  "EdiromOnline.controller.window.about.AboutWindow": [],
   "EdiromOnline.controller.window.audio.AudioView": [],
   "EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavigator": [],
   "EdiromOnline.controller.window.iFrameView": [],
-  "EdiromOnline.controller.window.search.SearchWindow": [],
   "EdiromOnline.controller.window.source.MeasureBasedView": [],
   "EdiromOnline.controller.window.source.PageBasedView": [],
   "EdiromOnline.controller.window.source.SourceView": [],
@@ -74,13 +71,11 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.window.AnnotationView": [],
   "EdiromOnline.view.window.BottomBar": [],
   "EdiromOnline.view.window.HeaderView": [],
-  "EdiromOnline.view.window.HelpWindow": [],
   "EdiromOnline.view.window.SummaryView": [],
   "EdiromOnline.view.window.TopBar": [],
   "EdiromOnline.view.window.View": [],
   "EdiromOnline.view.window.Window": [],
   "EdiromOnline.view.window.XmlView": [],
-  "EdiromOnline.view.window.about.AboutWindow": [],
   "EdiromOnline.view.window.annotationLayouts.AnnotationLayout1": [],
   "EdiromOnline.view.window.annotationLayouts.AnnotationLayout2": [],
   "EdiromOnline.view.window.annotationLayouts.AnnotationLayout3": [],
@@ -92,7 +87,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.window.image.ImageViewer": [],
   "EdiromOnline.view.window.image.OpenSeaDragonViewer": [],
   "EdiromOnline.view.window.image.VerovioImage": [],
-  "EdiromOnline.view.window.search.SearchWindow": [],
   "EdiromOnline.view.window.source.GotoMsg": [],
   "EdiromOnline.view.window.source.HorizontalMeasureViewer": [],
   "EdiromOnline.view.window.source.IntervalSpinner": [],
@@ -954,16 +948,13 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.navigator.Navigator": [],
   "EdiromOnline.controller.window.AnnotationView": [],
   "EdiromOnline.controller.window.HeaderView": [],
-  "EdiromOnline.controller.window.HelpWindow": [],
   "EdiromOnline.controller.window.SingleWindowController": [],
   "EdiromOnline.controller.window.SummaryView": [],
   "EdiromOnline.controller.window.WindowController": [],
   "EdiromOnline.controller.window.XmlView": [],
-  "EdiromOnline.controller.window.about.AboutWindow": [],
   "EdiromOnline.controller.window.audio.AudioView": [],
   "EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavigator": [],
   "EdiromOnline.controller.window.iFrameView": [],
-  "EdiromOnline.controller.window.search.SearchWindow": [],
   "EdiromOnline.controller.window.source.MeasureBasedView": [],
   "EdiromOnline.controller.window.source.PageBasedView": [],
   "EdiromOnline.controller.window.source.SourceView": [],
@@ -1003,9 +994,6 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.view.window.HeaderView": [
     "widget.headerView"
   ],
-  "EdiromOnline.view.window.HelpWindow": [
-    "widget.helpWindow"
-  ],
   "EdiromOnline.view.window.SummaryView": [
     "widget.layout-border",
     "widget.summaryView"
@@ -1019,9 +1007,6 @@ Ext.ClassManager.addNameAliasMappings({
   ],
   "EdiromOnline.view.window.XmlView": [
     "widget.xmlView"
-  ],
-  "EdiromOnline.view.window.about.AboutWindow": [
-    "widget.aboutWindow"
   ],
   "EdiromOnline.view.window.annotationLayouts.AnnotationLayout1": [],
   "EdiromOnline.view.window.annotationLayouts.AnnotationLayout2": [],
@@ -1040,9 +1025,6 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.view.window.image.ImageViewer": [],
   "EdiromOnline.view.window.image.OpenSeaDragonViewer": [],
   "EdiromOnline.view.window.image.VerovioImage": [],
-  "EdiromOnline.view.window.search.SearchWindow": [
-    "widget.searchWindow"
-  ],
   "EdiromOnline.view.window.source.GotoMsg": [],
   "EdiromOnline.view.window.source.HorizontalMeasureViewer": [
     "widget.horizontalMeasureViewer"

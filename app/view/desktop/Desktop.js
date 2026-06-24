@@ -172,27 +172,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             
     },
 
-    openSearchWindow: function(term) {
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.search.SearchWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.search.SearchWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(thisWindow);
-            thisWindow.show();
-
-        }else {
-            thisWindow.show();
-        }
-            
-        thisWindow.doSearch(term);
-    },
 
     getSizeAndPosition: function(maxWidth, maxHeight) {
 
@@ -228,12 +207,14 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         // set of ignored windows (e.g. for tiling, cascading, ...)
         var ignoredWindows = [
-            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
-            'EdiromOnline.view.window.search.SearchWindow'
+            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
         ];
 
-        // add windows of active desktop to set, except ignored windows
+        // add windows of active desktop to set, except ignored windows and
+        // WinBox web-component proxies (which are not tileable ExtJS windows)
         this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+            if(activeWindow.isExtWindowProxy)
+                return;
             if(ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
                 set.add(activeWindow);
             }   

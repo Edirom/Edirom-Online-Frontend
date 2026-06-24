@@ -192,11 +192,11 @@ Ext.define('EdiromOnline.controller.LinkController', {
     },
 
     parseEdiromLink: function(uri) {
+        var me = this;
         //TODO: edirom link
 
         if(uri == 'edirom://searchWindow') {
-            //TODO: open search window
-            Ext.log('open search window');
+            me.application.getController('desktop.Desktop').openSearch('');
             return;
 
         }else if(uri.match(/^edirom:\/\/searchWindow[type:.*]/)) {
