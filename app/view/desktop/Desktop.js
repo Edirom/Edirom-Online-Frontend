@@ -194,29 +194,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         thisWindow.doSearch(term);
     },
 
-    openAboutWindow: function() {
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.about.AboutWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.about.AboutWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(thisWindow);
-            thisWindow.show();
-
-        }else if(thisWindow != me.getActiveWindow())
-            thisWindow.show();
-
-        else
-            thisWindow.destroy();
-    
-    },
-
     getSizeAndPosition: function(maxWidth, maxHeight) {
 
         var me = this;
@@ -252,7 +229,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         // set of ignored windows (e.g. for tiling, cascading, ...)
         var ignoredWindows = [
             'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
-            'EdiromOnline.view.window.about.AboutWindow',
             'EdiromOnline.view.window.search.SearchWindow'
         ];
 
