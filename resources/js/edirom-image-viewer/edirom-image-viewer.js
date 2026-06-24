@@ -1,3 +1,7 @@
+
+console.log("Image Viewer loaded!");
+
+
 /**
  * Custom Web Component for viewing IIIF images using the OpenSeadragon viewer.
  * 
@@ -31,7 +35,13 @@
  * @attribute {string} triggerfullscreen - Trigger attribute to toggle fullscreen mode.
  * @attribute {object|string} openseadragon-options - Additional OpenSeadragon configuration options as JSON object.
  * 
+ * @attribute {string} zones-data - JSON object mapping zone keys to zone objects.
+ *   Each zone: { name: string, page: number, ulx: number, uly: number, lrx: number, lry: number }
+ * @attribute {string} zone - Key of the zone to navigate to (must exist in zones-data).
+ * 
  * @fires communicate-[property]-update - Fired when a property is updated via attribute change.
+ * @fires page-changed - Fired when the viewer navigates to a new page. detail: { pageNumber } (1-based).
+ * @fires zone-changed - Fired when the viewer navigates to a zone. detail: { zoneKey, zone }.
  * 
  * @method nextPage - Navigate to the next page in a sequence.
  * @method previousPage - Navigate to the previous page in a sequence.
@@ -63,6 +73,18 @@ class EdiromOpenseadragon extends HTMLElement {
         /** @type {OpenSeadragon.Viewer} OpenSeadragon viewer instance */
         this.openSeaDragon = null;
         
+        /** @type {number} Total number of tile sources (images/pages) */
+        this.totalTileSources = 0;
+        
+        /** @type {Object} Zone lookup map parsed from the zones-data attribute */
+        this._zonesData = {};
+
+        /** @type {string|null} Key of the currently active zone, or null */
+        this._currentZoneKey = null;
+
+        /** @type {Object|null} Zone waiting to be applied after an OSD page change completes */
+        this._pendingZoneAfterPageChange = null;
+
         /** @type {object} Additional OpenSeadragon options */
         this.options = this.getAttribute('openseadragon-options') ? 
             JSON.parse(this.getAttribute('openseadragon-options')) : {};
@@ -74,7 +96,7 @@ class EdiromOpenseadragon extends HTMLElement {
      * @returns {Array<string>} The list of observed attributes.
      */
     static get observedAttributes() {
-        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol',  'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options'];
+        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone'];
     }
 
     /**
@@ -116,6 +138,19 @@ class EdiromOpenseadragon extends HTMLElement {
      * Loads the OpenSeadragon library and initializes the viewer container.
      */
     connectedCallback() {
+        console.log("Image Viewer connected to DOM!");
+        
+        // Add host styles
+        const style = document.createElement('style');
+        style.textContent = `
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+        `;
+        this.shadowRoot.appendChild(style);
+
         console.log("Connected to DOM");
 
         // Inject stylesheet links so overlay styles (measures, annotations) work inside the shadow root
@@ -225,6 +260,24 @@ class EdiromOpenseadragon extends HTMLElement {
                     this.openSeaDragon.gestureSettingsMouse.clickToZoom = newPropertyValue === 'true';
                 }
                 break;
+
+            case 'zones-data':
+                try {
+                    this._zonesData = JSON.parse(newPropertyValue) || {};
+                } catch (e) {
+                    console.error('Invalid zones-data JSON:', e);
+                    this._zonesData = {};
+                }
+                // If a zone key is already active, re-apply it against the new data.
+                if (this._currentZoneKey) {
+                    this._applyZoneByKey(this._currentZoneKey);
+                }
+                break;
+
+            case 'zone':
+                this._applyZoneByKey(newPropertyValue);
+                break;
+
             // handle default
             default:  
               console.log("Invalid property: '"+property+"'");
@@ -293,33 +346,81 @@ class EdiromOpenseadragon extends HTMLElement {
      * @param {Array} tileSources - Array of tile source URLs or objects.
      */
     initializeViewer(tileSources) {
-        this.openSeaDragon = OpenSeadragon({
-            element: this.shadowRoot.querySelector('#viewer'),
-            // Load the navigation control icons from the CDN that hosts the OSD library
-            prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/images/',
-            preserveViewport: this.preserveviewport === 'true',
-            visibilityRatio: parseFloat(this.visibilityratio) || 1.0,
-            minZoomLevel: parseFloat(this.minzoomlevel) || 0.5,
-            defaultZoomLevel: parseFloat(this.defaultzoomlevel) || 1,
-            maxZoomLevel: parseFloat(this.maxzoomlevel) || 10,
-            showNavigationControl: this.shownavigationcontrol === 'true',
-            tileSources: tileSources,
-            showNavigator:  this.shownavigator === 'true',
-            showZoomControl:  this.showzoomcontrol === 'true',
-            showHomeControl:  this.showhomecontrol === 'true',
-            showFullPageControl:  this.showfullpagecontrol === 'true',
-            showSequenceControl:  this.showsequencecontrol === 'true',
-            sequenceMode: this.sequencemode === 'true',
-            gestureSettingsMouse: {
-              clickToZoom: this.clicktozoom === 'true',
-            },
-            // Performance and timeout settings
-            timeout: 120000, // Increase timeout to 120 seconds for slow servers
-            maxImageCacheCount: 200,
-            imageLoaderLimit: 2, // Limit concurrent tile requests to reduce server load
-            // Merge additional options from openseadragon-options attribute
-            ...this.options
-        });
+        console.log('initializeViewer called with:', tileSources);
+        console.log('Viewer div:', this.viewerDiv);
+        console.log('OpenSeadragon available:', !!window.OpenSeadragon);
+        
+        if (!window.OpenSeadragon) {
+            console.error('OpenSeadragon library not available');
+            return;
+        }
+        
+        try {
+            // Store the tile sources count
+            this.totalTileSources = Array.isArray(tileSources) ? tileSources.length : 1;
+            
+            this.openSeaDragon = OpenSeadragon({
+                element: this.viewerDiv,
+                prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/images/',
+                preserveViewport: this.preserveviewport === 'true',
+                visibilityRatio: parseFloat(this.visibilityratio) || 1.0,
+                minZoomLevel: parseFloat(this.minzoomlevel) || 0.5,
+                defaultZoomLevel: parseFloat(this.defaultzoomlevel) || 1,
+                maxZoomLevel: parseFloat(this.maxzoomlevel) || 10,
+                showNavigationControl: this.shownavigationcontrol === 'true',
+                tileSources: tileSources,
+                showNavigator:  this.shownavigator === 'true',
+                showZoomControl:  this.showzoomcontrol === 'true',
+                showHomeControl:  this.showhomecontrol === 'true',
+                showFullPageControl:  this.showfullpagecontrol === 'true',
+                showSequenceControl:  this.showsequencecontrol === 'true',
+                sequenceMode: this.sequencemode === 'true',
+                gestureSettingsMouse: {
+                  clickToZoom: this.clicktozoom === 'true',
+                },
+                // Required for OSD's WebGL drawer to be able to use cross-origin
+                // tile images as WebGL textures. Without this, tiles fetched from
+                // a different origin are "tainted" and cannot be uploaded to WebGL,
+                // causing blank pages on revisit (cached tiles trigger the failure
+                // before OSD's canvas-drawer fallback can schedule a redraw).
+                crossOriginPolicy: 'Anonymous',
+                // Performance and timeout settings
+                timeout: 120000, // Increase timeout to 120 seconds for slow servers
+                maxImageCacheCount: 200,
+                imageLoaderLimit: 2, // Limit concurrent tile requests to reduce server load
+                // Merge additional options from openseadragon-options attribute
+                ...this.options
+            });
+            console.log('OpenSeadragon viewer initialized successfully:', this.openSeaDragon);
+
+            // --- Page change and zone handlers ---
+            // Fire page-changed on every OSD page navigation.
+            // If a zone was requested for this page, apply it once tiles are loaded.
+            this.openSeaDragon.addHandler('page', (event) => {
+                this._firePageChanged(event.page + 1);
+                if (!this._pendingZoneAfterPageChange) return;
+                const pending = this._pendingZoneAfterPageChange;
+                this._pendingZoneAfterPageChange = null;
+                // Wait for the tiled image on the new page to be fully ready
+                this.openSeaDragon.addOnceHandler('tile-loaded', () => {
+                    this._applyZone(pending.zone);
+                    this._fireZoneChanged(pending.zoneKey, pending.zone);
+                });
+            });
+
+            // If a zone was requested before the viewer was ready, apply it now.
+            // Wait for 'tile-loaded' so coordinate conversion is safe.
+            if (this._currentZoneKey && this._zonesData[this._currentZoneKey]) {
+                const zone = this._zonesData[this._currentZoneKey];
+                const zoneKey = this._currentZoneKey;
+                this.openSeaDragon.addOnceHandler('tile-loaded', () => {
+                    this._applyZone(zone);
+                    this._fireZoneChanged(zoneKey, zone);
+                });
+            }
+        } catch (error) {
+            console.error('Error initializing OpenSeadragon:', error);
+        }
     }
     
     /**
@@ -435,6 +536,100 @@ class EdiromOpenseadragon extends HTMLElement {
     
     getRotation() {
         return this.openSeaDragon ? this.openSeaDragon.viewport.getRotation() : 0;
+    }
+
+    // ---------------------------------------------------------------
+    //  Zone navigation
+    // ---------------------------------------------------------------
+
+    /**
+     * Navigates the viewer to the zone identified by `zoneKey` in `_zonesData`.
+     * Handles same-page transitions (smooth) and cross-page transitions
+     * (page change + deferred zone application).
+     * @param {string} zoneKey - Key of the zone in the zones-data map.
+     */
+    _applyZoneByKey(zoneKey) {
+        const zone = this._zonesData[zoneKey];
+        if (!zone) {
+            console.warn(`edirom-openseadragon: zone "${zoneKey}" not found in zones-data.`);
+            return;
+        }
+        this._currentZoneKey = zoneKey;
+
+        if (!this.openSeaDragon) {
+            // Viewer not ready yet — initializeViewer will pick it up via _currentZoneKey.
+            return;
+        }
+
+        const targetPage = parseInt(zone.page) - 1; // 1-based → 0-based
+        const currentPage = this.openSeaDragon.currentPage();
+
+        if (targetPage === currentPage) {
+            // Same page: apply zone directly (smooth viewport animation)
+            this._applyZone(zone);
+            this._fireZoneChanged(zoneKey, zone);
+        } else {
+            // Different page: defer zone until the new page's tiles are loaded
+            this._pendingZoneAfterPageChange = { zoneKey, zone };
+            this.openSeaDragon.goToPage(targetPage);
+        }
+    }
+
+    /**
+     * Zooms/pans the viewport to the zone coordinates, or resets to home if
+     * no coordinates are present. Uses OSD's spring animation for smooth transitions.
+     * @param {Object} zone - The zone object with optional ulx, uly, lrx, lry.
+     */
+    _applyZone(zone) {
+        if (!this.openSeaDragon) return;
+
+        const hasZone = zone.ulx != null && zone.uly != null &&
+            zone.lrx != null && zone.lry != null;
+
+        if (!hasZone) {
+            this.openSeaDragon.viewport.goHome();
+            return;
+        }
+
+        // Convert pixel coordinates to viewport coordinates via the current TiledImage
+        const tiledImage = this.openSeaDragon.world.getItemAt(0);
+        if (!tiledImage) {
+            console.warn('edirom-openseadragon: no TiledImage available for zone conversion.');
+            this.openSeaDragon.viewport.goHome();
+            return;
+        }
+
+        const rect = tiledImage.imageToViewportRectangle(
+            Number(zone.ulx),
+            Number(zone.uly),
+            Number(zone.lrx) - Number(zone.ulx),
+            Number(zone.lry) - Number(zone.uly)
+        );
+        // fitBounds without immediately=true uses OSD's spring animation
+        this.openSeaDragon.viewport.fitBounds(rect);
+    }
+
+    /**
+     * Dispatches the `zone-changed` custom event.
+     * @param {string} zoneKey - The key of the zone that was navigated to.
+     * @param {Object} zone - The zone object that was navigated to.
+     */
+    _fireZoneChanged(zoneKey, zone) {
+        this.dispatchEvent(new CustomEvent('zone-changed', {
+            detail: { zoneKey, zone },
+            bubbles: true
+        }));
+    }
+
+    /**
+     * Dispatches the `page-changed` custom event.
+     * @param {number} pageNumber - The 1-based page number that was navigated to.
+     */
+    _firePageChanged(pageNumber) {
+        this.dispatchEvent(new CustomEvent('page-changed', {
+            detail: { pageNumber },
+            bubbles: true
+        }));
     }
 }
 

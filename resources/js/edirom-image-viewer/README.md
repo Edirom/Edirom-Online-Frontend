@@ -16,6 +16,7 @@ This web component displays IIIF images using the [OpenSeadragon](https://opense
 - **Attribute-Driven**: All interactions through standard HTML attributes
 - **Custom Configuration**: Pass advanced OpenSeadragon options via JSON
 - **Event Communication**: Custom events for state changes
+- **Zone Navigation**: Define a lookup map of named zones, each pointing to a page and optional pixel-precise coordinates. Navigate to any zone with smooth animated viewport transitions, including automatic cross-page navigation.
 
 ## License
 
@@ -96,6 +97,8 @@ This applies to `pagenumber` attribute and all page-related methods. The compone
 | `triggerhome`            | boolean | Trigger home position reset (set to `"true"` to reset view to initial state).                                                                            | `"false"` |
 | `triggerfullscreen`      | boolean | Trigger fullscreen mode toggle (set to `"true"` to toggle fullscreen).                                                                                   | `"false"` |
 | `openseadragon-options`  | string  | JSON object with additional OpenSeadragon configuration options. Example: `'{"showNavigator": true}'`                             | `""`     |
+| `zones-data`             | string  | JSON object mapping zone keys to zone objects. Each zone: `{ page: number, ulx: number, uly: number, lrx: number, lry: number }`. See [Zone Navigation](#zone-navigation) for details. | `"{}"` |
+| `zone`                   | string  | Key of the zone to navigate to. Must exist in `zones-data`. Setting this attribute triggers navigation to the zone. | `""` |
 
 ## Public Methods
 
@@ -212,6 +215,76 @@ The component fires custom events when attributes change:
 - `communicate-triggerhome-update` - Fired when home is triggered
 - `communicate-triggerfullscreen-update` - Fired when fullscreen is triggered
 - And more for each observable attribute
+
+The component also fires dedicated events for navigation:
+
+- `page-changed` - Fired when the viewer navigates to a new page. Detail: `{ pageNumber }` (1-based).
+- `zone-changed` - Fired after the viewer successfully navigates to a zone. Detail: `{ zoneKey, zone }`.
+
+```javascript
+viewer.addEventListener('page-changed', (event) => {
+    console.log('Navigated to page:', event.detail.pageNumber);
+});
+
+viewer.addEventListener('zone-changed', (event) => {
+    console.log('Navigated to zone:', event.detail.zoneKey);
+});
+```
+
+## Zone Navigation
+
+The `zones-data` attribute enables pixel-precise navigation to named rectangular regions on any page. This is independent of OSD's own sequence controls.
+
+### Zone Object Format
+
+Each entry in the `zones-data` map must have a 1-based `page` number and pixel coordinates (`ulx`, `uly`, `lrx`, `lry`) defining the upper-left and lower-right corners of the region.
+
+```json
+{
+  "measure_1": { "page": 1, "ulx": 100, "uly": 200, "lrx": 800, "lry": 600 },
+  "measure_2": { "page": 1, "ulx": 900, "uly": 200, "lrx": 1600, "lry": 600 },
+  "measure_3": { "page": 2, "ulx": 150, "uly": 300, "lrx": 950, "lry": 700 }
+}
+```
+
+- **Same page**: the viewer smoothly pans and zooms to the zone using OSD's spring animation.
+- **Cross-page**: the component navigates to the target page first, waits until its tiles are loaded, then applies the zone — ensuring coordinate conversion is always accurate.
+- **Updating zones-data**: setting a new `zones-data` value while a zone is active re-applies the current zone against the updated data.
+
+### Example: Zone Navigation
+
+```html
+<edirom-openseadragon
+    id="viewer"
+    sequencemode="true"
+    showsequencecontrol="false"
+    tilesources='[...]'
+    zones-data='{}'>
+</edirom-openseadragon>
+```
+
+```javascript
+const viewer = document.querySelector('#viewer');
+
+// Populate zones-data with zone coordinates
+viewer.setAttribute('zones-data', JSON.stringify({
+    measure_1: { page: 1, ulx: 100, uly: 200, lrx: 800, lry: 600 },
+    measure_2: { page: 2, ulx: 150, uly: 300, lrx: 950, lry: 700 }
+}));
+
+// Navigate to a zone
+viewer.setAttribute('zone', 'measure_1');
+
+// React to zone changes (e.g. to update an external control)
+viewer.addEventListener('zone-changed', (event) => {
+    console.log('Navigated to zone:', event.detail.zoneKey);
+});
+
+// React to page changes
+viewer.addEventListener('page-changed', (event) => {
+    console.log('Page is now:', event.detail.pageNumber);
+});
+```
 
 ## Browser Support
 
