@@ -74,6 +74,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         me.on("afterrender", me.createMenuEntries, me, { single: true });
         me.on("afterrender", me.createToolbarEntries, me, { single: true });
         me.imageViewer.on("zoomChanged", me.updateZoom, me);
+        me.imageViewer.on("imageChanged", me.onViewerImageChanged, me);
 
         me.window.on("loadInternalLink", me.loadInternalId, me);
     },
@@ -106,6 +107,13 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         me.pageSpinner.setStore(me.imageSet);
 
+        // When the viewer supports native pagination (OpenSeaDragonViewer),
+        // load the whole set as a sequence once so page changes only switch
+        // the component's page number instead of reloading a single image.
+        if (Ext.isFunction(me.imageViewer.setImages)) {
+            me.imageViewer.setImages(me.imageSet);
+        }
+
         if (me.imageToShow != null) {
             me.pageSpinner.setPage(me.imageSet.getById(me.imageToShow));
             me.imageToShow = null;
@@ -125,6 +133,13 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         var imgIndex = me.imageSet.findExact("id", id);
         me.activePage = me.imageSet.getAt(imgIndex);
 
+        // Prefer the viewer's native sequence pagination; fall back to
+        // reloading a single image (e.g. the digilib ImageViewer).
+        if (Ext.isFunction(me.imageViewer.goToPageById)
+                && me.imageViewer.goToPageById(id)) {
+            return;
+        }
+
         me.imageViewer.showImage(
             me.activePage.get("path"),
             me.activePage.get("width"),
@@ -141,6 +156,14 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         }
 
         me.pageSpinner.setPage(me.imageSet.getById(pageId));
+    },
+
+    // Keep the page spinner's number box in sync when the image viewer changes
+    // page on its own (e.g. via the web component's native sequence navigation).
+    onViewerImageChanged: function (viewer, path, id) {
+        var me = this;
+        if (me.pageSpinner && Ext.isFunction(me.pageSpinner.syncPage))
+            me.pageSpinner.syncPage(id);
     },
 
     getActivePage: function () {

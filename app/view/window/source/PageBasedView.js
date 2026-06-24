@@ -58,6 +58,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.callParent();
 
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
+ 	   me.imageViewer.on('imageChanged', me.onViewerImageChanged, me);
+    },
+
+    // Keep the page spinner's number box in sync when the image viewer changes
+    // page on its own (e.g. via the web component's native sequence navigation).
+    onViewerImageChanged: function(viewer, path, id) {
+        var me = this;
+        if(me.pageSpinner && Ext.isFunction(me.pageSpinner.syncPage))
+            me.pageSpinner.syncPage(id);
     },
 
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
@@ -168,6 +177,12 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         me.pageSpinner.setStore(me.imageSet);
 
+        // When the viewer supports native pagination (OpenSeaDragonViewer),
+        // load the whole set as a sequence once so page changes only switch
+        // the component's page number instead of reloading a single image.
+        if(Ext.isFunction(me.imageViewer.setImages))
+            me.imageViewer.setImages(me.imageSet);
+
         if(me.imageToShow != null) {
             me.pageSpinner.setPage(me.imageSet.getById(me.imageToShow));
             me.imageToShow = null;
@@ -189,8 +204,27 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var imgIndex = me.imageSet.findExact('id', id);
         me.activePage = me.imageSet.getAt(imgIndex);
 
-        me.imageViewer.showImage(me.activePage.get('path'),
-            me.activePage.get('width'), me.activePage.get('height'));
+        // Native sequence pagination (OpenSeaDragonViewer): the component keeps
+        // all pages loaded, so switching does NOT reload/destroy overlays. Tear
+        // down the current page's overlays explicitly before navigating; the
+        // visibility events below re-apply them for the new page.
+        if(Ext.isFunction(me.imageViewer.goToPageById)) {
+
+            me.imageViewer.removeShapes('measures');
+            me.imageViewer.removeShapes('annotations');
+
+            if(me.owner.overlaysVisible) {
+                Ext.Array.each(Object.keys(me.owner.overlaysVisible), function(overlayId) {
+                    me.imageViewer.removeSVGOverlay(overlayId);
+                });
+            }
+
+            me.imageViewer.goToPageById(id);
+
+        }else {
+            me.imageViewer.showImage(me.activePage.get('path'),
+                me.activePage.get('width'), me.activePage.get('height'));
+        }
 
         if(me.owner.measuresVisible)
             me.owner.fireEvent('measureVisibilityChange', me.owner, true);

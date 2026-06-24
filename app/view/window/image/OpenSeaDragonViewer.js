@@ -34,6 +34,11 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
     imagePrefix: null,
 
+    // Ordered list of pages currently loaded as an OpenSeadragon sequence.
+    pages: null,
+    // Page index requested before the viewer finished initializing.
+    pendingPageIndex: null,
+
     shapes: null,
     partLabel: null,
 
@@ -66,10 +71,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
          };
 
         me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;">' +
-                  '<edirom-openseadragon id="' + me.id + '_wc" ' +
+                  '<edirom-image-viewer id="' + me.id + '_wc' + '" ' +
                   'style="width:100%;height:100%;display:block;" ' +
                   'shownavigationcontrol="false" shownavigator="false" clicktozoom="false">' +
-                  '</edirom-openseadragon>' +
+                  '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
 
         me.shapes = new Ext.util.MixedCollection();
@@ -82,10 +87,40 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     initSurface: function() {
         var me = this;
         me.webComponent = document.getElementById(me.id + '_wc');
-    },
 
-    getViewer: function() {
-        return this.webComponent ? this.webComponent.openSeaDragon : null;
+        // Forward the web component's zoom events as ExtJS 'zoomChanged' events.
+        me.webComponent.addEventListener('zoom', function(event) {
+            me.fireEvent('zoomChanged', event.detail.zoom);
+        });
+
+        // Re-apply a pending rectangle once the image's tiles have been drawn.
+        me.webComponent.addEventListener('image-ready', function() {
+            // Apply an initial page requested before the viewer was ready
+            // (e.g. a deep link to a page other than the first one).
+            if (me.pendingPageIndex != null) {
+                var idx = me.pendingPageIndex;
+                me.pendingPageIndex = null;
+                if (idx > 0) me.webComponent.setAttribute('pagenumber', String(idx + 1));
+            }
+
+            if (me.rect && me.rect != null) {
+                me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
+            }
+        });
+
+        // Forward the web component's native sequence page changes so the
+        // ExtJS layer (page spinner, overlays) can stay in sync.
+        me.webComponent.addEventListener('page-changed', function(event) {
+            var pageNumber = event.detail.pageNumber; // 1-based
+            var page = (me.pages && me.pages.length >= pageNumber) ? me.pages[pageNumber - 1] : null;
+            if (page) {
+                me.imageHeight = page.height;
+                me.imageWidth = page.width;
+                me.imgPath = page.path;
+                me.imgId = page.id;
+                me.fireEvent('imageChanged', me, page.path, page.id);
+            }
+        });
     },
 
     clear: function() {
@@ -93,20 +128,16 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.rect = null;
     },
 
-    showImage: function(path, width, height, pageId) {
+    // Builds a IIIF level2 tile source descriptor for a single image.
+    buildTileSource: function(path, width, height) {
         var me = this;
-
-        me.imageHeight = height;
-        me.imageWidth = width;
-        me.imgPath = path;
-        me.imgId = pageId;
 
         var iiifPath = path;
         if(!path.startsWith("http")) {
             iiifPath = me.imagePrefix + path.replace(new RegExp('\/', 'g'), '!');
         }
 
-        var tileSource = {
+        return {
             "@context": "http://iiif.io/api/image/2/context.json",
             "@id": iiifPath,
             "height": Number(height),
@@ -118,53 +149,90 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 "width": 1024
             }]
         };
+    },
 
-        me.webComponent.setAttribute('tilesources', JSON.stringify([tileSource]));
+    showImage: function(path, width, height, pageId) {
+        var me = this;
 
-        var osd = me.webComponent.openSeaDragon;
-        if (osd) {
-            osd.addHandler('zoom', function(event) { me.fireEvent('zoomChanged', event.zoom); });
-            osd.addOnceHandler('tile-drawn', function() {
-                if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
-            });
-        }
+        me.imageHeight = height;
+        me.imageWidth = width;
+        me.imgPath = path;
+        me.imgId = pageId;
+
+        me.webComponent.setAttribute('tilesources', JSON.stringify([me.buildTileSource(path, width, height)]));
 
         me.fireEvent('imageChanged', me, path, pageId);
+    },
+
+    // Loads an entire page set as an OpenSeadragon sequence so the component's
+    // native pagination (goToPage / pagenumber) can switch pages without
+    // reloading the whole viewer. `store` is the imageSet (Ext.data.Store).
+    setImages: function(store) {
+        var me = this;
+
+        me.pages = [];
+        var tileSources = [];
+
+        store.each(function(rec) {
+            me.pages.push({
+                id: rec.get('id'),
+                path: rec.get('path'),
+                width: rec.get('width'),
+                height: rec.get('height')
+            });
+            tileSources.push(me.buildTileSource(rec.get('path'), rec.get('width'), rec.get('height')));
+        });
+
+        if (!me.webComponent) return;
+
+        me.webComponent.setAttribute('sequencemode', 'true');
+        me.webComponent.setAttribute('tilesources', JSON.stringify(tileSources));
+    },
+
+    // Navigates the loaded sequence to the page with the given id by setting
+    // the web component's 1-based `pagenumber` attribute. Returns true if the
+    // page was found.
+    goToPageById: function(id) {
+        var me = this;
+
+        if (!me.webComponent || !me.pages) return false;
+
+        var index = -1;
+        for (var i = 0; i < me.pages.length; i++) {
+            if (me.pages[i].id === id) { index = i; break; }
+        }
+        if (index < 0) return false;
+
+        me.rect = null;
+
+        // getCurrentPage() returns 0 until OpenSeadragon is initialized; defer
+        // the navigation to the first 'image-ready' event in that case.
+        if (me.webComponent.getCurrentPage && me.webComponent.getCurrentPage() > 0) {
+            me.webComponent.setAttribute('pagenumber', String(index + 1));
+        } else {
+            me.pendingPageIndex = index;
+        }
+        return true;
     },
 
     fitInImage: function() {
 
         var me = this;
-        var osd = me.getViewer();
-        if (osd) osd.viewport.goHome();
+        if (me.webComponent) me.webComponent.home();
     },
 
     setZoomAndCenter: function(z) {
 
         var me = this;
-        var osd = me.getViewer();
-        if (osd) osd.viewport.zoomTo(z);
+        if (me.webComponent) me.webComponent.setZoom(z);
     },
 
     getActualRect: function() {
 
         var me = this;
-        var osd = me.getViewer();
-        if (!osd) return { x: 0, y: 0, width: 0, height: 0 };
+        if (!me.webComponent) return { x: 0, y: 0, width: 0, height: 0 };
 
-        var viewportBounds = osd.viewport.getBounds();
-        var imageBounds = osd.viewport.viewportToImageRectangle(viewportBounds.x, viewportBounds.y, viewportBounds.width, viewportBounds.height);
-        var x = (imageBounds.x < 0?0:imageBounds.x);
-        var y = (imageBounds.y < 0?0:imageBounds.y);
-        var width = (imageBounds.width > me.imageWidth?me.imageWidth:imageBounds.width);
-        var height = (imageBounds.height > me.imageHeight?me.imageHeight:imageBounds.height);
-
-        return {
-            x: x,
-            y: y,
-            width: width,
-            height: height
-        };
+        return me.webComponent.getImageViewportRect();
     },
 
     showRect: function(x, y, width, height, highlight) {
@@ -178,17 +246,13 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             highlight:highlight
         };
 
-        var osd = me.getViewer();
-        if (!osd) return;
-        var rect = osd.viewport.imageToViewportRectangle(x, y, width, height);
-        osd.viewport.fitBoundsWithConstraints(rect);
+        if (me.webComponent) me.webComponent.fitImageRect(x, y, width, height);
     },
 
     addMeasures: function(shapes) {
 
         var me = this;
-        var osd = me.getViewer();
-        if (!osd) return;
+        if (!me.webComponent) return;
 
         me.shapes.add('measures', shapes);
 
@@ -206,13 +270,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             measure.className = "measure";
             measure.innerHTML = '<span class="' + (name === ''?'measureInnerEmpty':'measureInner') + '" id="' + me.id + '_' + id + '_inner">' + name + '</span>';
 
-            var point = osd.viewport.imageToViewportCoordinates(x, y);
-            var rect = osd.viewport.imageToViewportRectangle(x, y, width, height);
-
-            osd.addOverlay({
-                element: measure,
-                location: new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)
-            });
+            me.webComponent.addImageOverlay(measure, x, y, width, height);
 
             var text = Ext.get(me.webComponent.shadowRoot.getElementById(me.id + '_' + id + '_inner'));
             text.on('mouseenter', me.highlightShape, me, measure, true);
@@ -226,11 +284,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     addSVGOverlay: function(overlayId, overlay, name, uri, fn) {
 
         var me = this;
-        var osd = me.getViewer();
-        if (!osd) return;
+        if (!me.webComponent) return;
 
         var svgId = me.id + '_' + overlayId;
-        var overlayOSD = osd.getOverlayById(svgId);
+        var overlayOSD = me.webComponent.getOverlayById(svgId);
         if (overlayOSD !== null ) {
             return;
         }
@@ -245,25 +302,16 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 var y = 0;
                 var width = svg.width.baseVal.value;
                 var height = svg.height.baseVal.value;
-                var point = osd.viewport.imageToViewportCoordinates(x, y);
-                var rect = osd.viewport.imageToViewportRectangle(x, y, width, height);
-                osd.addOverlay({
-                    element:overlayXML.documentElement,
-                    location:new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)
-                });
+                me.webComponent.addImageOverlay(overlayXML.documentElement, x, y, width, height);
             }
         });
     },
 
     removeSVGOverlay: function(overlayId) {
         var me = this;
-        var osd = me.getViewer();
-        if (!osd) return;
+        if (!me.webComponent) return;
         var svgId = me.id + '_' + overlayId;
-        var overlayOSD = osd.getOverlayById(svgId);
-        if (overlayOSD !== null ) {
-            overlayOSD.destroy();
-        }
+        me.webComponent.removeOverlay(svgId);
     },
 
     removeShapes: function(groupName) {
@@ -274,7 +322,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         }
 
         var me = this;
-        var osd = me.getViewer();
 
         //abort if me.shapes does not contain key
         if(!me.shapes.containsKey(groupName)) {
@@ -300,7 +347,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 console.log('+shape.id: ' + me.id + '_' + id);
             }
 
-            if (osd) osd.removeOverlay(me.id + '_' + id);
+            if (me.webComponent) me.webComponent.removeOverlay(me.id + '_' + id);
         };
 
         if(me.shapes.get(groupName).each)
@@ -335,8 +382,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     addAnnotations: function(annotations) {
 
         var me = this;
-        var osd = me.getViewer();
-        if (!osd) return;
+        if (!me.webComponent) return;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('controller: OpenseaDragonView: addAnnotaitons');
@@ -387,7 +433,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 var height = shape.lry - shape.uly;
                 var partType = shape.type;
 
-                var anno = osd.getOverlayById(me.id + '_' + id);
+                var anno = me.webComponent.getOverlayById(me.id + '_' + id);
                 if(anno === null) {
 
                     var anno = document.createElement('div');
@@ -400,10 +446,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
                     anno.append(annoIcon);
 
-                    var point = osd.viewport.imageToViewportCoordinates(x, y);
-                    var rect = osd.viewport.imageToViewportRectangle(x, y, width, height);
-
-                    osd.addOverlay({element:anno, location:new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)});
+                    me.webComponent.addImageOverlay(anno, x, y, width, height);
 
                 }else {
 

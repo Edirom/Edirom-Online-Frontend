@@ -5,7 +5,7 @@ console.log("Image Viewer loaded!");
 /**
  * Custom Web Component for viewing IIIF images using the OpenSeadragon viewer.
  * 
- * <edirom-openseadragon> provides an interface to load, view, and interact with IIIF images
+ * <edirom-image-viewer> provides an interface to load, view, and interact with IIIF images
  * using the OpenSeadragon JavaScript library. It supports dynamic attribute changes, zooming,
  * page navigation, rotation, and various viewer controls.
  * 
@@ -13,7 +13,7 @@ console.log("Image Viewer loaded!");
  * @extends HTMLElement
  * 
  * @example
- * <edirom-openseadragon tilesources='["manifest.json"]'></edirom-openseadragon>
+ * <edirom-image-viewer tilesources='["manifest.json"]'></edirom-image-viewer>
  * 
  * @attribute {string} tilesources - JSON string array of IIIF manifest URLs or tile source objects.
  * @attribute {number} pagenumber - The current page/image number to display (for multi-image sequences).
@@ -393,6 +393,21 @@ class EdiromOpenseadragon extends HTMLElement {
             });
             console.log('OpenSeadragon viewer initialized successfully:', this.openSeaDragon);
 
+            // Re-dispatch OSD zoom changes as a DOM event so host apps can
+            // react without reaching into the underlying OpenSeadragon instance.
+            this.openSeaDragon.addHandler('zoom', (event) => {
+                this.dispatchEvent(new CustomEvent('zoom', {
+                    detail: { zoom: event.zoom },
+                    bubbles: true
+                }));
+            });
+
+            // Dispatch an 'image-ready' event once the first tile of the
+            // current tile source has been drawn.
+            this.openSeaDragon.addOnceHandler('tile-drawn', () => {
+                this.dispatchEvent(new CustomEvent('image-ready', { bubbles: true }));
+            });
+
             // --- Page change and zone handlers ---
             // Fire page-changed on every OSD page navigation.
             // If a zone was requested for this page, apply it once tiles are loaded.
@@ -539,6 +554,89 @@ class EdiromOpenseadragon extends HTMLElement {
     }
 
     // ---------------------------------------------------------------
+    //  Viewport helpers (image-space)
+    // ---------------------------------------------------------------
+
+    /**
+     * Returns the currently visible region of the image in image-pixel
+     * coordinates, clamped to the image bounds.
+     * @returns {{x:number,y:number,width:number,height:number}}
+     */
+    getImageViewportRect() {
+        if (!this.openSeaDragon) {
+            return { x: 0, y: 0, width: 0, height: 0 };
+        }
+        const tiledImage = this.openSeaDragon.world.getItemAt(0);
+        if (!tiledImage) {
+            return { x: 0, y: 0, width: 0, height: 0 };
+        }
+        const viewportBounds = this.openSeaDragon.viewport.getBounds();
+        const imageBounds = tiledImage.viewportToImageRectangle(viewportBounds);
+        const size = tiledImage.getContentSize();
+        const x = imageBounds.x < 0 ? 0 : imageBounds.x;
+        const y = imageBounds.y < 0 ? 0 : imageBounds.y;
+        const width = imageBounds.width > size.x ? size.x : imageBounds.width;
+        const height = imageBounds.height > size.y ? size.y : imageBounds.height;
+        return { x: x, y: y, width: width, height: height };
+    }
+
+    /**
+     * Fits the viewport to the given image-pixel rectangle (with constraints).
+     * @param {number} x - Upper-left X in image pixels.
+     * @param {number} y - Upper-left Y in image pixels.
+     * @param {number} width - Width in image pixels.
+     * @param {number} height - Height in image pixels.
+     */
+    fitImageRect(x, y, width, height) {
+        if (!this.openSeaDragon) return;
+        const tiledImage = this.openSeaDragon.world.getItemAt(0);
+        if (!tiledImage) return;
+        const rect = tiledImage.imageToViewportRectangle(
+            Number(x), Number(y), Number(width), Number(height));
+        this.openSeaDragon.viewport.fitBoundsWithConstraints(rect);
+    }
+
+    // ---------------------------------------------------------------
+    //  Overlay management (image-space)
+    // ---------------------------------------------------------------
+
+    /**
+     * Adds an HTML/SVG element overlay positioned by image-pixel coordinates.
+     * @param {Element} element - The overlay element.
+     * @param {number} x - Upper-left X in image pixels.
+     * @param {number} y - Upper-left Y in image pixels.
+     * @param {number} width - Width in image pixels.
+     * @param {number} height - Height in image pixels.
+     */
+    addImageOverlay(element, x, y, width, height) {
+        if (!this.openSeaDragon) return;
+        const tiledImage = this.openSeaDragon.world.getItemAt(0);
+        if (!tiledImage) return;
+        const rect = tiledImage.imageToViewportRectangle(
+            Number(x), Number(y), Number(width), Number(height));
+        this.openSeaDragon.addOverlay({ element: element, location: rect });
+    }
+
+    /**
+     * Removes an overlay by its element id (no-op if it does not exist).
+     * @param {string} overlayId
+     */
+    removeOverlay(overlayId) {
+        if (this.openSeaDragon) {
+            this.openSeaDragon.removeOverlay(overlayId);
+        }
+    }
+
+    /**
+     * Returns an overlay by id, or null if not present / viewer not ready.
+     * @param {string} overlayId
+     * @returns {object|null}
+     */
+    getOverlayById(overlayId) {
+        return this.openSeaDragon ? this.openSeaDragon.getOverlayById(overlayId) : null;
+    }
+
+    // ---------------------------------------------------------------
     //  Zone navigation
     // ---------------------------------------------------------------
 
@@ -551,7 +649,7 @@ class EdiromOpenseadragon extends HTMLElement {
     _applyZoneByKey(zoneKey) {
         const zone = this._zonesData[zoneKey];
         if (!zone) {
-            console.warn(`edirom-openseadragon: zone "${zoneKey}" not found in zones-data.`);
+            console.warn(`edirom-image-viewer: zone "${zoneKey}" not found in zones-data.`);
             return;
         }
         this._currentZoneKey = zoneKey;
@@ -594,7 +692,7 @@ class EdiromOpenseadragon extends HTMLElement {
         // Convert pixel coordinates to viewport coordinates via the current TiledImage
         const tiledImage = this.openSeaDragon.world.getItemAt(0);
         if (!tiledImage) {
-            console.warn('edirom-openseadragon: no TiledImage available for zone conversion.');
+            console.warn('edirom-image-viewer: no TiledImage available for zone conversion.');
             this.openSeaDragon.viewport.goHome();
             return;
         }
@@ -633,4 +731,4 @@ class EdiromOpenseadragon extends HTMLElement {
     }
 }
 
-customElements.define('edirom-openseadragon', EdiromOpenseadragon);
+customElements.define('edirom-image-viewer', EdiromOpenseadragon);

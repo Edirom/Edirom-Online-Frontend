@@ -40,12 +40,12 @@ Add the web component script to your HTML page's `<head>`:
 Include the custom element in your HTML `<body>`:
 
 ```html
-<edirom-openseadragon 
+<edirom-image-viewer 
     tilesources='["https://example.com/iiif/manifest.json"]'
     shownavigator="true"
     showzoomcontrol="true"
     sequencemode="true">
-</edirom-openseadragon>
+</edirom-image-viewer>
 ```
 
 ### 3. Interact via Attributes
@@ -53,7 +53,7 @@ Include the custom element in your HTML `<body>`:
 Control the component by setting attributes programmatically:
 
 ```javascript
-const viewer = document.querySelector('edirom-openseadragon');
+const viewer = document.querySelector('edirom-image-viewer');
 viewer.setAttribute('zoom', '2.5');
 viewer.setAttribute('rotation', '90');
 viewer.setAttribute('pagenumber', '5');
@@ -133,15 +133,15 @@ The component provides the following public methods:
 ### Basic IIIF Manifest
 
 ```html
-<edirom-openseadragon 
+<edirom-image-viewer 
     tilesources='["https://example.com/iiif/manifest.json"]'>
-</edirom-openseadragon>
+</edirom-image-viewer>
 ```
 
 ### Multi-Page Sequence with Controls and Trigger Attributes
 
 ```html
-<edirom-openseadragon 
+<edirom-image-viewer 
     id="viewer"
     tilesources='["https://content.staatsbibliothek-berlin.de/dc/69007087X-0001/info.json", "https://content.staatsbibliothek-berlin.de/dc/69007087X-0002/info.json"]'
     pagenumber="1"
@@ -155,13 +155,13 @@ The component provides the following public methods:
     showzoomcontrol="true"
     showhomecontrol="true"
     showfullpagecontrol="true">
-</edirom-openseadragon>
+</edirom-image-viewer>
 ```
 
 ### Controlling via JavaScript and Triggers
 
 ```javascript
-const viewer = document.querySelector('edirom-openseadragon');
+const viewer = document.querySelector('edirom-image-viewer');
 
 // Navigate to page 3
 viewer.setAttribute('pagenumber', '3');
@@ -179,9 +179,9 @@ viewer.setAttribute('triggerfullscreen', 'true');
 ### Custom OpenSeadragon Configuration
 
 <!-- Example: Disable sequence mode via options -->
-<edirom-openseadragon 
+<edirom-image-viewer 
     openseadragon-options='{"sequenceMode": false}'>
-</edirom-openseadragon>
+</edirom-image-viewer>
 
 
 ## IIIF Support
@@ -200,7 +200,7 @@ Trigger attributes are used to invoke actions on the viewer. Set these attribute
 
 Example:
 ```javascript
-const viewer = document.querySelector('edirom-openseadragon');
+const viewer = document.querySelector('edirom-image-viewer');
 viewer.setAttribute('triggerhome', 'true');      // Reset to home position
 viewer.setAttribute('triggerfullscreen', 'true'); // Toggle fullscreen
 ```
@@ -254,13 +254,13 @@ Each entry in the `zones-data` map must have a 1-based `page` number and pixel c
 ### Example: Zone Navigation
 
 ```html
-<edirom-openseadragon
+<edirom-image-viewer
     id="viewer"
     sequencemode="true"
     showsequencecontrol="false"
     tilesources='[...]'
     zones-data='{}'>
-</edirom-openseadragon>
+</edirom-image-viewer>
 ```
 
 ```javascript
