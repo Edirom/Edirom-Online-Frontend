@@ -67,7 +67,10 @@ Ext.define('EdiromOnline.controller.AJAXController', {
         if(typeof async === 'undefined')
             async = true;
 
-        url = this.application.backendURL + url;
+        // Keep the relative `url` untouched so retries can re-resolve it correctly.
+        // Prepending backendURL to `url` itself caused retries to double the prefix
+        // (e.g. backendURL + backendURL + 'data/xql/...') and fail with HTTP 500.
+        var fullUrl = this.application.backendURL + url;
 
         var fn = Ext.bind(function(response, options, retryNoInt) {
         
@@ -83,7 +86,7 @@ Ext.define('EdiromOnline.controller.AJAXController', {
         }, me, [retryNo], true);
 
         Ext.Ajax.request({
-            url: url,
+            url: fullUrl,
             method: method,
             params: params,
             success: fn,

@@ -450,6 +450,11 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         return shapeDiv.getById(me.id + '_' + shapeId);
     },
 
+    getElemByRawId: function(rawId) {
+
+        return Ext.get(rawId);
+    },
+
     removeShapes: function(groupName) {
         var me = this;
         var shapeDiv = me.el.getById(me.id + '_facsContEvents');

@@ -393,6 +393,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         //add empty annotations array to shapes
         me.shapes.add('annotations', []);
 
+        // Reset the per-measure overlay container map for this page. All annotations that
+        // point at the same measure share one container so their badges stack (see below).
+        me.annotationContainers = {};
+
         // template for annotation element
         //TODO: currently unused
         //var dh = Ext.DomHelper;
@@ -433,57 +437,74 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 var height = shape.lry - shape.uly;
                 var partType = shape.type;
 
-                var anno = me.webComponent.getOverlayById(me.id + '_' + id);
-                if(anno === null) {
-
-                    var anno = document.createElement('div');
-                    anno.id = me.id + '_' + id;
-                    anno.className = 'annotation';
-
-                    // annoIcon: has to be nearly identical to annoIcon in else
-                    var annoIcon = document.createElement('div');
-                    annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
-                    anno.append(annoIcon);
-
-                    me.webComponent.addImageOverlay(anno, x, y, width, height);
-
-                }else {
-
-                    // annoIcon: has to be nearly identical to annoIcon in if
-                    var anno = Ext.get(me.webComponent.shadowRoot.getElementById(me.id + '_' + id));
-                    var annoIcon = document.createElement('div');
-                    annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
-                    anno.dom.append(annoIcon);
+                // All annotations that point at the same measure share ONE overlay
+                // container (shape.id is the measure id), so their badges stack in a flex
+                // column instead of piling up as overlapping full-size overlays - which made
+                // every measure look like it held a single annotation box. Keep our own
+                // reference map: OpenSeadragon may append the overlay element to the shadow
+                // DOM asynchronously, so getElementById can miss a container created earlier
+                // in this same pass and produce duplicate containers.
+                var containerId = me.id + '_' + id;
+                var containerDom = me.annotationContainers[containerId];
+                if(!containerDom) {
+                    containerDom = document.createElement('div');
+                    containerDom.id = containerId;
+                    containerDom.className = 'annotation';
+                    me.annotationContainers[containerId] = containerDom;
+                    me.webComponent.addImageOverlay(containerDom, x, y, width, height);
                 }
 
-                // retrieve dom element of annotationIcon to bind actions
-                var annoIcon = Ext.get(me.webComponent.shadowRoot.getElementById(annoIcon.id));
+                // each annotation gets its own small badge inside the shared container;
+                // flex-direction:column (in annotation-style.css) stacks multiple badges.
+                var annoIconDom = document.createElement('div');
+                annoIconDom.id = containerId + annoId;
+                annoIconDom.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
+                annoIconDom.title = name;
+                annoIconDom.setAttribute('data-edirom-annot-id', annoId);
+                containerDom.appendChild(annoIconDom);
 
-                // bind onclick action to annotation icon
-                annoIcon.on('click', me.openShapeLink, me, {
-                    single: false,
-                    stopEvent : true,
-                    fn: fn
+                // bind actions to the badge itself (not the shared box) so each stacked
+                // annotation is hovered and clicked independently.
+                var annoIcon = Ext.get(annoIconDom);
+
+                // Open this annotation on click. OpenSeadragon's MouseTracker listens for
+                // *pointer* events on its container (inside the same shadow DOM) and calls
+                // setPointerCapture on pointerdown - that redirects the following mouseup/click
+                // to the container, so an Ext 'mousedown -> mouseup' pattern or even a raw
+                // 'click' never completes for a real mouse (synthetic element-targeted events
+                // bypass capture, which is why they appeared to work). Stopping pointerdown
+                // (and mousedown for non-pointer browsers) at the badge prevents OSD from
+                // capturing/panning; a native click listener then fires reliably.
+                annoIconDom.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); });
+                annoIconDom.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
+                annoIconDom.addEventListener('click', function(ev){
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    eval(fn);
                 });
 
-                // create the tooltip for the annotation
-                var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: annoIcon.id,
+                // create the tooltip for the annotation. Ext.tip.ToolTip's automatic
+                // `target` binding only resolves elements in the main document, so it never
+                // fires for overlays living inside the web component shadow DOM (no tip, and
+                // its afterrender -> getAnnotation.xql fetch never runs). Use a plain
+                // Ext.tip.Tip shown manually on hover via showBy() instead (ToolTip.show()
+                // throws without a `target`).
+                var tip = Ext.create('Ext.tip.Tip', {
                     cls: 'annotationTip',
                     width: me.annotTipWidth,
                     maxWidth: me.annotTipMaxWidth,
                     height: me.annotTipHeight,
                     maxHeight: me.annotTipMaxHeight,
-                    dismissDelay: 0,
-                    hideDelay: 1000,
-                    anchor: 'left',
+                    autoHide: false,
+                    shadow: true,
                     html: getLangString('Annotation_plus_Title', name)
                 });
 
-                // bind function to fetch the contents for the annotation tooltip
-                tip.on('afterrender', function() {
+                // lazily fetch the tooltip contents on first hover
+                var tipLoaded = false;
+                var loadTipContents = function() {
+                    if(tipLoaded) return;
+                    tipLoaded = true;
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
                         'GET',
                         {
@@ -493,24 +514,24 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                         },
                         Ext.bind(function(response){
                             this.update(response.responseText);
-                        }, this)
+                        }, tip)
                     );
-                    this.el.on('mouseover', function() {
-                        this.addCls('mouseOverAnnot');
-                    }, this);
-                    this.el.on('mouseout', function() {
-                        this.removeCls('mouseOverAnnot');
-                    }, this);
-                }, tip);
+                };
 
-                // delay hiding the annotation tooltip
-                tip.on('beforehide', function() {
-                    if(this.el.hasCls('mouseOverAnnot')) {
-                        Ext.Function.defer(function(){
-                            this.hide();
-                        }, 1000, this);
-                        return false;
-                    }
+                // hover intent: show this icon's tip; small grace period so the pointer
+                // can travel into the tip before it hides
+                var hideTask = new Ext.util.DelayedTask(function(){ tip.hide(); });
+                annoIcon.on('mouseenter', function() {
+                    hideTask.cancel();
+                    loadTipContents();
+                    tip.showBy(annoIcon, 'l-r?');
+                });
+                annoIcon.on('mouseleave', function() {
+                    hideTask.delay(300);
+                });
+                tip.on('afterrender', function() {
+                    this.el.on('mouseenter', function(){ hideTask.cancel(); });
+                    this.el.on('mouseleave', function(){ hideTask.delay(300); });
                 }, tip);
             });
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -533,9 +554,18 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             console.log('view: OpenSeaDragonView: getShapeElem: ' + shapeId);
         }
         var me = this;
-        var elem = me.el.getById(me.id + '_' + shapeId);//TODO causes problems || me.el.getById(shapeId);
+        // OpenSeaDragon renders overlays inside the web component's shadow DOM,
+        // so they cannot be found via me.el (which searches the main document).
+        return me.getElemByRawId(me.id + '_' + shapeId);
+    },
 
-        return elem;
+    getElemByRawId: function(rawId) {
+
+        var me = this;
+        if(!me.webComponent || !me.webComponent.shadowRoot)
+            return null;
+        var dom = me.webComponent.shadowRoot.getElementById(rawId);
+        return dom ? Ext.get(dom) : null;
     },
 
     listenForShapeLink: function(e, dom, args) {

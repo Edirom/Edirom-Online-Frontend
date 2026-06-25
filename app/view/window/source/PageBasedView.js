@@ -94,7 +94,9 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         // define function to apply to relevant element IDs
         var fn = Ext.bind(function(annotationId) {
 
-            var annotDiv = Ext.get(annotationId);
+            var annotDiv = me.imageViewer.getElemByRawId(annotationId);
+            if(annotDiv == null || annotDiv.dom == null)
+                return;
             var classList = annotDiv.dom.classList;
             var prioritiesCategories = Ext.Array.toArray(classList);
             Ext.Array.remove(prioritiesCategories, 'measure');
@@ -156,6 +158,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             }
 
             var annotDiv = me.imageViewer.getShapeElem(annotation.id);
+            if(annotDiv == null || annotDiv.dom == null)
+                return;
             var children = Ext.Array.toArray(annotDiv.dom.childNodes);
 
             // Ext.Array.push(annotationDivIds, annotation.id);

@@ -161,3 +161,117 @@
     background: -webkit-linear-gradient(top, rgb(215, 185, 180), rgb(146, 64, 92));
     color: rgb(248, 238, 218);
 }
+
+/*
+ * Measure number badge. Duplicated from facsimile.scss because OpenSeadragon
+ * renders measure overlays inside the web component's shadow DOM, which the
+ * main document stylesheets (scoped to .ediromWindow) cannot reach.
+ */
+.measureInner {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 15px;
+    padding: 3px 5px 0;
+    text-shadow: 0 1px 2px #000000, 0 0 5px #ffffff;
+    top: 50%;
+    background-image: radial-gradient(circle at center, rgba(100, 100, 100, 0.3), rgba(0, 0, 0, 0) 5px);
+}
+
+/*
+ * Whole-measure hover/highlight = a visible ZOOM of the ENTIRE measure box (not
+ * the number on its own). The .measure overlay covers the full measure rectangle
+ * and receives pointer events again (the .annotation overlay above it is
+ * pointer-events:none). OpenSeadragon positions the overlay with inline
+ * left/top/width/height and never uses `transform`, so a CSS transform: scale
+ * safely zooms the whole box around its centre without affecting placement. The
+ * upstream (develop branch) drop-shadow is kept so the lifted box reads clearly.
+ *
+ * The `.measure` base rules below were moved here from todo.css - they were the
+ * only todo.css rules that actually reached this shadow root, so todo.css is no
+ * longer injected into the web component (see edirom-image-viewer.js).
+ */
+.measure {
+    text-align: center;
+    z-index: 5;
+    cursor: pointer;
+    transform-origin: center center;
+    transition: transform 0.12s ease-out;
+}
+
+.measure:hover,
+.measure.highlighted {
+    transform: scale(1.18);
+    z-index: 6;
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+}
+
+/*
+ * Annotation badge box. Duplicated from facsimile.scss because OpenSeadragon
+ * renders annotation overlays inside the web component's shadow DOM, which the
+ * main document stylesheets (scoped to .ediromWindow) cannot reach. Without
+ * this the .annotIcon boxes have no size/background and stay invisible.
+ */
+.annotIcon {
+    width: 20px;
+    height: 16px;
+    border: 1px solid #666666;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px #000000;
+    z-index: 1;
+}
+
+.annotation.highlighted {
+    border-radius: 3px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.annotIcon.ediromAnnotPrio1 {
+    background: linear-gradient(to bottom, rgba(255, 48, 25, 0.85) 0%, rgba(207, 4, 4, 0.85) 100%);
+}
+
+.annotIcon.ediromAnnotPrio2 {
+    background: linear-gradient(to bottom, rgba(255, 233, 91, 0.85) 0%, rgba(255, 107, 15, 0.85) 100%);
+}
+
+.annotIcon.ediromAnnotPrio3 {
+    background: linear-gradient(to bottom, rgba(254, 252, 234, 0.85) 0%, rgba(241, 218, 54, 0.85) 100%);
+}
+
+/*
+ * Annotation overlay layout + hover. Duplicated (unscoped) from the
+ * `.ediromWindow .annotation*` rules in todo.css, which never apply inside the
+ * web component shadow DOM because there is no .ediromWindow ancestor there.
+ * Restores icon centring, the pointer cursor and the hover elevation effect.
+ */
+.annotation {
+    z-index: 10;
+    /* OpenSeadragon writes `display: block` as an inline style on every overlay,
+       so !important is required for the flex centring to win. Stack multiple
+       annotation icons that share one zone vertically. */
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    align-content: center;
+    /* small gap so multiple stacked badges on one measure do not touch */
+    gap: 3px;
+    /* The overlay covers the whole measure but is transparent; without this it
+       would swallow the measure's hover (zoom) interaction. Only the small
+       .annotIcon badges below re-enable pointer events. */
+    pointer-events: none;
+}
+
+.annotIcon:hover {
+    /* clearly pop the hovered badge: grow it, give it a bright outline and lift it
+       above its neighbours so the user can tell exactly which one is active. */
+    transform: scale(1.3);
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 4px 12px rgba(0, 0, 0, 0.75);
+    z-index: 20;
+}
+
+.annotation .annotIcon {
+    cursor: pointer;
+    /* re-enable interaction on the badge itself (parent has pointer-events:none) */
+    pointer-events: auto;
+}

@@ -153,9 +153,11 @@ class EdiromOpenseadragon extends HTMLElement {
 
         console.log("Connected to DOM");
 
-        // Inject stylesheet links so overlay styles (measures, annotations) work inside the shadow root
+        // Inject the overlay stylesheet (measures, annotations) into the shadow root.
+        // todo.css is NOT injected here: it is the app's general main-document
+        // stylesheet and the only rules of it that reached this shadow root
+        // (.measure base styling) now live in annotation-style.css.
         const cssFiles = [
-            'resources/css/todo.css',
             'resources/css/annotation-style.css'
         ];
         cssFiles.forEach(href => {
