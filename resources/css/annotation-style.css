@@ -32,6 +32,7 @@
     display: none;
 }
 
+/* legacy annotation annotIcon styling */
 .annotation .annotIcon.Notentext:before {
     line-height: 1;
     font-family: Bravura;

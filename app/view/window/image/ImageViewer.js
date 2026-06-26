@@ -181,24 +181,20 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         me.shapes.add('annotations', []);
 
         var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-        var dh = Ext.DomHelper;
-        var tpl = dh.createTemplate('<div id="{0}" class="annotation {2} {3} {4}" data-edirom-annot-id="{4}"><div id="{0}_inner" class="annotIcon" title="{1}"></div></div>');
-        tpl.compile();
-
         annotations.each(function(annotation) {
 
             var name = annotation.get('title');
             var uri = annotation.get('uri');
             var categories = annotation.get('categories');
             var priority = annotation.get('priority');
-            var fn = annotation.get('fn');          
+            var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
-            
+
             Ext.Array.each(annotation.get('svgList'), function(svg) {
                 this.addSVGOverlay(svg.id, svg.svg, name, uri, fn);
                 Ext.Array.push(this.annotSVGOverlays, svg.id);
             }, me);
-            
+
             Ext.Array.insert(me.shapes.get('annotations'), 0, plist);
 
             Ext.Array.each(plist, function(shape) {
@@ -208,28 +204,44 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 var y = shape.uly;
                 var width = shape.lrx - shape.ulx;
                 var height = shape.lry - shape.uly;
+                var outerId = me.id + '_' + id;
+                var innerId = outerId + annotation.get('id');
 
-                //TODO: Korrektes Bild anhängen
-                var shape = tpl.append(shapeDiv, [me.id + '_' + id, name, categories, priority, annotation.get('id')], true);
+                // reuse existing outer div if already present (multiple annotations on same zone)
+                var outerDiv = Ext.get(outerId);
+                if (!outerDiv) {
+                    outerDiv = Ext.DomHelper.append(shapeDiv, {
+                        tag: 'div',
+                        id: outerId,
+                        cls: 'annotation',
+                        'data-edirom-annot-id': annotation.get('id')
+                    }, true);
+                    outerDiv.setStyle({
+                        position: 'absolute'
+                    });
+                }
 
-                shape.setStyle({
-                    position: 'absolute'
-                });
+                // inner annotIcon div carries taxonomy classes (categories and priority)
+                var innerDiv = Ext.DomHelper.append(outerDiv, {
+                    tag: 'div',
+                    id: innerId,
+                    cls: 'annotIcon ' + categories + ' ' + priority,
+                    title: name
+                }, true);
 
-                var innerShape = shape.getById(me.id + '_' + id + '_inner');
-                innerShape.on('mouseenter', me.highlightShape, me, shape, true);
-                innerShape.on('mouseleave', me.deHighlightShape, me, shape, true);
-                innerShape.on('mousedown', me.listenForShapeLink, me, {
+                innerDiv.on('mouseenter', me.highlightShape, me, outerDiv, true);
+                innerDiv.on('mouseleave', me.deHighlightShape, me, outerDiv, true);
+                innerDiv.on('mousedown', me.listenForShapeLink, me, {
                     stopEvent : true,
-                    elem: innerShape,
+                    elem: innerDiv,
                     fn: fn
                 });
-                innerShape.setStyle({
+                innerDiv.setStyle({
                     position: 'relative'
                 });
 
                 var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: me.id + '_' + id + '_inner',
+                    target: innerId,
                     cls: 'annotationTip',
                     width: me.annotTipWidth,
                     maxWidth: me.annotTipMaxWidth,
@@ -242,7 +254,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
                 tip.on('afterrender', function() {
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
-                        'GET', 
+                        'GET',
                         {
                             uri: uri,
                             target: 'tip',

@@ -7,11 +7,13 @@
 	
 	h1 {
 		font-weight: bold;
-		font-size: 2em;
+		font-size: 1.3em !important; //coppied from todo.css
 		line-height: 2em;
 		margin-top: 0;
 	}
-	
+	.textViewContent .teidiv0 > p, .textViewContent .teidiv0 > .listhead {
+		margin-left: 4em;
+	}
 	h2 {
 		font-weight: bold;
 		font-size: 1.6em;

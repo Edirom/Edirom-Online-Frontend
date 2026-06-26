@@ -32,16 +32,46 @@ Ext.define('EdiromOnline.view.window.audio.AudioView', {
     initComponent: function () {
 
         var me = this;
+        
+        me.callParent();
+    },
 
-        me.html = '<div id="' + me.id + '_audioCont" class="audioViewContent"><iframe id="' + me.id + '_audioContIFrame" src="" seamless="seamless" style="width:100%; height:100%; border:none;"></div>';
+    initComponent: function () {
+
+        var me = this;
+
+        me.html = `
+            <div id="` + me.id + `_contentAudioPlayer" class="audio-player-container">
+                <!-- Audio player will be attached here -->
+            </div>
+        `;
 
         me.callParent();
     },
 
-    setIFrameURL: function(url) {
+    attachPlayer: function(tracks) {
         var me = this;
-        var contEl = me.el.getById(me.id + '_audioContIFrame');
-        contEl.set({'src': url});
+
+        const audioHTML = `
+            <edirom-audio-player 
+                id="` + me.id + `_audioPlayer"
+                tracks='`+ tracks +`'
+                height="100%" 
+                width="100%" 
+                state="pause" 
+                track="0" 
+                start="0.0" 
+                end="" 
+                playbackrate="1.0" 
+                playlist="true" 
+                progressbar="true">
+            </edirom-audio-player>
+        `;
+
+        var contEl = me.el.getById(me.id + '_contentAudioPlayer');
+        contEl.setHTML(audioHTML);
+
+
     },
     
     getContentConfig: function() {
@@ -50,4 +80,5 @@ Ext.define('EdiromOnline.view.window.audio.AudioView', {
             id: this.id
         };
     }
+
 });

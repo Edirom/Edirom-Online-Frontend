@@ -44,19 +44,19 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         if(view.initialized) return;
         view.initialized = true;
 
-        view.on('measureVisibilityChange', me.onMeasureVisibilityChange, me);
+        view.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
         view.on('gotoZone', me.onGotoZone, me);
 
-        ToolsController.addMeasureVisibilityListener(view.id, Ext.bind(view.checkGlobalMeasureVisibility, view));
-        view.checkGlobalMeasureVisibility(ToolsController.areMeasuresVisible());
+        ToolsController.addMeasuresVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('measures');
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
-        view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
-        
+        ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('annotations');
+
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('Controller: SourceView: onSourceViewRendered. getMovements');
         }
@@ -165,7 +165,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             view.gotoMdivInImage(movementId, pageId);
     },
 
-    onMeasureVisibilityChange: function(view, visible) {
+    onMeasuresVisibilityChange: function(view, visible) {
         var me = this;
 
         if(visible) {
@@ -351,7 +351,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 	onSourceViewDestroyed: function (view) {
 		var me = this;
 
-		ToolsController.removeMeasureVisibilityListener(view.id);
-		ToolsController.removeAnnotationVisibilityListener(view.id);
+		ToolsController.removeMeasuresVisibilityListener(view.id);
+		ToolsController.removeAnnotationsVisibilityListener(view.id);
 	}
 });

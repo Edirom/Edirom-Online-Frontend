@@ -24,6 +24,9 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
         'window.HelpWindow'
     ],
 
+    backendPath: '@backend.path@',
+    backendURL: '@backend.url@',
+
     init: function() {
         this.control({
             'helpWindow': {
@@ -46,7 +49,11 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
                 idPrefix: win.id
             },
             Ext.bind(function(response){
-                win.setContent(response.responseText);
+
+                var windowContent = response.responseText;
+
+                // set window content
+                win.setContent(windowContent);
             }, me)
         );
     }
