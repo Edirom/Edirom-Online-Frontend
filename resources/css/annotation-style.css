@@ -223,15 +223,12 @@
 
 /*
  * Hover highlight for measures. The `highlighted` class is toggled on
- * mouseenter/mouseleave by OpenSeaDragonViewer (number badge only); the
- * `:hover` selector additionally covers the whole measure boundary so hovering
- * anywhere inside the measure - not just over its number - triggers the effect.
- * The box-shadow is duplicated (unscoped) from the
- * `.ediromWindow .measure.highlighted` rule in facsimile.scss on the develop
- * branch, which never reaches the web component shadow DOM.
+ * mouseenter/mouseleave by OpenSeaDragonViewer; this box-shadow is duplicated
+ * (unscoped) from the `.ediromWindow .measure.highlighted` rule in
+ * facsimile.scss on the develop branch, which never reaches the web component
+ * shadow DOM.
  */
-.measure.highlighted,
-.measure:hover {
+.measure.highlighted {
     box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 
