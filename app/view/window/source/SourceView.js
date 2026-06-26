@@ -421,7 +421,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
-            text: getLangString('view.window.source.SourceView_ShowAnnotations'),
+            text: getLangString('view.window.source.SourceView_showAnnotations'),
             checkHandler: Ext.bind(me.toggleAnnotations, me, [], true)
         });
 
@@ -545,6 +545,14 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.measuresVisibilitySetLocaly = true;
         
         this.fireEvent('measureVisibilityChange', me, state);
+    },
+
+    toggleAnnotations: function(item, state) {
+        var me = this;
+        me.annotationsVisible = state;
+        me.annotationsVisibilitySetLocaly = true;
+
+        this.fireEvent('annotationsVisibilityChange', me, state);
     },
 
     showMeasures: function(measures) {
