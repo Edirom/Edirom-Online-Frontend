@@ -25,6 +25,13 @@
     font-style: normal;
 }
 
+/* The category/priority filter toggles visibility by adding the 'hidden' class
+   to annotation badges. The global .hidden rule (todo.css) does not reach the
+   image viewer's shadow DOM, so it must be declared here too. */
+.hidden {
+    display: none;
+}
+
 .annotation .annotIcon.Notentext:before {
     line-height: 1;
     font-family: Bravura;
