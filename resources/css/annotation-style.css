@@ -1,4 +1,31 @@
-.annotation.Notentext .annotIcon:before {
+/* Fonts must be declared here too: this stylesheet is injected into the image
+   viewer's shadow DOM, where the main-document @font-face rules (todo.css,
+   font-awesome.min.css) do not apply. Paths are relative to resources/css/. */
+@font-face {
+    font-family: 'Bravura';
+    src: url('../fonts/bravura/eot/Bravura.eot#') format('eot'),
+        url('../fonts/bravura/woff/Bravura.woff') format('woff'),
+        url('../fonts/bravura/otf/Bravura.otf') format('opentype'),
+        url('../fonts/bravura/svg/Bravura.svg#bravuraregular') format('svg'),
+        url('../fonts/bravura/eot/BravuraText.eot#') format('eot'),
+        url('../fonts/bravura/woff/BravuraText.woff') format('woff'),
+        url('../fonts/bravura/otf/BravuraText.otf') format('opentype'),
+        url('../fonts/bravura/svg/BravuraText.svg#bravuraregular') format('svg');
+}
+
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('../fonts/fontawesome-webfont.eot?v=4.3.0');
+    src: url('../fonts/fontawesome-webfont.eot?#iefix&v=4.3.0') format('embedded-opentype'),
+        url('../fonts/fontawesome-webfont.woff2?v=4.3.0') format('woff2'),
+        url('../fonts/fontawesome-webfont.woff?v=4.3.0') format('woff'),
+        url('../fonts/fontawesome-webfont.ttf?v=4.3.0') format('truetype'),
+        url('../fonts/fontawesome-webfont.svg?v=4.3.0#fontawesomeregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.annotation .annotIcon.Notentext:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D5";
@@ -7,7 +34,7 @@
     left: 0.55em
 }
 
-.annotation.HalsungBalkung .annotIcon:before {
+.annotation .annotIcon.HalsungBalkung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1F3";
@@ -16,7 +43,7 @@
     left: 0.59em
 }
 
-.annotation.TaktartMetrum .annotIcon:before {
+.annotation .annotIcon.TaktartMetrum:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E099";
@@ -26,7 +53,7 @@
     font-size: 25px;
 }
 
-.annotation.Pausensetzung .annotIcon:before {
+.annotation .annotIcon.Pausensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4E5";
@@ -36,7 +63,7 @@
     font-size: 17px;
 }
 
-.annotation.Tondauer .annotIcon:before {
+.annotation .annotIcon.Tondauer:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D2";
@@ -46,7 +73,7 @@
     font-size: 20px;
 }
 
-.annotation.Vortragsanweisung .annotIcon:before {
+.annotation .annotIcon.Vortragsanweisung:before {
     line-height: 1;
     font-family: Bravura;
     content: "rit.";
@@ -57,7 +84,7 @@
     font-size: 10px;
 }
 
-.annotation.Artikulation .annotIcon:before {
+.annotation .annotIcon.Artikulation:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4B2";
@@ -67,7 +94,7 @@
     font-size: 25px;
 }
 
-.annotation.Dynamik .annotIcon:before {
+.annotation .annotIcon.Dynamik:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E520";
@@ -77,7 +104,7 @@
     font-size: 12px;
 }
 
-.annotation.Pedalsetzung .annotIcon:before {
+.annotation .annotIcon.Pedalsetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E650";
@@ -87,7 +114,7 @@
     font-size: 12px;
 }
 
-.annotation.Phrasierungsboegen .annotIcon:before {
+.annotation .annotIcon.Phrasierungsboegen:before {
     line-height: 1;
 /*    font-family: Bravura;*/
     content: "---";
@@ -97,7 +124,7 @@
     font-size: 12px;
 }
 
-.annotation.Bogensetzung .annotIcon:before {
+.annotation .annotIcon.Bogensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4BA";
@@ -107,7 +134,7 @@
     font-size: 40px;
 }
 
-.annotation.Beschreibung .annotIcon:before {
+.annotation .annotIcon.Beschreibung:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f0e5";
@@ -117,7 +144,7 @@
     top: -1px;
 }
 
-.annotation.Hinzufügung .annotIcon:before {
+.annotation .annotIcon.Hinzufügung:before {
     line-height: 1;
     content: "+";
     position: relative;
@@ -126,7 +153,7 @@
     font-size: 19px;
 }
 
-.annotation.RasurTektur .annotIcon:before {
+.annotation .annotIcon.RasurTektur:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f12d";
@@ -136,7 +163,7 @@
     font-size: 12px;
 }
 
-.annotation.Streichung  .annotIcon:before {
+.annotation .annotIcon.Streichung:before {
     line-height: 1;
     /*font-family: Bravura;*/
     content: "xxx";
@@ -146,7 +173,7 @@
     font-size: 9px;
 }
 
-.annotation.Liedtext .annotIcon:before {
+.annotation .annotIcon.Liedtext:before {
     line-height: 1;
     /*font-family: Bravura;
     content: "\E595";*/
@@ -177,31 +204,15 @@
 }
 
 /*
- * Whole-measure hover/highlight = a visible ZOOM of the ENTIRE measure box (not
- * the number on its own). The .measure overlay covers the full measure rectangle
- * and receives pointer events again (the .annotation overlay above it is
- * pointer-events:none). OpenSeadragon positions the overlay with inline
- * left/top/width/height and never uses `transform`, so a CSS transform: scale
- * safely zooms the whole box around its centre without affecting placement. The
- * upstream (develop branch) drop-shadow is kept so the lifted box reads clearly.
- *
  * The `.measure` base rules below were moved here from todo.css - they were the
  * only todo.css rules that actually reached this shadow root, so todo.css is no
  * longer injected into the web component (see edirom-image-viewer.js).
+ * No hover/highlight zoom is applied: the develop branch has no such effect.
  */
 .measure {
     text-align: center;
     z-index: 5;
     cursor: pointer;
-    transform-origin: center center;
-    transition: transform 0.12s ease-out;
-}
-
-.measure:hover,
-.measure.highlighted {
-    transform: scale(1.18);
-    z-index: 6;
-    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 
 /*
@@ -259,15 +270,6 @@
        would swallow the measure's hover (zoom) interaction. Only the small
        .annotIcon badges below re-enable pointer events. */
     pointer-events: none;
-}
-
-.annotIcon:hover {
-    /* clearly pop the hovered badge: grow it, give it a bright outline and lift it
-       above its neighbours so the user can tell exactly which one is active. */
-    transform: scale(1.3);
-    border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 4px 12px rgba(0, 0, 0, 0.75);
-    z-index: 20;
 }
 
 .annotation .annotIcon {

@@ -167,6 +167,32 @@ class EdiromOpenseadragon extends HTMLElement {
             this.shadowRoot.appendChild(link);
         });
 
+        // Also inject the EDITION's own stylesheet — the same one Application.js
+        // loads into the document <head> from the 'additional_css_path' preference.
+        // Edition-specific annotation styling (e.g. the per-category glyph rules in
+        // an edition's annotation-style.css) lives there, and main-document
+        // stylesheets do not cross the shadow boundary. Cloning the existing head
+        // link keeps this edition-agnostic: any edition that sets additional_css_path
+        // gets its CSS applied to the overlays in this shadow root.
+        try {
+            const cssPref = (typeof getPreference === 'function')
+                ? getPreference('additional_css_path', true) : null;
+            if (cssPref && cssPref.indexOf('/db/') !== -1) {
+                const tail = cssPref.split('/db/')[1];
+                const editionLink = Array.prototype.slice
+                    .call(document.head.querySelectorAll('link[rel="stylesheet"]'))
+                    .find(l => l.href && l.href.indexOf(tail) !== -1);
+                if (editionLink) {
+                    const clone = document.createElement('link');
+                    clone.rel = 'stylesheet';
+                    clone.href = editionLink.href;
+                    this.shadowRoot.appendChild(clone);
+                }
+            }
+        } catch (e) {
+            console.warn('Image Viewer: could not inject edition stylesheet', e);
+        }
+
         // Create a div for the OpenSeadragon viewer
         this.viewerDiv = document.createElement('div');
         this.viewerDiv.id = 'viewer';
