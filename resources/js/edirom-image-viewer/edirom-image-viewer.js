@@ -96,7 +96,7 @@ class EdiromOpenseadragon extends HTMLElement {
      * @returns {Array<string>} The list of observed attributes.
      */
     static get observedAttributes() {
-        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone'];
+        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'fitrect', 'view-mode'];
     }
 
     /**
@@ -306,6 +306,34 @@ class EdiromOpenseadragon extends HTMLElement {
                 this._applyZoneByKey(newPropertyValue);
                 break;
 
+            // Fit the viewport to an image-pixel rectangle. Value format:
+            // "x,y,width,height" with an optional trailing nonce token that is
+            // ignored — the nonce only exists so that repeating the SAME jump
+            // produces a different attribute value and thus re-fires
+            // attributeChangedCallback (used by jump-to-measure / jump-to-mdiv).
+            case 'fitrect':
+                if (newPropertyValue) {
+                    const parts = String(newPropertyValue).split(',');
+                    if (parts.length >= 4) {
+                        this.fitImageRect(
+                            parseFloat(parts[0]), parseFloat(parts[1]),
+                            parseFloat(parts[2]), parseFloat(parts[3]));
+                    }
+                }
+                break;
+
+            // Declarative view mode (e.g. 'pageBasedView' / 'measureBasedView').
+            // The component records the mode and re-broadcasts it so host code
+            // can react; the actual page/measure layout swap is owned by the
+            // surrounding ExtJS views.
+            case 'view-mode':
+                this._viewMode = newPropertyValue;
+                this.dispatchEvent(new CustomEvent('view-mode-changed', {
+                    detail: { viewMode: newPropertyValue },
+                    bubbles: true
+                }));
+                break;
+
             // handle default
             default:  
               console.log("Invalid property: '"+property+"'");
@@ -496,7 +524,11 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     setZoom(zoomLevel) {
         if(this.openSeaDragon && !isNaN(zoomLevel)) {
-            this.openSeaDragon.viewport.zoomTo(zoomLevel);
+            // Apply immediately (3rd arg = true). OSD's animated spring does not
+            // advance in this embedding (animation-frame never fires), so a
+            // plain zoomTo(zoomLevel) would set the target but never move the
+            // viewport, making the zoom slider appear to do nothing.
+            this.openSeaDragon.viewport.zoomTo(zoomLevel, null, true);
         }
     }
     
@@ -621,7 +653,9 @@ class EdiromOpenseadragon extends HTMLElement {
         if (!tiledImage) return;
         const rect = tiledImage.imageToViewportRectangle(
             Number(x), Number(y), Number(width), Number(height));
-        this.openSeaDragon.viewport.fitBoundsWithConstraints(rect);
+        // immediately=true: the animated spring does not advance in this
+        // embedding, so an animated fit would never move the viewport.
+        this.openSeaDragon.viewport.fitBoundsWithConstraints(rect, true);
     }
 
     // ---------------------------------------------------------------
@@ -718,7 +752,7 @@ class EdiromOpenseadragon extends HTMLElement {
             zone.lrx != null && zone.lry != null;
 
         if (!hasZone) {
-            this.openSeaDragon.viewport.goHome();
+            this.openSeaDragon.viewport.goHome(true);
             return;
         }
 
@@ -736,8 +770,9 @@ class EdiromOpenseadragon extends HTMLElement {
             Number(zone.lrx) - Number(zone.ulx),
             Number(zone.lry) - Number(zone.uly)
         );
-        // fitBounds without immediately=true uses OSD's spring animation
-        this.openSeaDragon.viewport.fitBounds(rect);
+        // immediately=true: OSD's spring animation does not advance in this
+        // embedding, so an animated fitBounds would never move the viewport.
+        this.openSeaDragon.viewport.fitBounds(rect, true);
     }
 
     /**

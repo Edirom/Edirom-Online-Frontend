@@ -218,13 +218,21 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     fitInImage: function() {
 
         var me = this;
-        if (me.webComponent) me.webComponent.home();
+        // Drive the component declaratively: bump the 'triggerhome' attribute so
+        // attributeChangedCallback fires even on repeated fits.
+        if (me.webComponent) {
+            me._homeNonce = (me._homeNonce || 0) + 1;
+            me.webComponent.setAttribute('triggerhome', String(me._homeNonce));
+        }
     },
 
     setZoomAndCenter: function(z) {
 
         var me = this;
-        if (me.webComponent) me.webComponent.setZoom(z);
+        // Drive the zoom via the 'zoom' attribute. The slider stays in sync with
+        // the actual viewport zoom (via the 'zoomChanged' event), so consecutive
+        // values differ and attributeChangedCallback fires reliably.
+        if (me.webComponent) me.webComponent.setAttribute('zoom', String(z));
     },
 
     getActualRect: function() {
@@ -246,7 +254,14 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             highlight:highlight
         };
 
-        if (me.webComponent) me.webComponent.fitImageRect(x, y, width, height);
+        if (me.webComponent) {
+            // Drive the component declaratively via the 'fitrect' attribute. A
+            // monotonic nonce is appended so that jumping to the SAME region
+            // again still changes the attribute value and re-fires the handler.
+            me._fitNonce = (me._fitNonce || 0) + 1;
+            me.webComponent.setAttribute('fitrect',
+                [x, y, width, height, me._fitNonce].join(','));
+        }
     },
 
     addMeasures: function(shapes) {

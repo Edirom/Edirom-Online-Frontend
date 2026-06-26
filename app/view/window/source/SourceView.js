@@ -519,6 +519,14 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         }
         
         me.activeView = viewId;
+
+        // Reflect the active view as a declarative attribute on the page-based
+        // view's image component, so the component (and anything observing it)
+        // is driven by the same attribute convention as the other controls.
+        var iv = me.pageBasedView && me.pageBasedView.imageViewer;
+        if (iv && iv.webComponent && iv.webComponent.setAttribute) {
+            iv.webComponent.setAttribute('view-mode', viewId);
+        }
     },
 
     fitFacsimile: function() {
