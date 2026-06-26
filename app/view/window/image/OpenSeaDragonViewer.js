@@ -70,10 +70,32 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
           openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents"></div>';
          };
 
+        // All configurable attributes are listed here with their default values
+        // so the component is easy to test/tweak. The data-driven attributes
+        // (tilesources, pagenumber, sequencemode, *-data) are also set at runtime
+        // by this class; the values below are just the initial defaults.
         me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;">' +
                   '<edirom-image-viewer id="' + me.id + '_wc' + '" ' +
                   'style="width:100%;height:100%;display:block;" ' +
-                  'shownavigationcontrol="false" shownavigator="false" clicktozoom="false">' +
+                  'tilesources="[]" ' +
+                  'pagenumber="1" ' +
+                  'zoom="1" ' +
+                  'rotation="0" ' +
+                  'preserveviewport="false" ' +
+                  'clicktozoom="false" ' +
+                  'minzoomlevel="0.5" ' +
+                  'maxzoomlevel="10" ' +
+                  'shownavigationcontrol="false" ' +
+                  'shownavigator="false" ' +
+                  'showzoomcontrol="false" ' +
+                  'showhomecontrol="false" ' +
+                  'showfullpagecontrol="false" ' +
+                  'showsequencecontrol="false" ' +
+                  'measures-data="{}" ' +
+                  'measure="" ' +
+                  'mdivs-data="{}" ' +
+                  'mdiv="" ' +
+                  'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
 

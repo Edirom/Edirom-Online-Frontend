@@ -11,12 +11,18 @@ This web component displays IIIF images using the [OpenSeadragon](https://opense
 - **IIIF Support**: Load IIIF manifests or direct tile sources
 - **Image Navigation**: Navigate through multi-page image sequences
 - **Zoom & Pan**: Interactive zoom and pan controls
+- **Zoom Limits**: Enforced `minzoomlevel` / `maxzoomlevel` bounds — programmatic zoom is clamped to the configured range
 - **Rotation**: Rotate images to any angle
 - **Customizable Controls**: Show/hide navigator, zoom buttons, home button, fullscreen toggle
 - **Attribute-Driven**: All interactions through standard HTML attributes
 - **Custom Configuration**: Pass advanced OpenSeadragon options via JSON
 - **Event Communication**: Custom events for state changes
-- **Zone Navigation**: Define a lookup map of named zones, each pointing to a page and optional pixel-precise coordinates. Navigate to any zone with smooth animated viewport transitions, including automatic cross-page navigation.
+- **Region Navigation**: Define lookup maps of named regions and jump to them with pixel-precise, aspect-preserving viewport fits, including automatic cross-page navigation. Three complementary lookup maps are supported:
+    - **Zones** (`zones-data` / `zone`) — generic named regions.
+    - **Measures** (`measures-data` / `measure`) — music measures/bars.
+    - **Movements** (`mdivs-data` / `mdiv`) — MEI `<mdiv>` movements (page-level, optional region).
+- **Rectangle Fit** (`fitrect`): Fit the viewport to an arbitrary image-pixel rectangle.
+- **View Mode** (`view-mode`): Declarative view-mode attribute that is recorded and re-broadcast for host code to react to.
 
 ## License
 
@@ -84,9 +90,12 @@ This applies to `pagenumber` attribute and all page-related methods. The compone
 |--------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | `tilesources`            | string  | JSON array of IIIF manifest URLs or tile source URLs. Example: `'["https://example.com/manifest.json"]'` or `'["https://example.com/info.json"]'` | `""`     |
 | `pagenumber`             | number  | Current page number in a multi-image sequence (1-based, where 1 = first image).                                                                       | `1`      |
-| `zoom`                   | number  | Zoom level of the viewer.                                                                                                                                | `1`      |
+| `zoom`                   | number  | Zoom level of the viewer. Values are clamped to `[minzoomlevel, maxzoomlevel]`.                                                                          | `1`      |
 | `rotation`               | number  | Rotation angle in degrees (0-360).                                                                                                                       | `0`      |
+| `preserveviewport`       | boolean | Preserve the current viewport (zoom/pan) when changing pages.                                                                                            | `false`  |
 | `clicktozoom`            | boolean | Enable click-to-zoom functionality.                                                                                                                      | `true`   |
+| `minzoomlevel`           | number  | Minimum allowed zoom level. Programmatic `zoom` is clamped to this lower bound.                                                                          | OSD default |
+| `maxzoomlevel`           | number  | Maximum allowed zoom level. Programmatic `zoom` is clamped to this upper bound.                                                                          | OSD default |
 | `shownavigationcontrol`  | boolean | Show/hide all navigation controls.                                                                                                                       | `true`   |
 | `sequencemode`           | boolean | Enable sequence mode for multi-image navigation.                                                                                                         | `false`  |
 | `shownavigator`          | boolean | Show/hide the navigator mini-map.                                                                                                                        | `true`   |
@@ -97,8 +106,14 @@ This applies to `pagenumber` attribute and all page-related methods. The compone
 | `triggerhome`            | boolean | Trigger home position reset (set to `"true"` to reset view to initial state).                                                                            | `"false"` |
 | `triggerfullscreen`      | boolean | Trigger fullscreen mode toggle (set to `"true"` to toggle fullscreen).                                                                                   | `"false"` |
 | `openseadragon-options`  | string  | JSON object with additional OpenSeadragon configuration options. Example: `'{"showNavigator": true}'`                             | `""`     |
-| `zones-data`             | string  | JSON object mapping zone keys to zone objects. Each zone: `{ page: number, ulx: number, uly: number, lrx: number, lry: number }`. See [Zone Navigation](#zone-navigation) for details. | `"{}"` |
+| `zones-data`             | string  | JSON object mapping zone keys to zone objects. Each zone: `{ page: number, ulx: number, uly: number, lrx: number, lry: number }`. See [Region Navigation](#region-navigation) for details. | `"{}"` |
 | `zone`                   | string  | Key of the zone to navigate to. Must exist in `zones-data`. Setting this attribute triggers navigation to the zone. | `""` |
+| `measures-data`          | string  | JSON object mapping measure keys to region objects `{ page, ulx, uly, lrx, lry }`. Lookup map for `measure`. See [Region Navigation](#region-navigation). | `"{}"` |
+| `measure`                | string  | Key of the measure to navigate to (must exist in `measures-data`). Append `\|<nonce>` to re-fire navigation to the same measure. | `""` |
+| `mdivs-data`             | string  | JSON object mapping movement (`mdiv`) keys to objects `{ page }` (with optional region). Lookup map for `mdiv`. See [Region Navigation](#region-navigation). | `"{}"` |
+| `mdiv`                   | string  | Key of the movement to navigate to (must exist in `mdivs-data`). Append `\|<nonce>` to re-fire navigation to the same movement. | `""` |
+| `fitrect`                | string  | Fit the viewport to an image-pixel rectangle `"x,y,width,height"`. An optional trailing `,<nonce>` token re-fires the same fit. | `""` |
+| `view-mode`              | string  | Declarative view mode (e.g. `pageBasedView` / `measureBasedView`). Recorded and re-broadcast via the `view-mode-changed` event for host code to react to. | `""` |
 
 ## Public Methods
 
@@ -114,7 +129,7 @@ The component provides the following public methods:
 ### Zoom
 - `zoomIn()` - Zoom in by 20%
 - `zoomOut()` - Zoom out by 20%
-- `setZoom(level)` - Set zoom to a specific level
+- `setZoom(level)` - Set zoom to a specific level (clamped to `[minzoomlevel, maxzoomlevel]`)
 - `getZoom()` - Get the current zoom level
 
 ### View Control
@@ -207,37 +222,50 @@ viewer.setAttribute('triggerfullscreen', 'true'); // Toggle fullscreen
 
 ## Events
 
-The component fires custom events when attributes change:
+The component fires a generic `communicate-[property]-update` event whenever any observed attribute changes:
 
 - `communicate-zoom-update` - Fired when zoom level changes
 - `communicate-rotation-update` - Fired when rotation changes
 - `communicate-pagenumber-update` - Fired when page changes
 - `communicate-triggerhome-update` - Fired when home is triggered
 - `communicate-triggerfullscreen-update` - Fired when fullscreen is triggered
-- And more for each observable attribute
+- And one for every other observable attribute
 
-The component also fires dedicated events for navigation:
+The component also fires dedicated semantic events:
 
-- `page-changed` - Fired when the viewer navigates to a new page. Detail: `{ pageNumber }` (1-based).
-- `zone-changed` - Fired after the viewer successfully navigates to a zone. Detail: `{ zoneKey, zone }`.
+| Event                | Detail                       | Fired when |
+|----------------------|------------------------------|------------|
+| `page-changed`       | `{ pageNumber }` (1-based)   | The viewer navigates to a new page. |
+| `zone-changed`       | `{ zoneKey, zone }`          | Navigation to a `zone` completes. |
+| `measure-changed`    | `{ key, region }`            | Navigation to a `measure` completes. |
+| `mdiv-changed`       | `{ key, region }`            | Navigation to an `mdiv` completes. |
+| `view-mode-changed`  | `{ viewMode }`               | The `view-mode` attribute changes. |
+| `zoom`               | `{ zoom }`                   | The OpenSeadragon viewport zoom changes. |
+| `image-ready`        | —                            | The image/tiles have finished loading. |
 
 ```javascript
 viewer.addEventListener('page-changed', (event) => {
     console.log('Navigated to page:', event.detail.pageNumber);
 });
 
-viewer.addEventListener('zone-changed', (event) => {
-    console.log('Navigated to zone:', event.detail.zoneKey);
+viewer.addEventListener('measure-changed', (event) => {
+    console.log('Navigated to measure:', event.detail.key);
 });
 ```
 
-## Zone Navigation
+## Region Navigation
 
-The `zones-data` attribute enables pixel-precise navigation to named rectangular regions on any page. This is independent of OSD's own sequence controls.
+The component supports pixel-precise navigation to named rectangular regions on any page, independent of OSD's own sequence controls. Three parallel lookup maps share the same mechanism and the same region object shape:
 
-### Zone Object Format
+| Lookup map      | Trigger attribute | Completion event   | Typical use |
+|-----------------|-------------------|--------------------|-------------|
+| `zones-data`    | `zone`            | `zone-changed`     | Generic named regions |
+| `measures-data` | `measure`         | `measure-changed`  | Music measures / bars |
+| `mdivs-data`    | `mdiv`            | `mdiv-changed`     | MEI `<mdiv>` movements (page-level, optional region) |
 
-Each entry in the `zones-data` map must have a 1-based `page` number and pixel coordinates (`ulx`, `uly`, `lrx`, `lry`) defining the upper-left and lower-right corners of the region.
+### Region Object Format
+
+Each entry in a `*-data` map must have a 1-based `page` number and (for precise fits) pixel coordinates (`ulx`, `uly`, `lrx`, `lry`) defining the upper-left and lower-right corners of the region. Movements (`mdivs-data`) may carry only a `page` to navigate to the movement's first page without a region fit.
 
 ```json
 {
@@ -247,11 +275,23 @@ Each entry in the `zones-data` map must have a 1-based `page` number and pixel c
 }
 ```
 
-- **Same page**: the viewer smoothly pans and zooms to the zone using OSD's spring animation.
-- **Cross-page**: the component navigates to the target page first, waits until its tiles are loaded, then applies the zone — ensuring coordinate conversion is always accurate.
-- **Updating zones-data**: setting a new `zones-data` value while a zone is active re-applies the current zone against the updated data.
+- **Same page**: the viewer fits the region directly (aspect-preserving).
+- **Cross-page**: the component navigates to the target page first, waits until its tiles are loaded, then applies the region — ensuring coordinate conversion is always accurate.
+- **Updating `zones-data`**: setting a new `zones-data` value while a zone is active re-applies the current zone against the updated data.
 
-### Example: Zone Navigation
+### Push model: data map + trigger
+
+The `*-data` attribute is a **lookup map** (set once, performs no navigation on its own). The matching trigger attribute (`zone` / `measure` / `mdiv`) is the **navigation trigger** and must hold a key that exists in the map. To re-fire navigation to the **same** key, append a `|<nonce>` token to the trigger value — it is stripped before lookup:
+
+```javascript
+let nonce = 0;
+viewer.setAttribute('measure', 'measure_1|' + (++nonce)); // jump
+viewer.setAttribute('measure', 'measure_1|' + (++nonce)); // jump again to the same measure
+```
+
+Empty trigger values (`measure=""`, `mdiv=""`) are ignored, so they are safe as defaults in markup.
+
+### Example: Measure Navigation
 
 ```html
 <edirom-image-viewer
@@ -259,30 +299,48 @@ Each entry in the `zones-data` map must have a 1-based `page` number and pixel c
     sequencemode="true"
     showsequencecontrol="false"
     tilesources='[...]'
-    zones-data='{}'>
+    measures-data='{}'
+    measure="">
 </edirom-image-viewer>
 ```
 
 ```javascript
 const viewer = document.querySelector('#viewer');
 
-// Populate zones-data with zone coordinates
-viewer.setAttribute('zones-data', JSON.stringify({
+// Populate the lookup map
+viewer.setAttribute('measures-data', JSON.stringify({
     measure_1: { page: 1, ulx: 100, uly: 200, lrx: 800, lry: 600 },
     measure_2: { page: 2, ulx: 150, uly: 300, lrx: 950, lry: 700 }
 }));
 
-// Navigate to a zone
-viewer.setAttribute('zone', 'measure_1');
+// Trigger navigation
+viewer.setAttribute('measure', 'measure_2');
 
-// React to zone changes (e.g. to update an external control)
-viewer.addEventListener('zone-changed', (event) => {
-    console.log('Navigated to zone:', event.detail.zoneKey);
+viewer.addEventListener('measure-changed', (event) => {
+    console.log('Navigated to measure:', event.detail.key);
 });
 
-// React to page changes
 viewer.addEventListener('page-changed', (event) => {
     console.log('Page is now:', event.detail.pageNumber);
+});
+```
+
+## Rectangle Fit (`fitrect`)
+
+Fit the viewport to an arbitrary image-pixel rectangle, independent of any lookup map. The value is `"x,y,width,height"` in image-pixel coordinates, with an optional trailing `,<nonce>` token to re-fire the same fit:
+
+```javascript
+viewer.setAttribute('fitrect', '500,300,1200,800');
+```
+
+## View Mode (`view-mode`)
+
+A declarative attribute the host can set to record the active view mode (e.g. `pageBasedView` / `measureBasedView`). The component stores it and re-broadcasts it via the `view-mode-changed` event; the actual layout swap is owned by the surrounding host application:
+
+```javascript
+viewer.setAttribute('view-mode', 'measureBasedView');
+viewer.addEventListener('view-mode-changed', (event) => {
+    console.log('View mode:', event.detail.viewMode);
 });
 ```
 

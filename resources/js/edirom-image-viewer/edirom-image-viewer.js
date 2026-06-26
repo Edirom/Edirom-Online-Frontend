@@ -21,7 +21,6 @@ console.log("Image Viewer loaded!");
  * @attribute {number} rotation - The rotation angle in degrees (0-360).
  * @attribute {boolean} preserveviewport - Whether to preserve viewport when changing pages.
  * @attribute {boolean} clicktozoom - Enable/disable click-to-zoom functionality.
- * @attribute {number} visibilityratio - Ratio of image that must be visible (0.0-1.0).
  * @attribute {number} minzoomlevel - Minimum allowed zoom level.
  * @attribute {number} maxzoomlevel - Maximum allowed zoom level.
  * @attribute {boolean} shownavigationcontrol - Show/hide all navigation controls.
@@ -110,7 +109,7 @@ class EdiromOpenseadragon extends HTMLElement {
      * @returns {Array<string>} The list of observed attributes.
      */
     static get observedAttributes() {
-        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'measures-data', 'measure', 'mdivs-data', 'mdiv', 'fitrect', 'view-mode'];
+        return ['preserveviewport', 'clicktozoom', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'measures-data', 'measure', 'mdivs-data', 'mdiv', 'fitrect', 'view-mode'];
     }
 
     /**
@@ -281,7 +280,6 @@ class EdiromOpenseadragon extends HTMLElement {
                 break;
 
             case 'preserveviewport':
-            case 'visibilityratio':
             case 'minzoomlevel':
             case 'maxzoomlevel':
             case 'shownavigationcontrol':
@@ -346,15 +344,23 @@ class EdiromOpenseadragon extends HTMLElement {
             // Jump to a specific measure (by the key used in measures-data).
             // An optional trailing "|nonce" makes repeated jumps to the same
             // measure re-fire this handler; the nonce is stripped before lookup.
-            case 'measure':
-                this._applyMeasure(String(newPropertyValue).split('|')[0]);
+            case 'measure': {
+                const measureKey = String(newPropertyValue).split('|')[0];
+                // Ignore the empty default value (measure="") set in markup so
+                // it does not log a "not found" warning on viewer creation.
+                if (measureKey) this._applyMeasure(measureKey);
                 break;
+            }
 
             // Load / jump to a movement's first page (by the key used in
             // mdivs-data). Same optional "|nonce" handling as 'measure'.
-            case 'mdiv':
-                this._applyMdiv(String(newPropertyValue).split('|')[0]);
+            case 'mdiv': {
+                const mdivKey = String(newPropertyValue).split('|')[0];
+                // Ignore the empty default value (mdiv="") set in markup so it
+                // does not log a "not found" warning on viewer creation.
+                if (mdivKey) this._applyMdiv(mdivKey);
                 break;
+            }
 
             // Fit the viewport to an image-pixel rectangle. Value format:
             // "x,y,width,height" with an optional trailing nonce token that is
@@ -469,7 +475,6 @@ class EdiromOpenseadragon extends HTMLElement {
                 element: this.viewerDiv,
                 prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/images/',
                 preserveViewport: this.preserveviewport === 'true',
-                visibilityRatio: parseFloat(this.visibilityratio) || 1.0,
                 minZoomLevel: parseFloat(this.minzoomlevel) || 0.5,
                 defaultZoomLevel: parseFloat(this.defaultzoomlevel) || 1,
                 maxZoomLevel: parseFloat(this.maxzoomlevel) || 10,
@@ -589,11 +594,18 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     setZoom(zoomLevel) {
         if(this.openSeaDragon && !isNaN(zoomLevel)) {
-            // Apply immediately (3rd arg = true). OSD's animated spring does not
-            // advance in this embedding (animation-frame never fires), so a
-            // plain zoomTo(zoomLevel) would set the target but never move the
-            // viewport, making the zoom slider appear to do nothing.
-            this.openSeaDragon.viewport.zoomTo(zoomLevel, null, true);
+            const viewport = this.openSeaDragon.viewport;
+            // Clamp to the configured min/max zoom ourselves. We apply the zoom
+            // immediately (3rd arg = true) because OSD's animated spring does not
+            // advance in this embedding (animation-frame never fires) — but
+            // immediate zoomTo also BYPASSES OSD's own min/max constraint spring,
+            // so a programmatic zoom (e.g. dragging the zoom bar) could otherwise
+            // shoot past maxZoomLevel / below minZoomLevel. Clamp here so the
+            // zoom bar can never exceed the configured limits.
+            const clampedZoom = Math.max(
+                viewport.getMinZoom(),
+                Math.min(zoomLevel, viewport.getMaxZoom()));
+            viewport.zoomTo(clampedZoom, null, true);
         }
     }
     
