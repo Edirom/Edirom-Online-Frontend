@@ -650,9 +650,14 @@ class EdiromOpenseadragon extends HTMLElement {
      * @param {string} overlayId
      */
     removeOverlay(overlayId) {
-        if (this.openSeaDragon) {
-            this.openSeaDragon.removeOverlay(overlayId);
-        }
+        if (!this.openSeaDragon) return;
+        // OpenSeadragon's removeOverlay(string) resolves the element via
+        // document.getElementById, which CANNOT see elements inside this
+        // component's shadow DOM, so the overlay would never be removed
+        // (e.g. hiding annotations did nothing). Resolve the element from the
+        // shadow root ourselves and pass it directly; fall back to the id.
+        const element = this.shadowRoot.getElementById(overlayId);
+        this.openSeaDragon.removeOverlay(element || overlayId);
     }
 
     /**
