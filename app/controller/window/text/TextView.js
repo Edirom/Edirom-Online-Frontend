@@ -44,19 +44,18 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
-        ToolsController.addAnnotationVisibilityListener(view.id, Ext.bind(view.checkGlobalAnnotationVisibility, view));
-        view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible());
-        console.log("hi this is an annotation view status on TextView ",         view.checkGlobalAnnotationVisibility(ToolsController.areAnnotationsVisible()))
+        ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
+        view.checkGlobalVisibility('annotations');
 
         var uri = view.uri;
 
-        window.doAJAXRequest('data/xql/getText.xql',
+        // request goes to v2 API - relative to backendURI
+        window.doAJAXRequest('api/document',
             'GET',
             {
-                uri: uri,
+                resource: uri,
                 idPrefix: view.id + '_',
-                term: view.window.term,
-                path: view.window.path
+                mediaType: 'text/html'
             },
             Ext.bind(function(response){
                 this.contentLoaded(view, response.responseText);
@@ -156,6 +155,6 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
     onBeforeDestroy: function(view) {
         var me = this;
         
-        ToolsController.removeAnnotationVisibilityListener(view.id);
+        ToolsController.removeAnnotationsVisibilityListener(view.id);
     }
 });

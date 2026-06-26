@@ -159,6 +159,7 @@ function showMovement(movementId) {
         renderer.setAttribute('pageheight', initHeight);
         
         // Store reference
+        // TODO: replace " window.verovioRenderer = renderer;" global reference once iframe based windows are removed; the consumers should get the renderer via dependency injection or events instead.
         window.verovioRenderer = renderer;
         
         // Track if this is the initial movement load
