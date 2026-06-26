@@ -214,12 +214,22 @@
  * The `.measure` base rules below were moved here from todo.css - they were the
  * only todo.css rules that actually reached this shadow root, so todo.css is no
  * longer injected into the web component (see edirom-image-viewer.js).
- * No hover/highlight zoom is applied: the develop branch has no such effect.
  */
 .measure {
     text-align: center;
     z-index: 5;
     cursor: pointer;
+}
+
+/*
+ * Hover highlight for measures. The `highlighted` class is toggled on
+ * mouseenter/mouseleave by OpenSeaDragonViewer; this box-shadow is duplicated
+ * (unscoped) from the `.ediromWindow .measure.highlighted` rule in
+ * facsimile.scss on the develop branch, which never reaches the web component
+ * shadow DOM.
+ */
+.measure.highlighted {
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 
 /*
