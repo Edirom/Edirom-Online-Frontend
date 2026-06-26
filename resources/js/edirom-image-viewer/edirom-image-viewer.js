@@ -79,6 +79,20 @@ class EdiromOpenseadragon extends HTMLElement {
         /** @type {Object} Zone lookup map parsed from the zones-data attribute */
         this._zonesData = {};
 
+        /**
+         * @type {Object} Measure lookup map parsed from the measures-data attribute.
+         * Keyed by measure number/id; each entry is a region
+         * {page, ulx, uly, lrx, lry} just like a zone.
+         */
+        this._measuresData = {};
+
+        /**
+         * @type {Object} Movement (mdiv) lookup map parsed from the mdivs-data
+         * attribute. Keyed by mdiv id; each entry is at least {page} (the
+         * movement's first page) and may also carry a region.
+         */
+        this._mdivsData = {};
+
         /** @type {string|null} Key of the currently active zone, or null */
         this._currentZoneKey = null;
 
@@ -96,7 +110,7 @@ class EdiromOpenseadragon extends HTMLElement {
      * @returns {Array<string>} The list of observed attributes.
      */
     static get observedAttributes() {
-        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'fitrect', 'view-mode'];
+        return ['preserveviewport', 'clicktozoom', 'visibilityratio', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'measures-data', 'measure', 'mdivs-data', 'mdiv', 'fitrect', 'view-mode'];
     }
 
     /**
@@ -306,6 +320,42 @@ class EdiromOpenseadragon extends HTMLElement {
                 this._applyZoneByKey(newPropertyValue);
                 break;
 
+            // Push-model navigation data: the host resolves all measures /
+            // movements of the source once and pushes them as JSON maps. The
+            // semantic 'measure' / 'mdiv' attributes below are then pure
+            // client-side lookups, mirroring the Verovio renderer's
+            // measurenumber / mdivname attributes.
+            case 'measures-data':
+                try {
+                    this._measuresData = JSON.parse(newPropertyValue) || {};
+                } catch (e) {
+                    console.error('Invalid measures-data JSON:', e);
+                    this._measuresData = {};
+                }
+                break;
+
+            case 'mdivs-data':
+                try {
+                    this._mdivsData = JSON.parse(newPropertyValue) || {};
+                } catch (e) {
+                    console.error('Invalid mdivs-data JSON:', e);
+                    this._mdivsData = {};
+                }
+                break;
+
+            // Jump to a specific measure (by the key used in measures-data).
+            // An optional trailing "|nonce" makes repeated jumps to the same
+            // measure re-fire this handler; the nonce is stripped before lookup.
+            case 'measure':
+                this._applyMeasure(String(newPropertyValue).split('|')[0]);
+                break;
+
+            // Load / jump to a movement's first page (by the key used in
+            // mdivs-data). Same optional "|nonce" handling as 'measure'.
+            case 'mdiv':
+                this._applyMdiv(String(newPropertyValue).split('|')[0]);
+                break;
+
             // Fit the viewport to an image-pixel rectangle. Value format:
             // "x,y,width,height" with an optional trailing nonce token that is
             // ignored — the nonce only exists so that repeating the SAME jump
@@ -466,17 +516,32 @@ class EdiromOpenseadragon extends HTMLElement {
 
             // --- Page change and zone handlers ---
             // Fire page-changed on every OSD page navigation.
-            // If a zone was requested for this page, apply it once tiles are loaded.
+            // If a zone was requested for this page, apply it once the new page
+            // is shown.
             this.openSeaDragon.addHandler('page', (event) => {
                 this._firePageChanged(event.page + 1);
                 if (!this._pendingZoneAfterPageChange) return;
                 const pending = this._pendingZoneAfterPageChange;
                 this._pendingZoneAfterPageChange = null;
-                // Wait for the tiled image on the new page to be fully ready
-                this.openSeaDragon.addOnceHandler('tile-loaded', () => {
+
+                // Apply the region after the new page settles. We can't rely on
+                // 'tile-loaded' alone: it does not fire when the target page's
+                // tiles are already cached (e.g. a page visited before), which
+                // would leave the viewport at the page's home position. Use a
+                // one-shot guard fed by both 'tile-drawn' (fires on cached
+                // redraws too) and a timeout fallback that also runs after
+                // OpenSeadragon's own page-change home reset.
+                let applied = false;
+                const applyPending = () => {
+                    if (applied) return;
+                    applied = true;
                     this._applyZone(pending.zone);
-                    this._fireZoneChanged(pending.zoneKey, pending.zone);
-                });
+                    this._fireRegionChanged(
+                        pending.eventName || 'zone-changed',
+                        pending.zoneKey, pending.zone);
+                };
+                this.openSeaDragon.addOnceHandler('tile-drawn', applyPending);
+                setTimeout(applyPending, 250);
             });
 
             // If a zone was requested before the viewer was ready, apply it now.
@@ -704,7 +769,7 @@ class EdiromOpenseadragon extends HTMLElement {
     }
 
     // ---------------------------------------------------------------
-    //  Zone navigation
+    //  Zone / measure / movement navigation
     // ---------------------------------------------------------------
 
     /**
@@ -720,22 +785,62 @@ class EdiromOpenseadragon extends HTMLElement {
             return;
         }
         this._currentZoneKey = zoneKey;
+        this._navigateToRegion(zone, zoneKey, 'zone-changed');
+    }
 
+    /**
+     * Jumps to the measure identified by `measureKey` in `_measuresData`.
+     * @param {string} measureKey - Key of the measure in the measures-data map.
+     */
+    _applyMeasure(measureKey) {
+        const region = this._measuresData[measureKey];
+        if (!region) {
+            console.warn(`edirom-image-viewer: measure "${measureKey}" not found in measures-data.`);
+            return;
+        }
+        this._navigateToRegion(region, measureKey, 'measure-changed');
+    }
+
+    /**
+     * Loads / jumps to the movement (mdiv) identified by `mdivKey` in
+     * `_mdivsData`. A movement entry typically only carries a `page` (its first
+     * page), in which case the viewer navigates to that page and shows it whole.
+     * @param {string} mdivKey - Key of the movement in the mdivs-data map.
+     */
+    _applyMdiv(mdivKey) {
+        const region = this._mdivsData[mdivKey];
+        if (!region) {
+            console.warn(`edirom-image-viewer: mdiv "${mdivKey}" not found in mdivs-data.`);
+            return;
+        }
+        this._navigateToRegion(region, mdivKey, 'mdiv-changed');
+    }
+
+    /**
+     * Shared page-aware navigation used by zone / measure / mdiv jumps.
+     * Handles same-page transitions (apply region directly) and cross-page
+     * transitions (change page, then apply the region once tiles are loaded).
+     * @param {Object} region - Region with a 1-based `page` and optional
+     *     `ulx, uly, lrx, lry` pixel coordinates.
+     * @param {string} key - The lookup key, echoed back in the change event.
+     * @param {string} eventName - CustomEvent name fired once navigation lands.
+     */
+    _navigateToRegion(region, key, eventName) {
         if (!this.openSeaDragon) {
-            // Viewer not ready yet — initializeViewer will pick it up via _currentZoneKey.
+            // Viewer not ready yet — initializeViewer re-applies the active zone.
             return;
         }
 
-        const targetPage = parseInt(zone.page) - 1; // 1-based → 0-based
+        const targetPage = parseInt(region.page) - 1; // 1-based → 0-based
         const currentPage = this.openSeaDragon.currentPage();
 
-        if (targetPage === currentPage) {
-            // Same page: apply zone directly (smooth viewport animation)
-            this._applyZone(zone);
-            this._fireZoneChanged(zoneKey, zone);
+        if (isNaN(targetPage) || targetPage === currentPage) {
+            // Same page (or no page given): apply region directly
+            this._applyZone(region);
+            this._fireRegionChanged(eventName, key, region);
         } else {
-            // Different page: defer zone until the new page's tiles are loaded
-            this._pendingZoneAfterPageChange = { zoneKey, zone };
+            // Different page: defer region until the new page's tiles are loaded
+            this._pendingZoneAfterPageChange = { zoneKey: key, zone: region, eventName };
             this.openSeaDragon.goToPage(targetPage);
         }
     }
@@ -783,6 +888,20 @@ class EdiromOpenseadragon extends HTMLElement {
     _fireZoneChanged(zoneKey, zone) {
         this.dispatchEvent(new CustomEvent('zone-changed', {
             detail: { zoneKey, zone },
+            bubbles: true
+        }));
+    }
+
+    /**
+     * Dispatches a region-navigation custom event (`zone-changed`,
+     * `measure-changed` or `mdiv-changed`).
+     * @param {string} eventName - The event name to dispatch.
+     * @param {string} key - The lookup key that was navigated to.
+     * @param {Object} region - The region object that was navigated to.
+     */
+    _fireRegionChanged(eventName, key, region) {
+        this.dispatchEvent(new CustomEvent(eventName, {
+            detail: { key, zoneKey: key, region, zone: region },
             bubbles: true
         }));
     }

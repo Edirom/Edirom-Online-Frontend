@@ -364,6 +364,30 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.imageViewer.showRect(x, y, width, height, true);
     },
 
+    // Pushes a measure's region to the image component and jumps to it via the
+    // semantic 'measure' attribute (Verovio-style push model). `m` carries
+    // {pageId, ulx, uly, lrx, lry} as returned by getMeasurePage.xql.
+    gotoMeasureInImage: function(measureKey, m) {
+        var me = this;
+        if (!me.imageViewer || typeof me.imageViewer.gotoMeasure !== 'function') return;
+        me.imageViewer.setMeasuresData([{
+            key: String(measureKey),
+            pageId: m.pageId,
+            ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry
+        }]);
+        me.imageViewer.gotoMeasure(String(measureKey));
+    },
+
+    // Pushes a movement's first page to the image component and loads it via
+    // the semantic 'mdiv' attribute. `pageId` is the movement's first page id
+    // as returned by getMovementsFirstPage.xql.
+    gotoMdivInImage: function(mdivKey, pageId) {
+        var me = this;
+        if (!me.imageViewer || typeof me.imageViewer.gotoMdiv !== 'function') return;
+        me.imageViewer.setMdivsData([{ key: String(mdivKey), pageId: pageId }]);
+        me.imageViewer.gotoMdiv(String(mdivKey));
+    },
+
     showAnnotations: function(annotations) {
         var me = this;
         me.imageViewer.addAnnotations(annotations);

@@ -153,14 +153,16 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             },
             Ext.bind(function(response){
                 var data = response.responseText;
-                me.gotoMovement(Ext.String.trim(data), view);
+                me.gotoMovement(Ext.String.trim(data), movementId, view);
             }, this)
         );
     },
 
-    gotoMovement: function(pageId, view) {
+    gotoMovement: function(pageId, movementId, view) {
         if(pageId != '')
-            view.showPage(pageId);
+            // Drive the image component via its semantic 'mdiv' attribute
+            // (push model): load the movement's first page.
+            view.gotoMdivInImage(movementId, pageId);
     },
 
     onMeasureVisibilityChange: function(view, visible) {
@@ -268,8 +270,12 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 				movementId: movementId
             },
             Ext.bind(function(response){
-                var data = response.responseText;
-				this.gotoMeasure(Ext.JSON.decode(data)[0], view);
+                var data = Ext.JSON.decode(response.responseText);
+				// Drive the image component via its semantic 'measure'
+				// attribute (push model): getMeasurePage.xql returns the
+				// measure's page id and pixel rectangle.
+				if (data && data.length)
+					view.gotoMeasureInImage(measure, data[0]);
             }, me)
         );
 	},

@@ -591,13 +591,25 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
         me.pageBasedView.showZone(zone);
     },
-    
-    toggleAnnotations: function(item, state) {
-        var me = this;
-        me.annotationsVisible = state;
-        me.annotationsVisibilitySetLocaly = true;
 
-        this.fireEvent('annotationsVisibilityChange', me, state);
+    // Jump to a measure in the page-based image component via its semantic
+    // 'measure' attribute. `m` is the resolved region returned by
+    // getMeasurePage.xql ({pageId, ulx, uly, lrx, lry, ...}).
+    gotoMeasureInImage: function(measureKey, m) {
+        var me = this;
+        if (me.activeView !== 'pageBasedView')
+            me.switchInternalView('pageBasedView');
+        me.pageBasedView.gotoMeasureInImage(measureKey, m);
+    },
+
+    // Load / jump to a movement's first page in the page-based image component
+    // via its semantic 'mdiv' attribute. `pageId` is the movement's first page
+    // id returned by getMovementsFirstPage.xql.
+    gotoMdivInImage: function(mdivKey, pageId) {
+        var me = this;
+        if (me.activeView !== 'pageBasedView')
+            me.switchInternalView('pageBasedView');
+        me.pageBasedView.gotoMdivInImage(mdivKey, pageId);
     },
 
     showAnnotations: function(annotations) {

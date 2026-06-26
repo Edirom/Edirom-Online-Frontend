@@ -215,6 +215,71 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         return true;
     },
 
+    // Resolves a page id to its 1-based page number within the loaded sequence,
+    // or NaN if the id is unknown.
+    pageNumberById: function(id) {
+        var me = this;
+        if (!me.pages) return NaN;
+        for (var i = 0; i < me.pages.length; i++) {
+            if (me.pages[i].id === id) return i + 1;
+        }
+        return NaN;
+    },
+
+    // Pushes the full measures map to the component (Verovio-style "push"
+    // model). `measures` is an array of records each carrying a key plus a
+    // page id and pixel rectangle; the page id is resolved to a 1-based page
+    // number here so the component stays in page-number space.
+    // Record fields: { key, pageId, ulx, uly, lrx, lry }.
+    setMeasuresData: function(measures) {
+        var me = this;
+        if (!me.webComponent) return;
+
+        var map = {};
+        Ext.each(measures, function(m) {
+            map[m.key] = {
+                page: me.pageNumberById(m.pageId),
+                ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry
+            };
+        });
+        me.webComponent.setAttribute('measures-data', JSON.stringify(map));
+    },
+
+    // Pushes the full movements (mdiv) map to the component. `mdivs` is an
+    // array of records each carrying a key plus the movement's first page id,
+    // resolved here to a 1-based page number.
+    // Record fields: { key, pageId }.
+    setMdivsData: function(mdivs) {
+        var me = this;
+        if (!me.webComponent) return;
+
+        var map = {};
+        Ext.each(mdivs, function(m) {
+            map[m.key] = { page: me.pageNumberById(m.pageId) };
+        });
+        me.webComponent.setAttribute('mdivs-data', JSON.stringify(map));
+    },
+
+    // Jumps to a measure by setting the semantic `measure` attribute. A nonce
+    // is appended after a '|' separator so that repeating the same measure
+    // still changes the attribute value and re-fires the component's
+    // attributeChangedCallback; the component strips the nonce.
+    gotoMeasure: function(key) {
+        var me = this;
+        if (!me.webComponent) return;
+        me._measureNonce = (me._measureNonce || 0) + 1;
+        me.webComponent.setAttribute('measure', String(key) + '|' + me._measureNonce);
+    },
+
+    // Loads / jumps to a movement's first page by setting the `mdiv` attribute.
+    // Uses the same nonce-suffix scheme as gotoMeasure.
+    gotoMdiv: function(key) {
+        var me = this;
+        if (!me.webComponent) return;
+        me._mdivNonce = (me._mdivNonce || 0) + 1;
+        me.webComponent.setAttribute('mdiv', String(key) + '|' + me._mdivNonce);
+    },
+
     fitInImage: function() {
 
         var me = this;
