@@ -353,11 +353,15 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             me.webComponent.addImageOverlay(measure, x, y, width, height);
 
             var text = Ext.get(me.webComponent.shadowRoot.getElementById(me.id + '_' + id + '_inner'));
-            text.on('mouseenter', me.highlightShape, me, measure, true);
-            text.on('mouseleave', me.deHighlightShape, me, measure, true);
             text.setStyle({
                 position: 'relative'
             });
+
+            // Attach the hover highlight to the whole measure overlay (not just the
+            // number badge) so hovering anywhere inside the measure box triggers it.
+            var measureEl = Ext.get(me.webComponent.shadowRoot.getElementById(me.id + '_' + id));
+            measureEl.on('mouseenter', me.highlightShape, me, measure, true);
+            measureEl.on('mouseleave', me.deHighlightShape, me, measure, true);
         });
     },
 
