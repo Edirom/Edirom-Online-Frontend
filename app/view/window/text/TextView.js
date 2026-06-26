@@ -40,7 +40,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         this.items = [
             {
-                html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
+                html: '<div id="' + this.id + '_textCont" class="textViewContent"></div>'
             }
         ];
 
@@ -73,24 +73,21 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 */
     },
 
-    checkGlobalVisibility: function(type) {
+    checkGlobalAnnotationVisibility: function(visible) {
         
-        // TODO: align with checkGlobalVisibility in SourceView.js (there it's working)
-
         var me = this;
-
-        // If: measures visibility was set locally, do nothing
-        if(me[type+'VisibilitySetLocaly']) return;
         
-        // Otherwise: check local visibility state and decide on next visibility state        
-        // only if local state is null (case in which window does not override global) fire event with global visibility
-        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
-        if(localState === null) {
-            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
-            me[type+'Visible'] = visible;
-            me.fireEvent(type+'VisibilityChange', me, visible);
-        }
-
+        if(me.annotationsVisibilitySetLocaly) return;
+        
+        me.annotationsVisible = visible;
+        if(typeof me.toggleAnnotationVisibility != 'undefined')
+            me.toggleAnnotationVisibility.setChecked(visible, true);
+        
+        //TODO: Controller mit einbeziehen
+        if(visible && me.annotationsLoaded)
+            me.showAnnotations();
+        else
+            this.fireEvent('annotationsVisibilityChange', me, visible);
     },
 
     toggleAnnotations: function(item, state) {
@@ -239,7 +236,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
 
-        me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
+        me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
             text: getLangString('view.window.text.TextView_showAnnotations'),
@@ -252,7 +249,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             cls: 'menuButton',
             menu : {
                 items: [
-                    me.toggleAnnotationsVisibility
+                    me.toggleAnnotationVisibility
                 ]
             }
         });
