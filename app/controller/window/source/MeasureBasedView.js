@@ -125,13 +125,20 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         var me = this;
 
-        // remove all measures first
-        viewer.removeShapes('measures');
-        
-        // fetch measures if global or local visibility is on (both can't be because of the logic above)
-        if(sourceView.measuresVisible) {
-            me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
+        // OpenSeadragon web component: rendering + show/hide of measure
+        // overlays is owned by the component. Toggle visibility via the
+        // boolean attribute and (re)load this page's measures when shown.
+        if(Ext.isFunction(viewer.setShowMeasureNumbers)) {
+            viewer.setShowMeasureNumbers(sourceView.measuresVisible);
+            if(sourceView.measuresVisible)
+                me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
+            return;
         }
+
+        // Legacy ImageViewer fallback: render/remove overlays in ExtJS.
+        viewer.removeShapes('measures');
+        if(sourceView.measuresVisible)
+            me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
 
     },
     
@@ -160,7 +167,13 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        viewer.addMeasures(measures);
+        // Push the measures to the web component (push model); the component
+        // renders the overlays and owns their show/hide state. Fall back to
+        // the legacy ExtJS renderer for the non-OpenSeadragon ImageViewer.
+        if(Ext.isFunction(viewer.setMeasureNumbersData))
+            viewer.setMeasureNumbersData(measures);
+        else
+            viewer.addMeasures(measures);
     },
     
 
@@ -199,7 +212,7 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        viewer.addAnnotations(annotations);
+        viewer.setAnnotationsData(annotations);
         sourceView.annotationFilterChanged();
     },
     

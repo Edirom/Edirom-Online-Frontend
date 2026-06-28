@@ -92,6 +92,54 @@ class EdiromOpenseadragon extends HTMLElement {
          */
         this._mdivsData = {};
 
+        /**
+         * @type {Array<Object>} Annotation overlay data pushed via the
+         * annotations-data attribute. Each entry carries the annotation's id,
+         * title, uri, categories, priority, fn (host click action) and a
+         * plist of image-pixel regions. The component renders the overlay
+         * badges in its shadow DOM and fires CustomEvents the host listens to
+         * for tooltip / click / highlight, mirroring measures-data / mdivs-data.
+         */
+        this._annotationsData = [];
+
+        /**
+         * @type {Object<string,HTMLElement>} measure-keyed shared badge
+         * containers for the currently rendered annotations. All annotations
+         * pointing at the same measure share one container so their badges
+         * stack instead of overlapping.
+         */
+        this._annotationContainers = {};
+
+        /**
+         * @type {boolean} Whether annotation overlays are currently visible.
+         * Toggled via the `show-annotations` attribute without discarding the
+         * pushed annotations-data, so show/hide is a pure visibility switch.
+         */
+        this._showAnnotations = false;
+
+        /**
+         * @type {Array<Object>} Measure-number overlay data pushed via the
+         * measure-numbers-data attribute. Each entry carries the measure's id,
+         * name (the printed number) and an image-pixel rectangle. The component
+         * renders the `.measure` number boxes in its shadow DOM, mirroring the
+         * annotations-data push model.
+         */
+        this._measureNumbersData = [];
+
+        /**
+         * @type {Object<string,HTMLElement>} id-keyed measure-number overlay
+         * containers currently rendered, so visibility can be toggled and the
+         * overlays cleared without re-pushing the data.
+         */
+        this._measureNumberContainers = {};
+
+        /**
+         * @type {boolean} Whether measure-number overlays are currently visible.
+         * Toggled via the `show-measure-numbers` attribute without discarding
+         * the pushed measure-numbers-data.
+         */
+        this._showMeasureNumbers = false;
+
         /** @type {string|null} Key of the currently active zone, or null */
         this._currentZoneKey = null;
 
@@ -109,7 +157,7 @@ class EdiromOpenseadragon extends HTMLElement {
      * @returns {Array<string>} The list of observed attributes.
      */
     static get observedAttributes() {
-        return ['preserveviewport', 'clicktozoom', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'measures-data', 'measure', 'mdivs-data', 'mdiv', 'fitrect', 'view-mode'];
+        return ['preserveviewport', 'clicktozoom', 'minzoomlevel', 'maxzoomlevel', 'shownavigationcontrol', 'sequencemode', 'shownavigator', 'showzoomcontrol', 'showhomecontrol', 'showfullpagecontrol', 'showsequencecontrol', 'tilesources', 'pagenumber', 'zoom', 'rotation', 'triggerhome', 'triggerfullscreen', 'openseadragon-options', 'zones-data', 'zone', 'measures-data', 'measure', 'mdivs-data', 'mdiv', 'annotations-data', 'show-annotations', 'measure-numbers-data', 'show-measure-numbers', 'fitrect', 'view-mode'];
     }
 
     /**
@@ -339,6 +387,52 @@ class EdiromOpenseadragon extends HTMLElement {
                     console.error('Invalid mdivs-data JSON:', e);
                     this._mdivsData = {};
                 }
+                break;
+
+            // Annotation overlays (push model, like measures-data). The host
+            // pushes the page's annotations as JSON when the "show
+            // annotations" button is clicked, and pushes an empty array to
+            // hide them. The component renders the overlay badges and fires
+            // CustomEvents the host uses for tooltip / click / highlight.
+            case 'annotations-data':
+                try {
+                    this._annotationsData = JSON.parse(newPropertyValue) || [];
+                } catch (e) {
+                    console.error('Invalid annotations-data JSON:', e);
+                    this._annotationsData = [];
+                }
+                console.log('edirom-image-viewer: annotations-data', this._annotationsData);
+                this._renderAnnotations();
+                break;
+
+            // Toggle the visibility of the already-rendered annotation overlays
+            // without discarding their data. "true" (or absent value) shows
+            // them, "false" hides them. Separate from annotations-data so the
+            // host can show/hide repeatedly without re-pushing the data.
+            case 'show-annotations':
+                this._showAnnotations = String(newPropertyValue) !== 'false';
+                this._applyAnnotationVisibility();
+                break;
+
+            // Measure-number overlays (push model, like annotations-data). The
+            // host pushes the page's measures as JSON once per page; the
+            // component renders the `.measure` number boxes in its shadow DOM.
+            case 'measure-numbers-data':
+                try {
+                    this._measureNumbersData = JSON.parse(newPropertyValue) || [];
+                } catch (e) {
+                    console.error('Invalid measure-numbers-data JSON:', e);
+                    this._measureNumbersData = [];
+                }
+                this._renderMeasureNumbers();
+                break;
+
+            // Toggle the visibility of the already-rendered measure-number
+            // overlays without discarding their data. "true" shows them,
+            // "false" hides them.
+            case 'show-measure-numbers':
+                this._showMeasureNumbers = String(newPropertyValue) !== 'false';
+                this._applyMeasureNumberVisibility();
                 break;
 
             // Jump to a specific measure (by the key used in measures-data).
@@ -778,6 +872,195 @@ class EdiromOpenseadragon extends HTMLElement {
      */
     getOverlayById(overlayId) {
         return this.openSeaDragon ? this.openSeaDragon.getOverlayById(overlayId) : null;
+    }
+
+    // ---------------------------------------------------------------
+    //  Annotation overlays (push model, like measures-data)
+    // ---------------------------------------------------------------
+
+    /**
+     * Removes all annotation overlays currently rendered in the shadow DOM and
+     * resets the per-measure container map.
+     * @private
+     */
+    _clearAnnotations() {
+        const me = this;
+        Object.keys(this._annotationContainers).forEach(function (containerId) {
+            me.removeOverlay(containerId);
+        });
+        this._annotationContainers = {};
+    }
+
+    /**
+     * Shows or hides every rendered annotation overlay container according to
+     * `this._showAnnotations`. Used by the `show-annotations` attribute so the
+     * host can toggle visibility without re-pushing annotations-data.
+     *
+     * NOTE: this toggles `visibility`, not `display`. OpenSeadragon re-applies
+     * `display:block` to every overlay element on each viewport redraw, which
+     * would override a `display:none` hide on the next pan/zoom; it does not
+     * touch `visibility`, so the hide sticks.
+     * @private
+     */
+    _applyAnnotationVisibility() {
+        const value = this._showAnnotations ? '' : 'hidden';
+        const containers = this._annotationContainers;
+        Object.keys(containers).forEach(function (containerId) {
+            containers[containerId].style.visibility = value;
+        });
+    }
+
+    /**
+     * Renders annotation overlays from `this._annotationsData`. All annotations
+     * pointing at the same measure share one container (keyed by
+     * `idPrefix_measureId`) so their badges stack; each badge gets the id
+     * `idPrefix_measureId + annoId` and the class `annotIcon {categories}
+     * {priority} {partType}` so the host's filter / lookup helpers keep working.
+     * Each badge fires `annotation-click` / `annotation-mouseenter` /
+     * `annotation-mouseleave` CustomEvents the host listens to for its
+     * ExtJS-specific tooltip / click / highlight behaviour.
+     * @private
+     */
+    _renderAnnotations() {
+        const me = this;
+        this._clearAnnotations();
+        if (!this.openSeaDragon || !Array.isArray(this._annotationsData)) return;
+
+        this._annotationsData.forEach(function (annotation) {
+            const idPrefix = annotation.idPrefix || '';
+            const annoId = annotation.id;
+            const name = annotation.title || '';
+            const uri = annotation.uri || '';
+            const categories = annotation.categories || '';
+            const priority = annotation.priority || '';
+            const fn = annotation.fn || '';
+            const plist = Array.isArray(annotation.plist) ? annotation.plist : [];
+
+            plist.forEach(function (shape) {
+                const measureId = shape.id;
+                const x = Number(shape.ulx);
+                const y = Number(shape.uly);
+                const width = Number(shape.lrx) - Number(shape.ulx);
+                const height = Number(shape.lry) - Number(shape.uly);
+                const partType = shape.type || '';
+
+                const containerId = idPrefix + '_' + measureId;
+                let container = me._annotationContainers[containerId];
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = containerId;
+                    container.className = 'annotation';
+                    me._annotationContainers[containerId] = container;
+                    me.addImageOverlay(container, x, y, width, height);
+                }
+
+                const badge = document.createElement('div');
+                badge.id = containerId + annoId;
+                badge.className = ('annotIcon ' + categories + ' ' + priority + ' ' + partType).replace(/\s+/g, ' ').trim();
+                badge.title = name;
+                badge.setAttribute('data-edirom-annot-id', annoId);
+                container.appendChild(badge);
+
+                const detail = { id: annoId, uri: uri, fn: fn, title: name, element: badge };
+
+                // OpenSeadragon's MouseTracker captures pointer events on its
+                // container; stop them on the badge so the native click fires
+                // and the host receives the event instead of OSD panning.
+                badge.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); });
+                badge.addEventListener('mousedown', function (ev) { ev.stopPropagation(); });
+                badge.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    me.dispatchEvent(new CustomEvent('annotation-click', { detail: detail }));
+                });
+                badge.addEventListener('mouseenter', function () {
+                    me.dispatchEvent(new CustomEvent('annotation-mouseenter', { detail: detail }));
+                });
+                badge.addEventListener('mouseleave', function () {
+                    me.dispatchEvent(new CustomEvent('annotation-mouseleave', { detail: detail }));
+                });
+            });
+        });
+
+        // honour the current show/hide state for the freshly built overlays
+        this._applyAnnotationVisibility();
+    }
+
+    // ---------------------------------------------------------------
+    //  Measure-number overlays (push model, like annotations-data)
+    // ---------------------------------------------------------------
+
+    /**
+     * Removes all measure-number overlays currently rendered in the shadow DOM
+     * and resets the container map.
+     * @private
+     */
+    _clearMeasureNumbers() {
+        const me = this;
+        Object.keys(this._measureNumberContainers).forEach(function (containerId) {
+            me.removeOverlay(containerId);
+        });
+        this._measureNumberContainers = {};
+    }
+
+    /**
+     * Shows or hides every rendered measure-number overlay according to
+     * `this._showMeasureNumbers`. Toggles `visibility` (not `display`) for the
+     * same reason as annotations: OpenSeadragon re-applies `display:block` on
+     * each redraw but never touches `visibility`.
+     * @private
+     */
+    _applyMeasureNumberVisibility() {
+        const value = this._showMeasureNumbers ? '' : 'hidden';
+        const containers = this._measureNumberContainers;
+        Object.keys(containers).forEach(function (containerId) {
+            containers[containerId].style.visibility = value;
+        });
+    }
+
+    /**
+     * Renders the measure-number boxes from `this._measureNumbersData`. Each
+     * entry gets a `.measure` container (id `idPrefix_id`) holding a
+     * `.measureInner` / `.measureInnerEmpty` span with the printed number, added
+     * as an OSD image overlay at its pixel rect. A local hover highlight class
+     * is toggled on the box (no ExtJS needed for measure numbers).
+     * @private
+     */
+    _renderMeasureNumbers() {
+        const me = this;
+        this._clearMeasureNumbers();
+        if (!this.openSeaDragon || !Array.isArray(this._measureNumbersData)) return;
+
+        this._measureNumbersData.forEach(function (m) {
+            const idPrefix = m.idPrefix || '';
+            const id = m.id;
+            const name = m.name || '';
+            const x = Number(m.ulx);
+            const y = Number(m.uly);
+            const width = Number(m.lrx) - Number(m.ulx);
+            const height = Number(m.lry) - Number(m.uly);
+
+            const containerId = idPrefix + '_' + id;
+            const measure = document.createElement('div');
+            measure.id = containerId;
+            measure.className = 'measure';
+
+            const span = document.createElement('span');
+            span.className = (name === '' ? 'measureInnerEmpty' : 'measureInner');
+            span.id = containerId + '_inner';
+            span.style.position = 'relative';
+            span.textContent = name;
+            measure.appendChild(span);
+
+            me._measureNumberContainers[containerId] = measure;
+            me.addImageOverlay(measure, x, y, width, height);
+
+            measure.addEventListener('mouseenter', function () { measure.classList.add('highlighted'); });
+            measure.addEventListener('mouseleave', function () { measure.classList.remove('highlighted'); });
+        });
+
+        // honour the current show/hide state for the freshly built overlays
+        this._applyMeasureNumberVisibility();
     }
 
     // ---------------------------------------------------------------

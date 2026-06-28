@@ -241,8 +241,19 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             var localVisible = sessionStorage.getItem('edirom-'+type+'-visible-' + me.owner.id) === 'true';
             var localBlocked = document.getElementById('icon_display-'+type+'-window_' + me.owner.id).hasAttribute('pressed') && !localVisible;
 
-            // decide whether to show measures/annotations
-            if(localVisible || (globalVisible && !localBlocked)){
+            var visible = localVisible || (globalVisible && !localBlocked);
+
+            if(type === 'annotations') {
+                // Always preload this page's annotations into the component; the
+                // handler pushes the data once and then applies visibility, so
+                // the toolbar button can show/hide instantly without a re-fetch.
+                me.owner.fireEvent('loadAnnotations', me.owner, visible);
+            } else if(type === 'measures') {
+                // Same push model for measure numbers: preload this page's
+                // measures into the component once; the component remembers the
+                // last show/hide state and applies it to every page.
+                me.owner.fireEvent('loadMeasures', me.owner, visible);
+            } else if(visible) {
                 me.owner.fireEvent(type+'VisibilityChange', me.owner, true);
             }
         }
@@ -333,14 +344,21 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         this.imageViewer.fitInImage();
     },
 
-    showMeasures: function(measures) {
+    // Pushes the page's measure numbers to the image component once (push
+    // model); the toolbar button then only toggles their visibility.
+    setMeasureNumbersData: function(measures) {
         var me = this;
-        me.imageViewer.addMeasures(measures);
+        me.imageViewer.setMeasureNumbersData(measures);
+    },
+
+    showMeasures: function() {
+        var me = this;
+        me.imageViewer.setShowMeasureNumbers(true);
     },
 
     hideMeasures: function() {
         var me = this;
-        me.imageViewer.removeShapes('measures');
+        me.imageViewer.setShowMeasureNumbers(false);
     },
 
     showZone: function(zone) {
@@ -377,9 +395,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.imageViewer.gotoMdiv(String(mdivKey));
     },
 
-    showAnnotations: function(annotations) {
+    // Pushes the page's annotations to the image component once (push model).
+    setAnnotationsData: function(annotations) {
         var me = this;
-        me.imageViewer.addAnnotations(annotations);
+        me.imageViewer.setAnnotationsData(annotations);
+    },
+
+    showAnnotations: function() {
+        var me = this;
+        me.imageViewer.setShowAnnotations(true);
     },
 
     onOverlayVisibilityChange: function(view, state) {
@@ -389,7 +413,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
     hideAnnotations: function() {
         var me = this;
-        me.imageViewer.removeShapes('annotations');
+        me.imageViewer.setShowAnnotations(false);
     },
 
     updateZoom: function(zoom) {

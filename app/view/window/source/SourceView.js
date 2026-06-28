@@ -605,14 +605,21 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         this.fireEvent('annotationsVisibilityChange', me, state);
     },
 
-    showMeasures: function(measures) {
+    showMeasures: function() {
         var me = this;
-        me.pageBasedView.showMeasures(measures);
+        me.pageBasedView.showMeasures();
     },
 
     hideMeasures: function() {
         var me = this;
         me.pageBasedView.hideMeasures();
+    },
+
+    // Pushes the page's measure numbers to the image component once (push
+    // model); the toolbar button then only toggles their visibility.
+    setMeasureNumbersData: function(measures) {
+        var me = this;
+        me.pageBasedView.setMeasureNumbersData(measures);
     },
 
     gotoMeasureDialog: function() {
@@ -702,10 +709,17 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     },
 
-    showAnnotations: function(annotations) {
+    // Pushes the page's annotations to the image component once (push model);
+    // the toolbar button then only toggles their visibility.
+    setAnnotationsData: function(annotations) {
         var me = this;
-        me.pageBasedView.showAnnotations(annotations);
+        me.pageBasedView.setAnnotationsData(annotations);
         me.annotationFilterChanged();
+    },
+
+    showAnnotations: function() {
+        var me = this;
+        me.pageBasedView.showAnnotations();
     },
 
     hideAnnotations: function() {
