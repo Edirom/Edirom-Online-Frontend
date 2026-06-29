@@ -654,6 +654,15 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         var me = this;
 
         Ext.Array.each(me.imageViewers, function(viewer) {
+
+            // Component path: push the filter to the web component, which owns
+            // annotation rendering. Fall back to the legacy ExtJS class toggling
+            // for the non-OSD ImageViewer.
+            if(Ext.isFunction(viewer.setAnnotationFilter)) {
+                viewer.setAnnotationFilter(visibleCategories, visiblePriorities);
+                return;
+            }
+
             var annotations = viewer.getShapes('annotations');
 
             // define function to apply to relevant element IDs

@@ -95,6 +95,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'measure="" ' +
                   'mdivs-data="{}" ' +
                   'mdiv="" ' +
+                  'annotations-data="[]" ' +
+                  'show-annotations="false" ' +
+                  'visible-categories="[&quot;undefined&quot;]" ' +
+                  'visible-priorities="[&quot;undefined&quot;]" ' +
+                  'measure-numbers-data="[]" ' +
+                  'show-measure-numbers="false" ' +
                   'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
@@ -156,6 +162,14 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         });
         me.webComponent.addEventListener('annotation-mouseleave', function(event) {
             me.onAnnotationMouseLeave(event.detail);
+        });
+
+        // The component owns the category/priority filter; when it changes
+        // (including when the visible-categories/visible-priorities attributes
+        // are set externally), forward it so the host can keep its filter menu
+        // checkboxes in sync.
+        me.webComponent.addEventListener('annotation-filter-changed', function(event) {
+            me.fireEvent('annotationFilterChanged', me, event.detail.visibleCategories, event.detail.visiblePriorities);
         });
     },
 
@@ -495,6 +509,19 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var me = this;
         if (!me.webComponent) return;
         me.webComponent.setAttribute('show-annotations', show ? 'true' : 'false');
+    },
+
+    // Pushes the active category/priority filter to the component (push model).
+    // The component hides annotation badges whose category/priority ids are not
+    // in the visible sets, without re-pushing annotations-data. `visibleCategories`
+    // and `visiblePriorities` are the same arrays the host's legacy
+    // annotationFilterChanged builds (['undefined'] = no such taxonomy = show all,
+    // [] = nothing checked = hide all).
+    setAnnotationFilter: function(visibleCategories, visiblePriorities) {
+        var me = this;
+        if (!me.webComponent) return;
+        me.webComponent.setAttribute('visible-categories', Ext.JSON.encode(Ext.Array.toArray(visibleCategories)));
+        me.webComponent.setAttribute('visible-priorities', Ext.JSON.encode(Ext.Array.toArray(visiblePriorities)));
     },
 
     // Pushes the page's measure-number boxes to the component (push model, like

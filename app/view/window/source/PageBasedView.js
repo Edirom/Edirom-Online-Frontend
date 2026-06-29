@@ -59,6 +59,19 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
  	   me.imageViewer.on('imageChanged', me.onViewerImageChanged, me);
+
+ 	   // When the component reports a filter change (e.g. its visible-categories
+ 	   // attribute was set externally), keep the source view's filter menu
+ 	   // checkboxes in sync.
+ 	   me.imageViewer.on('annotationFilterChanged', me.onViewerAnnotationFilterChanged, me);
+    },
+
+    // Relays a component-driven filter change up to the source view so its
+    // annotation filter menu checkboxes mirror the visible categories/priorities.
+    onViewerAnnotationFilterChanged: function(viewer, visibleCategories, visiblePriorities) {
+        var me = this;
+        if(me.owner && Ext.isFunction(me.owner.syncAnnotationFilterMenu))
+            me.owner.syncAnnotationFilterMenu(visibleCategories, visiblePriorities);
     },
 
     // Keep the page spinner's number box in sync when the image viewer changes
@@ -72,6 +85,14 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
 
         var me = this;
+
+        // Component path: the web component owns annotation rendering, so push
+        // the filter to it and let it show/hide badges itself. Falls back to the
+        // legacy ExtJS shadow-DOM class toggling for the non-OSD ImageViewer.
+        if(Ext.isFunction(me.imageViewer.setAnnotationFilter)) {
+            me.imageViewer.setAnnotationFilter(visibleCategories, visiblePriorities);
+            return;
+        }
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('View: PageBasedView: annotationFilterChanged');

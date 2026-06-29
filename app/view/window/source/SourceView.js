@@ -208,13 +208,15 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
                 menu: me.annotCategoriesMenu
             });
         }
+
+        // Push the actual category/priority id lists to the viewer right away so
+        // the component starts with the real filter (all visible) instead of the
+        // template's placeholder, without waiting for the user to toggle a menu.
+        me.annotationFilterChanged();
     },
 
     annotationFilterChanged: function(item, event) {
         var me = this;
-
-        // if me.annotationsVisible is false do nothing
-        if(!me.annotationsVisible) return;
 
         // set visible Priorities
         var visiblePriorities = [];
@@ -244,6 +246,33 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         me.pageBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
         me.measureBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
+    },
+
+    // Updates the annotation filter menu checkboxes to mirror the given visible
+    // category / priority id arrays. Called when the filter changes outside the
+    // menu (e.g. the image component's visible-categories attribute is set
+    // externally). Child handlers are suppressed (setChecked second arg) so this
+    // does not loop back into annotationFilterChanged.
+    syncAnnotationFilterMenu: function(visibleCategories, visiblePriorities) {
+        var me = this;
+
+        var sync = function(menu, idField, visible) {
+            if(menu == null || menu.items.length == 0) return;
+
+            // null / undefined (no filter) and the ['undefined'] sentinel (no such
+            // taxonomy) both mean "show everything" -> check all.
+            var showAll = !Ext.isArray(visible)
+                || (visible.length == 1 && visible[0] == 'undefined');
+
+            menu.items.each(function(item) {
+                var shouldCheck = showAll || Ext.Array.contains(visible, item[idField]);
+                if(item.checked !== shouldCheck)
+                    item.setChecked(shouldCheck, true);
+            });
+        };
+
+        sync(me.annotPrioritiesMenu, 'priorityId', visiblePriorities);
+        sync(me.annotCategoriesMenu, 'categoryId', visibleCategories);
     },
 
     setMovements: function(movements) {
