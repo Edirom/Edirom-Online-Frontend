@@ -82,10 +82,6 @@ Ext.define('EdiromOnline.view.desktop.App', {
         };
 
         Ext.apply(cfg, me.desktopConfig);
-        Ext.apply(cfg, {
-            wallpaper: 'resources/wallpapers/Blue-Sencha.jpg',
-            wallpaperStretch: false
-        });
         
         return cfg;
     },
