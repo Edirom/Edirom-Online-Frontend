@@ -295,3 +295,47 @@
     /* re-enable interaction on the badge itself (parent has pointer-events:none) */
     pointer-events: auto;
 }
+
+/*
+ * Annotation tooltip. The hover tip used to be an ExtJS Ext.tip.Tip rendered in
+ * the main document, so its box chrome came from the ExtJS `.x-tip` theme and
+ * its inner `.annotTip` content from the theme stylesheet (annotation.scss).
+ * The tip is now rendered by the web component inside its shadow DOM, where
+ * neither of those stylesheets apply, so the box chrome and the `.annotTip`
+ * content rules are duplicated (unscoped) here. The host-supplied tip HTML is
+ * `<div class="annotTip"><div class="metaBox">…</div><div class="contentBox">…
+ * </div></div>` (see getAnnotation.xql, target=tip).
+ */
+.edirom-annotation-tip {
+    background-color: #ffffff;
+    border: 1px solid #999999;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    padding: 8px 10px;
+    color: #000000;
+    font-family: 'Open Sans', 'Courier New', Courier, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* The metaBox (priority / categories / sigla / id) is hidden in tips, matching
+   the theme's `.annotTip .metaBox { display: none }`. */
+.edirom-annotation-tip .annotTip .metaBox {
+    display: none;
+}
+
+/* Tip content: title + annotation text, in the edition content font. */
+.edirom-annotation-tip .annotTip .contentBox {
+    font-family: 'Caudex', Arial, sans-serif;
+    font-size: 12px;
+}
+
+.edirom-annotation-tip .annotTip .contentBox h1 {
+    font-size: 1.3em;
+    margin: 0 0 6px;
+}
+
+.edirom-annotation-tip .annotTip .contentBox span.ref {
+    cursor: pointer;
+    text-decoration: underline;
+}

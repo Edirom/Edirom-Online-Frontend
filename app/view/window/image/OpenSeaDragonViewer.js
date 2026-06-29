@@ -42,11 +42,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     shapes: null,
     partLabel: null,
 
-    annotTipWidth: 220,
-    annotTipMaxWidth: 300,
-    annotTipHeight: 140,
-    annotTipMaxHeight: 300,
-
     initComponent: function () {
 
         var me = this;
@@ -151,17 +146,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         });
 
         // Annotation overlays are rendered by the component from the pushed
-        // annotations-data attribute; the ExtJS-specific interactions (run the
-        // click action, show the lazily-loaded tooltip) are handled here via
-        // the CustomEvents the component fires for each badge.
+        // annotations-data attribute, including the tooltip (the host preloads
+        // each annotation's server-rendered tooltip HTML into annotations-data).
+        // The only ExtJS-specific interaction left here is the click action,
+        // run from the component's annotation-click event.
         me.webComponent.addEventListener('annotation-click', function(event) {
             me.onAnnotationClick(event.detail);
-        });
-        me.webComponent.addEventListener('annotation-mouseenter', function(event) {
-            me.onAnnotationMouseEnter(event.detail);
-        });
-        me.webComponent.addEventListener('annotation-mouseleave', function(event) {
-            me.onAnnotationMouseLeave(event.detail);
         });
 
         // The component owns the category/priority filter; when it changes
@@ -458,19 +448,17 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
     // Pushes the page's annotations to the component (push model, like
     // setMeasuresData / setMdivsData). The component renders the overlay
-    // badges from the annotations-data attribute; the ExtJS-specific
-    // interactions (click action + tooltip) are handled by the
-    // onAnnotation* listeners wired up in initSurface. `me.shapes` is still
-    // populated here so the existing filter / shadow-DOM lookup helpers
-    // (getShapes / getShapeElem / annotationFilterChanged) keep working.
-    // Passing an empty array hides all annotations.
+    // badges AND their hover tooltip from the annotations-data attribute; each
+    // record carries its server-rendered tooltip HTML (preloaded below), so the
+    // only ExtJS-specific interaction left is the click action (annotation-click
+    // event). `me.shapes` is still populated here so the existing filter /
+    // shadow-DOM lookup helpers (getShapes / getShapeElem /
+    // annotationFilterChanged) keep working. Passing an empty array hides all
+    // annotations.
     setAnnotationsData: function(annotations) {
 
         var me = this;
         if (!me.webComponent) return;
-
-        // discard tooltips created for the previous page's annotations
-        me.destroyAnnotationTips();
 
         // reset the shapes group the host filter iterates over
         me.shapes.add('annotations', []);
@@ -493,14 +481,46 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     categories: annotation.get('categories'),
                     priority: annotation.get('priority'),
                     fn: annotation.get('fn'),
-                    plist: plist
+                    plist: plist,
+                    tooltip: ''
                 });
             });
         }
 
-        console.log('OpenSeaDragonViewer: setAnnotationsData', data);
+        // Preload each annotation's server-rendered tooltip HTML up front so the
+        // component can render the tooltip itself on hover (push model: the host
+        // sends the data, the component renders it). All tooltips for the page
+        // are fetched in parallel and the annotations-data is pushed once they
+        // have all resolved. A safety-net timeout pushes whatever resolved so a
+        // single failed request never permanently hides the page's annotations.
+        var pending = data.length;
+        var pushed = false;
+        var pushData = function() {
+            if (pushed) return;
+            pushed = true;
+            me.webComponent.setAttribute('annotations-data', Ext.JSON.encode(data));
+        };
 
-        me.webComponent.setAttribute('annotations-data', Ext.JSON.encode(data));
+        if (pending === 0) { pushData(); return; }
+
+        Ext.each(data, function(rec) {
+            window.doAJAXRequest('data/xql/getAnnotation.xql',
+                'GET',
+                {
+                    uri: rec.uri,
+                    target: 'tip',
+                    edition: EdiromOnline.getApplication().activeEdition
+                },
+                function(response) {
+                    rec.tooltip = response.responseText;
+                    pending--;
+                    if (pending === 0) pushData();
+                }
+            );
+        });
+
+        // safety net in case some requests never call back
+        Ext.defer(pushData, 8000);
     },
 
     // Shows or hides the already-pushed annotation overlays via the boolean
@@ -570,88 +590,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     // annotation's `fn`), fired from the component's annotation-click event.
     onAnnotationClick: function(detail) {
         eval(detail.fn);
-    },
-
-    // Shows the annotation's lazily-loaded tooltip on hover. Ext.tip.ToolTip's
-    // automatic `target` binding only resolves elements in the main document,
-    // so it never fires for overlays living inside the component's shadow DOM;
-    // a plain Ext.tip.Tip shown manually via showBy() is used instead. Tips are
-    // cached per badge id so the contents are fetched only once.
-    onAnnotationMouseEnter: function(detail) {
-
-        var me = this;
-        var badge = detail.element;
-        if (!badge) return;
-
-        me._annotTips = me._annotTips || {};
-        var entry = me._annotTips[badge.id];
-
-        if (!entry) {
-            var tip = Ext.create('Ext.tip.Tip', {
-                cls: 'annotationTip',
-                width: me.annotTipWidth,
-                maxWidth: me.annotTipMaxWidth,
-                height: me.annotTipHeight,
-                maxHeight: me.annotTipMaxHeight,
-                autoHide: false,
-                shadow: true,
-                html: getLangString('Annotation_plus_Title', detail.title)
-            });
-
-            var hideTask = new Ext.util.DelayedTask(function(){ tip.hide(); });
-
-            // small grace period so the pointer can travel into the tip
-            tip.on('afterrender', function() {
-                this.el.on('mouseenter', function(){ hideTask.cancel(); });
-                this.el.on('mouseleave', function(){ hideTask.delay(300); });
-            }, tip);
-
-            entry = { tip: tip, hideTask: hideTask, loaded: false };
-            me._annotTips[badge.id] = entry;
-        }
-
-        entry.hideTask.cancel();
-
-        // lazily fetch the tooltip contents on first hover
-        if (!entry.loaded) {
-            entry.loaded = true;
-            window.doAJAXRequest('data/xql/getAnnotation.xql',
-                'GET',
-                {
-                    uri: detail.uri,
-                    target: 'tip',
-                    edition: EdiromOnline.getApplication().activeEdition
-                },
-                Ext.bind(function(response){
-                    this.update(response.responseText);
-                }, entry.tip)
-            );
-        }
-
-        entry.tip.showBy(Ext.get(badge), 'l-r?');
-    },
-
-    // Hides the annotation's tooltip after a short grace period, fired from the
-    // component's annotation-mouseleave event.
-    onAnnotationMouseLeave: function(detail) {
-
-        var me = this;
-        if (!me._annotTips || !detail.element) return;
-        var entry = me._annotTips[detail.element.id];
-        if (entry) entry.hideTask.delay(300);
-    },
-
-    // Destroys all cached annotation tooltips (called before re-rendering a new
-    // page's annotations so tips do not leak across pages).
-    destroyAnnotationTips: function() {
-
-        var me = this;
-        if (!me._annotTips) return;
-        Ext.Object.each(me._annotTips, function(key, entry) {
-            if (entry.hideTask) entry.hideTask.cancel();
-            if (entry.tip) entry.tip.destroy();
-        });
-        me._annotTips = {};
     },
 
     getShapes: function(groupName) {
