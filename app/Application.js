@@ -129,7 +129,7 @@ Ext.define('EdiromOnline.Application', {
                         me.loadEdiromForEdition();
 
                     // If there are multiple editions in the backend show a selection screen
-                    }else {
+                    } else {
                         let html = `<div class="container" style="margin: 8.75%;">
                                         <img src="icon.png"/>
                                         <h1 style="margin-top:5px;">Edirom Online</h1>

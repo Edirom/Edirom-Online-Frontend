@@ -39,20 +39,21 @@ Ext.define('EdiromOnline.view.navigator.Navigator', {
     initComponent: function () {
         var me = this;
 
+        let navigatorJsElement = document.createElement("script");
+        navigatorJsElement.setAttribute("defer", "defer");
+        navigatorJsElement.setAttribute("src", "resources/js/edirom-navigator/navigator.js");
+        navigatorJsElement.setAttribute("type", "module");
+        document.querySelector("head").appendChild(navigatorJsElement);
+
+        let ediromCoreJsElement = document.createElement("script");
+        ediromCoreJsElement.setAttribute("defer", "defer");
+        ediromCoreJsElement.setAttribute("src", "resources/js/edirom-core-web-components/edirom-icon.js");
+        ediromCoreJsElement.setAttribute("type", "module");
+        document.querySelector("head").appendChild(ediromCoreJsElement);
+
+        me.html = `<edirom-navigator id="${me.id}-navigator"></edirom-navigator>`;
+
         me.callParent();
-        me.userHeight = me.height;
-    },
-
-    afterRender: function() {
-        var me = this;
-        me.callParent();
-
-        /* adding event handlers */
-        //TODO me.resizer.on('resize', me.onResize, me);
-
-        me.el.style = {
-            backgroundColor: '#ffffff'
-        };
     },
 
     getUserHeight: function() {
