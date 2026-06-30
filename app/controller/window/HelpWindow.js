@@ -52,10 +52,6 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
 
                 var windowContent = response.responseText;
 
-                // replace image paths (relative backendPath to absolute backendURL)            
-                var replacee = new RegExp('src="' + me.backendPath.replace(/\/, '\/'/g), "g");
-                windowContent = windowContent.replace(replacee, 'src="' + me.backendURL);
-
                 // set window content
                 win.setContent(windowContent);
             }, me)

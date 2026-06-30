@@ -49,13 +49,13 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
 
         var uri = view.uri;
 
-        window.doAJAXRequest('data/xql/getText.xql',
+        // request goes to v2 API - relative to backendURI
+        window.doAJAXRequest('api/document',
             'GET',
             {
-                uri: uri,
+                resource: uri,
                 idPrefix: view.id + '_',
-                term: view.window.term,
-                path: view.window.path
+                mediaType: 'text/html'
             },
             Ext.bind(function(response){
                 this.contentLoaded(view, response.responseText);
