@@ -161,6 +161,19 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.webComponent.addEventListener('annotation-filter-changed', function(event) {
             me.fireEvent('annotationFilterChanged', me, event.detail.visibleCategories, event.detail.visiblePriorities);
         });
+
+        // Keep the host page list / spinner bounds in sync when the component's
+        // tile sources change to a SMALLER set (e.g. a page was removed). The
+        // initial setImages reports the same count the store already has, so this
+        // is a no-op then; only a genuine shrink trims the trailing pages and
+        // notifies the owning view.
+        me.webComponent.addEventListener('total-pages-changed', function(event) {
+            var total = (event.detail) ? event.detail.totalPages : null;
+            if (!me.pages || typeof total !== 'number' || total < 0) return;
+            if (total >= me.pages.length) return;
+            me.pages = me.pages.slice(0, total);
+            me.fireEvent('totalPagesChanged', me, total);
+        });
     },
 
     clear: function() {

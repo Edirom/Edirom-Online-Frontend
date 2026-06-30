@@ -64,6 +64,31 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   // attribute was set externally), keep the source view's filter menu
  	   // checkboxes in sync.
  	   me.imageViewer.on('annotationFilterChanged', me.onViewerAnnotationFilterChanged, me);
+
+ 	   // When the component's tile sources shrink (e.g. the last page is removed),
+ 	   // trim the page spinner / image set so its total updates and navigation
+ 	   // cannot run past the last image.
+ 	   me.imageViewer.on('totalPagesChanged', me.onViewerTotalPagesChanged, me);
+    },
+
+    // Trims the image set to match the component's reduced tile-source count so
+    // the page spinner total and next/prev bounds stay correct. Only shrinks
+    // (never adds, since the removed pages have no image data).
+    onViewerTotalPagesChanged: function(viewer, total) {
+        var me = this;
+        if(!me.imageSet || typeof total !== 'number') return;
+        if(total >= me.imageSet.getCount()) return;
+
+        var currentId = (me.pageSpinner && me.pageSpinner.combo) ? me.pageSpinner.combo.getValue() : null;
+
+        var toRemove = [];
+        for(var i = total; i < me.imageSet.getCount(); i++)
+            toRemove.push(me.imageSet.getAt(i));
+        me.imageSet.remove(toRemove);
+
+        // If the page currently shown was removed, fall back to the new last page.
+        if((currentId == null || me.imageSet.findExact('id', currentId) < 0) && me.imageSet.getCount() > 0)
+            me.pageSpinner.setPage(me.imageSet.getAt(me.imageSet.getCount() - 1).get('id'));
     },
 
     // Relays a component-driven filter change up to the source view so its
