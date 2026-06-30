@@ -43,12 +43,7 @@ Ext.define('EdiromOnline.model.Annotation', {
     },
 
     statics: {
-        updateProxyUrl: function () {
-
-            // get backend info from config
-            var configController = EdiromOnline.getApplication().getController('ConfigController');
-            var backendURL = configController.getConfig('backendURL');
-            
+        updateProxyUrl: function (backendURL) {            
             var model = Ext.ModelManager.getModel('EdiromOnline.model.Annotation');
             if (model) {
                 model.getProxy().url = backendURL + 'data/xql/getAnnotations.xql';
