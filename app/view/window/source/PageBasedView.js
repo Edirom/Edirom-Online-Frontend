@@ -70,7 +70,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     // annotation filter menu checkboxes mirror the visible categories/priorities.
     onViewerAnnotationFilterChanged: function(viewer, visibleCategories, visiblePriorities) {
         var me = this;
-        if(me.owner && Ext.isFunction(me.owner.syncAnnotationFilterMenu))
+        if(me.owner && typeof me.owner.syncAnnotationFilterMenu === 'function')
             me.owner.syncAnnotationFilterMenu(visibleCategories, visiblePriorities);
     },
 
@@ -78,7 +78,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     // page on its own (e.g. via the web component's native sequence navigation).
     onViewerImageChanged: function(viewer, path, id) {
         var me = this;
-        if(me.pageSpinner && Ext.isFunction(me.pageSpinner.syncPage))
+        if(me.pageSpinner && typeof me.pageSpinner.syncPage === 'function')
             me.pageSpinner.syncPage(id);
     },
 
@@ -89,7 +89,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         // Component path: the web component owns annotation rendering, so push
         // the filter to it and let it show/hide badges itself. Falls back to the
         // legacy ExtJS shadow-DOM class toggling for the non-OSD ImageViewer.
-        if(Ext.isFunction(me.imageViewer.setAnnotationFilter)) {
+        if(typeof me.imageViewer.setAnnotationFilter === 'function') {
             me.imageViewer.setAnnotationFilter(visibleCategories, visiblePriorities);
             return;
         }
@@ -205,7 +205,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         // When the viewer supports native pagination (OpenSeaDragonViewer),
         // load the whole set as a sequence once so page changes only switch
         // the component's page number instead of reloading a single image.
-        if(Ext.isFunction(me.imageViewer.setImages))
+        if(typeof me.imageViewer.setImages === 'function')
             me.imageViewer.setImages(me.imageSet);
 
         if(me.imageToShow != null) {
@@ -233,13 +233,13 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         // all pages loaded, so switching does NOT reload/destroy overlays. Tear
         // down the current page's overlays explicitly before navigating; the
         // visibility events below re-apply them for the new page.
-        if(Ext.isFunction(me.imageViewer.goToPageById)) {
+        if(typeof me.imageViewer.goToPageById === 'function') {
 
             me.imageViewer.removeShapes('measures');
             me.imageViewer.removeShapes('annotations');
 
             if(me.owner.overlaysVisible) {
-                Ext.Array.each(Object.keys(me.owner.overlaysVisible), function(overlayId) {
+                Object.keys(me.owner.overlaysVisible).forEach(function(overlayId) {
                     me.imageViewer.removeSVGOverlay(overlayId);
                 });
             }

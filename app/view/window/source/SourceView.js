@@ -261,11 +261,11 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
             // null / undefined (no filter) and the ['undefined'] sentinel (no such
             // taxonomy) both mean "show everything" -> check all.
-            var showAll = !Ext.isArray(visible)
+            var showAll = !Array.isArray(visible)
                 || (visible.length == 1 && visible[0] == 'undefined');
 
             menu.items.each(function(item) {
-                var shouldCheck = showAll || Ext.Array.contains(visible, item[idField]);
+                var shouldCheck = showAll || visible.indexOf(item[idField]) !== -1;
                 if(item.checked !== shouldCheck)
                     item.setChecked(shouldCheck, true);
             });

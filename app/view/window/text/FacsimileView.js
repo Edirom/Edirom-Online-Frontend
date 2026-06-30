@@ -110,7 +110,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         // When the viewer supports native pagination (OpenSeaDragonViewer),
         // load the whole set as a sequence once so page changes only switch
         // the component's page number instead of reloading a single image.
-        if (Ext.isFunction(me.imageViewer.setImages)) {
+        if (typeof me.imageViewer.setImages === 'function') {
             me.imageViewer.setImages(me.imageSet);
         }
 
@@ -135,7 +135,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         // Prefer the viewer's native sequence pagination; fall back to
         // reloading a single image (e.g. the digilib ImageViewer).
-        if (Ext.isFunction(me.imageViewer.goToPageById)
+        if (typeof me.imageViewer.goToPageById === 'function'
                 && me.imageViewer.goToPageById(id)) {
             return;
         }
@@ -162,7 +162,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
     // page on its own (e.g. via the web component's native sequence navigation).
     onViewerImageChanged: function (viewer, path, id) {
         var me = this;
-        if (me.pageSpinner && Ext.isFunction(me.pageSpinner.syncPage))
+        if (me.pageSpinner && typeof me.pageSpinner.syncPage === 'function')
             me.pageSpinner.syncPage(id);
     },
 

@@ -153,10 +153,10 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 uri: view.uri,
                 movementId: movementId
             },
-            Ext.bind(function(response){
+            function(response){
                 var data = response.responseText;
-                me.gotoMovement(Ext.String.trim(data), movementId, view);
-            }, this)
+                me.gotoMovement(data.trim(), movementId, view);
+            }
         );
     },
 
@@ -195,7 +195,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 
         var pageId = view.getActivePage().get('id');
 
-        me.fetchMeasures(view.uri, pageId, Ext.bind(function(measures){
+        me.fetchMeasures(view.uri, pageId, function(measures){
             // Ignore stale responses after a further page change.
             if(typeof view.getActivePage() == 'undefined'
                 || pageId != view.getActivePage().get('id')) return;
@@ -203,7 +203,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             // Push the data only. The component re-applies its remembered
             // visibility (_showMeasureNumbers) to the new page's overlays.
             view.setMeasureNumbersData(measures);
-        }, me));
+        });
     },
 
     fetchMeasures: function(uri, pageId, fn) {
@@ -265,9 +265,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 uri: view.uri,
                 pageId: pageId
             },
-            Ext.bind(function(response){
-                var me = this;
-
+            function(response){
                 // Ignore stale responses after a further page change.
                 if(typeof view.getActivePage() == 'undefined'
                     || pageId != view.getActivePage().get('id')) return;
@@ -276,14 +274,14 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 
                 var annotations = Ext.create('Ext.data.Store', {
                     fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
-                    data: Ext.JSON.decode(data)
+                    data: JSON.parse(data)
                 });
 
                 // Push the data only. The component re-applies its remembered
                 // visibility (_showAnnotations) to the new page's overlays, so
                 // the last show/hide choice carries over to every image.
                 view.setAnnotationsData(annotations);
-            }, this)
+            }
         );
     },
 
@@ -297,14 +295,14 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 				measure: measure,
 				movementId: movementId
             },
-            Ext.bind(function(response){
-                var data = Ext.JSON.decode(response.responseText);
+            function(response){
+                var data = JSON.parse(response.responseText);
 				// Drive the image component via its semantic 'measure'
 				// attribute (push model): getMeasurePage.xql returns the
 				// measure's page id and pixel rectangle.
 				if (data && data.length)
 					view.gotoMeasureInImage(measure, data[0]);
-            }, me)
+            }
         );
 	},
 

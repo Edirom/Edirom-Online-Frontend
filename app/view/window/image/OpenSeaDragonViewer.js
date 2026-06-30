@@ -276,7 +276,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         if (!me.webComponent) return;
 
         var map = {};
-        Ext.each(measures, function(m) {
+        (measures || []).forEach(function(m) {
             map[m.key] = {
                 page: me.pageNumberById(m.pageId),
                 ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry
@@ -294,7 +294,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         if (!me.webComponent) return;
 
         var map = {};
-        Ext.each(mdivs, function(m) {
+        (mdivs || []).forEach(function(m) {
             map[m.key] = { page: me.pageNumberById(m.pageId) };
         });
         me.webComponent.setAttribute('mdivs-data', JSON.stringify(map));
@@ -441,7 +441,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         if(me.shapes.get(groupName).each)
             me.shapes.get(groupName).each(fn);
         else
-            Ext.Array.each(me.shapes.get(groupName), fn);
+            (me.shapes.get(groupName) || []).forEach(fn);
 
         me.shapes.add(groupName, []);
     },
@@ -465,7 +465,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
         var data = [];
 
-        if (annotations && Ext.isFunction(annotations.each)) {
+        if (annotations && typeof annotations.each === 'function') {
             annotations.each(function(annotation) {
 
                 var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -498,12 +498,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var pushData = function() {
             if (pushed) return;
             pushed = true;
-            me.webComponent.setAttribute('annotations-data', Ext.JSON.encode(data));
+            me.webComponent.setAttribute('annotations-data', JSON.stringify(data));
         };
 
         if (pending === 0) { pushData(); return; }
 
-        Ext.each(data, function(rec) {
+        data.forEach(function(rec) {
             window.doAJAXRequest('data/xql/getAnnotation.xql',
                 'GET',
                 {
@@ -520,7 +520,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         });
 
         // safety net in case some requests never call back
-        Ext.defer(pushData, 8000);
+        setTimeout(pushData, 8000);
     },
 
     // Shows or hides the already-pushed annotation overlays via the boolean
@@ -540,8 +540,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     setAnnotationFilter: function(visibleCategories, visiblePriorities) {
         var me = this;
         if (!me.webComponent) return;
-        me.webComponent.setAttribute('visible-categories', Ext.JSON.encode(Ext.Array.toArray(visibleCategories)));
-        me.webComponent.setAttribute('visible-priorities', Ext.JSON.encode(Ext.Array.toArray(visiblePriorities)));
+        me.webComponent.setAttribute('visible-categories', JSON.stringify(Ext.Array.toArray(visibleCategories)));
+        me.webComponent.setAttribute('visible-priorities', JSON.stringify(Ext.Array.toArray(visiblePriorities)));
     },
 
     // Pushes the page's measure-number boxes to the component (push model, like
@@ -560,7 +560,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
         var data = [];
 
-        if (measures && Ext.isFunction(measures.each)) {
+        if (measures && typeof measures.each === 'function') {
             measures.each(function(shape) {
                 data.push({
                     idPrefix: me.id,
@@ -575,7 +575,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             });
         }
 
-        me.webComponent.setAttribute('measure-numbers-data', Ext.JSON.encode(data));
+        me.webComponent.setAttribute('measure-numbers-data', JSON.stringify(data));
     },
 
     // Shows or hides the already-pushed measure-number overlays via the boolean
