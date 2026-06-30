@@ -621,6 +621,8 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
 
         me.forceComponentLayout();
 
+        var partHeight = 0;
+
         for(var i = 0; i < viewerCount; i++) {
 
             var viewer = me.imageViewers[i];
@@ -646,7 +648,18 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             var width = lrx - ulx;
             var height = lry - uly;
 
+            // remember the tallest slice as this part's representative height
+            if(height > partHeight) partHeight = height;
+
             viewer.showRect(ulx, uly, width, height, true);
+        }
+
+        // Split the vertical space between parts proportionally to each part's zone height
+        // instead of equally (the previous flex:1 gave every part height/number-of-parts).
+        // The image viewers re-fit to the new row height via their onResize handler.
+        if(partHeight > 0) {
+            me.flex = partHeight;
+            if(me.ownerCt) me.ownerCt.updateLayout();
         }
     },
 
