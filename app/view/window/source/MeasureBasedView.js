@@ -651,12 +651,28 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             // remember the tallest slice as this part's representative height
             if(height > partHeight) partHeight = height;
 
-            viewer.showRect(ulx, uly, width, height, true);
+            // fitHeight=true so each part shows its full staff height at the common zoom.
+            // Alignment depends on position in the row:
+            //   single viewer  → center
+            //   two viewers    → right (left viewer) / left (right viewer)
+            //   three or more  → right (first) / left (last) / center (inner)
+            var alignment;
+            if(viewerCount <= 1) {
+                alignment = 'center';
+            } else if(i === 0) {
+                alignment = 'right';
+            } else if(i === viewerCount - 1) {
+                alignment = 'left';
+            } else {
+                alignment = 'center';
+            }
+            viewer.showRect(ulx, uly, width, height, true, true, alignment);
         }
 
-        // Split the vertical space between parts proportionally to each part's zone height
-        // instead of equally (the previous flex:1 gave every part height/number-of-parts).
-        // The image viewers re-fit to the new row height via their onResize handler.
+        // Split the vertical space between parts proportionally to each part's height. Because each
+        // part is fit to its row height, rowHeight ∝ height makes the resulting zoom identical for
+        // every part (the common zoom ≈ windowHeight / Σ partHeight), and every staff is shown in
+        // full. The image viewers re-fit to the new row height via their onResize handler.
         if(partHeight > 0) {
             me.flex = partHeight;
             if(me.ownerCt) me.ownerCt.updateLayout();
