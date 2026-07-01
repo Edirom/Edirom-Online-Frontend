@@ -69,6 +69,11 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   // trim the page spinner / image set so its total updates and navigation
  	   // cannot run past the last image.
  	   me.imageViewer.on('totalPagesChanged', me.onViewerTotalPagesChanged, me);
+
+ 	   // When the component's annotation / measure-number visibility changes,
+ 	   // mirror it onto the source view's toolbar toggle buttons.
+ 	   me.imageViewer.on('showAnnotationsChanged', me.onViewerShowAnnotationsChanged, me);
+ 	   me.imageViewer.on('showMeasureNumbersChanged', me.onViewerShowMeasureNumbersChanged, me);
     },
 
     // Trims the image set to match the component's reduced tile-source count so
@@ -97,6 +102,22 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var me = this;
         if(me.owner && typeof me.owner.syncAnnotationFilterMenu === 'function')
             me.owner.syncAnnotationFilterMenu(visibleCategories, visiblePriorities);
+    },
+
+    // Relays a component-driven annotation visibility change up to the source
+    // view so its annotation toolbar toggle button mirrors the actual state.
+    onViewerShowAnnotationsChanged: function(viewer, show) {
+        var me = this;
+        if(me.owner && typeof me.owner.syncAnnotationsButton === 'function')
+            me.owner.syncAnnotationsButton(show);
+    },
+
+    // Relays a component-driven measure-number visibility change up to the
+    // source view so its measures toolbar toggle button mirrors the actual state.
+    onViewerShowMeasureNumbersChanged: function(viewer, show) {
+        var me = this;
+        if(me.owner && typeof me.owner.syncMeasuresButton === 'function')
+            me.owner.syncMeasuresButton(show);
     },
 
     // Keep the page spinner's number box in sync when the image viewer changes

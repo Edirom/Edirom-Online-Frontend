@@ -738,6 +738,48 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     },
 
+    // Mirror the annotation toolbar button's pressed state onto the actual
+    // visibility reported by the image component (show-annotations attribute),
+    // so the button always reflects the real state even when the attribute is
+    // changed outside the button (API or direct edit). Does NOT fire the
+    // visibility event (the component is already in this state).
+    syncAnnotationsButton: function(visible) {
+        var me = this;
+        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
+        if(!iconElem) return;
+
+        if(visible) {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
+        } else {
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
+        }
+
+        me.annotationsVisible = visible;
+        me.annotationsVisibilitySetLocaly = visible;
+    },
+
+    // Mirror the measures toolbar button's pressed state onto the actual
+    // visibility reported by the image component (show-measure-numbers
+    // attribute). Does NOT fire the visibility event.
+    syncMeasuresButton: function(visible) {
+        var me = this;
+        var iconElem = document.getElementById('icon_display-measures-window_'+me.id);
+        if(!iconElem) return;
+
+        if(visible) {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
+        } else {
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-measures-visible-'+me.id);
+        }
+
+        me.measuresVisible = visible;
+        me.measuresVisibilitySetLocaly = visible;
+    },
+
     // Pushes the page's annotations to the image component once (push model);
     // the toolbar button then only toggles their visibility.
     setAnnotationsData: function(annotations) {

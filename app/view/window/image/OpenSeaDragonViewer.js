@@ -174,6 +174,19 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             me.pages = me.pages.slice(0, total);
             me.fireEvent('totalPagesChanged', me, total);
         });
+
+        // Forward the component's annotation / measure-number visibility state
+        // so the host can keep its toolbar toggle buttons in sync, regardless
+        // of how the show-annotations / show-measure-numbers attributes were
+        // changed (button, API or direct attribute edit).
+        me.webComponent.addEventListener('show-annotations-changed', function(event) {
+            var show = (event.detail) ? event.detail.show : false;
+            me.fireEvent('showAnnotationsChanged', me, show);
+        });
+        me.webComponent.addEventListener('show-measure-numbers-changed', function(event) {
+            var show = (event.detail) ? event.detail.show : false;
+            me.fireEvent('showMeasureNumbersChanged', me, show);
+        });
     },
 
     clear: function() {
