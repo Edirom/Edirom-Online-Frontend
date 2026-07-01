@@ -269,6 +269,13 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             console.log(storeFields);
         }
 
+        // Legacy fields declared by the backend — hidden by default in favour of taxonomy map
+        // entries when the annotation_hide_legacy_fields preference is true (default). The columns
+        // are still created so the user can re-enable them via the grid header menu.
+        // Falls back to [] for older backends that don't send this key, or when pref is false.
+        const hideLegacyFields = getPreference('annotation_hide_legacy_fields', true) === 'true';
+        const legacyFields = hideLegacyFields && me.data && me.data.legacyFields ? me.data.legacyFields : [];
+
         // default columns configuration
         var columns = [
             {
@@ -300,26 +307,22 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 header: getLangString('ediromPriority') + ' (legacy)',
                 dataIndex: 'priority',
                 flex: 1,
-                filter: true
+                filter: true,
+                hidden: legacyFields.includes('priority')
             },
             {
                 header: getLangString('ediromCategory') + ' (legacy)',
                 dataIndex: 'categories',
                 flex: 2,
-                filter: true
+                filter: true,
+                hidden: legacyFields.includes('categories')
             }
-            
+
         ];
 
         // save existing dataIndex entries as column names
         const existingColumnNames = columns.map(column =>
             column.dataIndex);
-
-        // Legacy fields declared by the backend — skip them in favour of taxonomy map entries
-        // when the annotation_hide_legacy_fields preference is true (default).
-        // Falls back to [] for older backends that don't send this key, or when pref is false.
-        const hideLegacyFields = getPreference('annotation_hide_legacy_fields', true) === 'true';
-        const legacyFields = hideLegacyFields && me.data && me.data.legacyFields ? me.data.legacyFields : [];
 
         //iterate over storeFields to create missing grid columns
         storeFields.forEach(field => {
