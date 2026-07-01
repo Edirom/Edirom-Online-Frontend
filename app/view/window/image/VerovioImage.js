@@ -35,7 +35,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		var me = this;
 
 		var configController = EdiromOnline.getApplication().getController('ConfigController');
-		var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+		var backendURL = configController.getConfig('backendURL');
 
 		var html = `<html>
         		<head>

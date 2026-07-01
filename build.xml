@@ -83,6 +83,7 @@
         <delete file="${build.dir}/app-temp.js"/>
         <!-- Copy CITATION.cff to resources -->
         <copy file="${basedir}/CITATION.cff" tofile="${build.dir}/resources/CITATION.cff" overwrite="true"/>
+        <copy file="${basedir}/config.json" tofile="${build.dir}/config.json" overwrite="true"/>
     </target>
 
     <target name="copy-xar-resources">

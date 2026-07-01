@@ -25,36 +25,19 @@ Ext.define('EdiromOnline.controller.ConfigController', {
             }
 
             this.config = await response.json();
-            console.info('config.json for backendURL loaded.');
+            console.info('config.json loaded.');
 
             if (callback) {
                 callback.call(scope || this, this.config);
             }
         } catch (e) {
-            console.log('No custom config.json found or syntax error – Using default configuration.');
-            this.loadDefaultConfig(callback, scope);
-        }
+            console.log('No custom config.json found or syntax error.');
+            }
     },
 
-    /**
-     * Handles errors when loading the configuration
-     * @param {Function} callback Callback function
-     * @param {Object} scope Scope for the callback
-     */
-    loadDefaultConfig: function (callback, scope) {
-        var me = this;
+    
 
-        // Fallback-Konfiguration
-        me.config = {
-            backendURL: '@backend.url@'
-        };
-
-        if (callback) {
-            Ext.callback(callback, scope || me, [me.config]);
-        }
-    },
-
-    /**
+        /**
      * Returns a configuration value
      * @param {String} key The configuration key
      * @param {*} defaultValue Default value if key doesn't exist
