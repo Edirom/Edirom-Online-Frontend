@@ -177,8 +177,12 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
                 // Add the list to the card layout at index 0
                 view.insert(0, view.list);
 
-                // Set the list as the active item initially
-                view.getLayout().setActiveItem(view.list);
+                // Only switch to the list if the user is not already viewing a single
+                // annotation (e.g. opened by clicking one annotation in the facsimileView).
+                // Otherwise the async list load would clobber the single-annotation display.
+                if (view.activeSingleAnnotation === "") {
+                    view.getLayout().setActiveItem(view.list);
+                }
 
                 // Hide loading mask
                 view.setLoading(false);
