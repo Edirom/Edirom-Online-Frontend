@@ -72,6 +72,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.callParent();
 
         me.on('afterrender', me.initSurface, me, {single: true});
+        me.on('resize', me.onResize, me);
     },
 
     initSurface: function() {
@@ -81,6 +82,13 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             id: me.id + '_openseadragon',
             showNavigator:  false,
             showNavigationControl: false,
+            // Disable OSD's own resize polling: its built-in resize branches either freeze the
+            // pixel scale or re-fit the full (letterboxed) viewport bounds, neither of which
+            // keeps the displayed zone height equal across the horizontal viewers in
+            // measureBasedView. We handle resize ourselves in onResize() and re-fit the stored
+            // zone instead, so every viewer renders its zone at the same height – also after a
+            // viewer is added or removed.
+            autoResize: false,
             tileSources:   []
         });
         me.viewer.addHandler('zoom', function(event){ me.fireEvent('zoomChanged', event.zoom);});
@@ -165,8 +173,33 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             highlight:highlight
         };
 
-        var rect = me.viewer.viewport.imageToViewportRectangle(x, y, width, height);
+        me.fitStoredRect();
+    },
+
+    fitStoredRect: function() {
+
+        var me = this;
+        if(!me.viewer || !me.rect || me.rect == null) return;
+
+        var rect = me.viewer.viewport.imageToViewportRectangle(me.rect.x, me.rect.y, me.rect.width, me.rect.height);
         me.viewer.viewport.fitBoundsWithConstraints(rect);
+    },
+
+    // Auto-resize is disabled (see initSurface), so we drive OSD's viewport sizing here.
+    // measureBasedView fires this whenever a viewer is laid out, resized, or its siblings
+    // change because one was added/removed. We sync the viewport to the new container size and
+    // re-fit the stored zone, so the zone keeps the same displayed height across all viewers.
+    onResize: function() {
+
+        var me = this;
+        if(!me.viewer) return;
+
+        var w = me.getWidth();
+        var h = me.getHeight();
+        if(w <= 0 || h <= 0) return;
+
+        me.viewer.viewport.resize(new OpenSeadragon.Point(w, h), false);
+        me.fitStoredRect();
     },
 
     addMeasures: function(shapes) {

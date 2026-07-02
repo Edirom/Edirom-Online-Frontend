@@ -101,7 +101,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         me.callParent();
 
         me.on('afterrender', me.initSurface, me, {single: true});
-        me.on('resize', me.calculateHiResImg, me);
+        me.on('resize', me.onResize, me);
     },
 
     initSurface: function() {
@@ -171,6 +171,8 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
         me.imgWidth = 0;
         me.imgHeight = 0;
+
+        me.rect = null;
 
     },
 
@@ -671,8 +673,19 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     },
 
     showRect: function(x, y, width, height, highlight) {
-    
+
         var me = this;
+
+        // Remember the rect so onResize can re-fit it: this keeps the displayed zone height
+        // equal across the horizontal viewers in measureBasedView even when the layout settles
+        // its container sizes over several passes – matching OpenSeaDragonViewer.
+        me.rect = {
+            x:x,
+            y:y,
+            width:width,
+            height:height,
+            highlight:highlight
+        };
 
         me.hiResImg.hide();
 
@@ -702,10 +715,22 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             Ext.defer(me.createTempRect, 1000, me, [x, y, width, height], false);
 
         me.calculateHiResImg();
-        
+
         Ext.defer(me.calculateHiResImg, 500, me);
     },
-    
+
+    onResize: function() {
+
+        var me = this;
+
+        // Re-fit the stored rect to the (now final) container size so the zone keeps the same
+        // displayed height across viewers; fall back to a hi-res refresh when nothing is shown.
+        if(me.rect && me.rect != null)
+            me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, false);
+        else
+            me.calculateHiResImg();
+    },
+
     getActualRect: function() {
     
         var me = this;
