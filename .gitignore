@@ -8,3 +8,5 @@ build-euryanthe
 local.properties
 .env
 sencha-error-*
+edirom-up.sh
+.existdb.json

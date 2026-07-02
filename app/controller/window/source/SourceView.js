@@ -44,10 +44,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         if(view.initialized) return;
         view.initialized = true;
 
-        view.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('loadAnnotations', me.onLoadAnnotations, me);
-        view.on('loadMeasures', me.onLoadMeasures, me);
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
@@ -165,66 +163,6 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             // Drive the image component via its semantic 'mdiv' attribute
             // (push model): load the movement's first page.
             view.gotoMdivInImage(movementId, pageId);
-    },
-
-    // The toolbar button only toggles VISIBILITY on the component now; the
-    // measure numbers are preloaded once per page by onLoadMeasures. So this
-    // handler does NOT fetch anything — it just shows/hides the already-pushed
-    // overlays via the component's show-measure-numbers attribute.
-    onMeasuresVisibilityChange: function(view, visible) {
-        var me = this;
-
-        if(visible)
-            view.showMeasures();
-        else
-            view.hideMeasures();
-    },
-
-    // Preloads the current page's measure numbers into the component (push
-    // model). Fired on every page load. It ONLY pushes the new page's data; it
-    // does NOT force show/hide. The component remembers the last show/hide
-    // state (_showMeasureNumbers) and re-applies it to every freshly rendered
-    // page, so toggling the measures button once persists across ALL
-    // pages/images until toggled again. (The `visible` arg is intentionally
-    // ignored to avoid resetting the user's choice on every page change.)
-    onLoadMeasures: function(view, visible) {
-        var me = this;
-
-        // If there is no active page, there is nothing to load.
-        if(typeof view.getActivePage() == 'undefined') return;
-
-        var pageId = view.getActivePage().get('id');
-
-        me.fetchMeasures(view.uri, pageId, function(measures){
-            // Ignore stale responses after a further page change.
-            if(typeof view.getActivePage() == 'undefined'
-                || pageId != view.getActivePage().get('id')) return;
-
-            // Push the data only. The component re-applies its remembered
-            // visibility (_showMeasureNumbers) to the new page's overlays.
-            view.setMeasureNumbersData(measures);
-        });
-    },
-
-    fetchMeasures: function(uri, pageId, fn) {
-        window.doAJAXRequest('data/xql/getMeasuresOnPage.xql',
-            'GET',
-            {
-                uri: uri,
-                pageId: pageId
-            },
-            Ext.bind(function(response){
-                var data = response.responseText;
-
-                var measures = Ext.create('Ext.data.Store', {
-                    fields: ['zoneId', 'ulx', 'uly', 'lrx', 'lry', 'id', 'name', 'type', 'rest'],
-                    data: Ext.JSON.decode(data)
-                });
-
-                if(typeof fn == 'function')
-                    fn(measures);
-            }, this)
-        );
     },
 
     // The toolbar button only toggles VISIBILITY on the component now; the

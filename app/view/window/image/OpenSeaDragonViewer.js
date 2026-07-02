@@ -86,16 +86,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'showhomecontrol="false" ' +
                   'showfullpagecontrol="false" ' +
                   'showsequencecontrol="false" ' +
-                  'measures-data="{}" ' +
-                  'measure="" ' +
-                  'mdivs-data="{}" ' +
-                  'mdiv="" ' +
+                  'zones-data="{}" ' +
+                  'zone="" ' +
                   'annotations-data="[]" ' +
                   'show-annotations="false" ' +
                   'visible-categories="[&quot;undefined&quot;]" ' +
                   'visible-priorities="[&quot;undefined&quot;]" ' +
-                  'measure-numbers-data="[]" ' +
-                  'show-measure-numbers="false" ' +
                   'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
@@ -175,17 +171,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             me.fireEvent('totalPagesChanged', me, total);
         });
 
-        // Forward the component's annotation / measure-number visibility state
-        // so the host can keep its toolbar toggle buttons in sync, regardless
-        // of how the show-annotations / show-measure-numbers attributes were
-        // changed (button, API or direct attribute edit).
+        // Forward the component's annotation visibility state so the host can
+        // keep its toolbar toggle button in sync, regardless of how the
+        // show-annotations attribute was changed (button, API or direct edit).
         me.webComponent.addEventListener('show-annotations-changed', function(event) {
             var show = (event.detail) ? event.detail.show : false;
             me.fireEvent('showAnnotationsChanged', me, show);
-        });
-        me.webComponent.addEventListener('show-measure-numbers-changed', function(event) {
-            var show = (event.detail) ? event.detail.show : false;
-            me.fireEvent('showMeasureNumbersChanged', me, show);
         });
     },
 
@@ -297,53 +288,71 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     // page id and pixel rectangle; the page id is resolved to a 1-based page
     // number here so the component stays in page-number space.
     // Record fields: { key, pageId, ulx, uly, lrx, lry }.
+    // Measures are pushed as ordinary zone entries (namespaced 'measure:<key>')
+    // into the single zones-data map the component understands.
     setMeasuresData: function(measures) {
         var me = this;
         if (!me.webComponent) return;
 
-        var map = {};
+        me._measureZones = {};
         (measures || []).forEach(function(m) {
-            map[m.key] = {
+            me._measureZones['measure:' + m.key] = {
                 page: me.pageNumberById(m.pageId),
                 ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry
             };
         });
-        me.webComponent.setAttribute('measures-data', JSON.stringify(map));
+        me.pushZonesData();
     },
 
     // Pushes the full movements (mdiv) map to the component. `mdivs` is an
     // array of records each carrying a key plus the movement's first page id,
     // resolved here to a 1-based page number.
     // Record fields: { key, pageId }.
+    // Movements are pushed as ordinary zone entries (namespaced 'mdiv:<key>')
+    // into the single zones-data map.
     setMdivsData: function(mdivs) {
         var me = this;
         if (!me.webComponent) return;
 
-        var map = {};
+        me._mdivZones = {};
         (mdivs || []).forEach(function(m) {
-            map[m.key] = { page: me.pageNumberById(m.pageId) };
+            me._mdivZones['mdiv:' + m.key] = { page: me.pageNumberById(m.pageId) };
         });
-        me.webComponent.setAttribute('mdivs-data', JSON.stringify(map));
+        me.pushZonesData();
     },
 
-    // Jumps to a measure by setting the semantic `measure` attribute. A nonce
-    // is appended after a '|' separator so that repeating the same measure
-    // still changes the attribute value and re-fires the component's
-    // attributeChangedCallback; the component strips the nonce.
+    // Serialises the union of the measure and movement zone maps and pushes it
+    // to the component's single `zones-data` attribute. Measures and movements
+    // live in separate local maps (each fully rebuilt on its own push) so that
+    // re-pushing one does not drop the other.
+    pushZonesData: function() {
+        var me = this;
+        if (!me.webComponent) return;
+        var map = Ext.apply({}, me._measureZones || {});
+        Ext.apply(map, me._mdivZones || {});
+        me.webComponent.setAttribute('zones-data', JSON.stringify(map));
+    },
+
+    // Jumps to a measure by setting the semantic `zone` attribute to the
+    // measure's namespaced zone key. A nonce is appended after a '|' separator
+    // so that repeating the same measure still changes the attribute value and
+    // re-fires the component's attributeChangedCallback; the component strips
+    // the nonce.
     gotoMeasure: function(key) {
         var me = this;
         if (!me.webComponent) return;
-        me._measureNonce = (me._measureNonce || 0) + 1;
-        me.webComponent.setAttribute('measure', String(key) + '|' + me._measureNonce);
+        me._zoneNonce = (me._zoneNonce || 0) + 1;
+        me.webComponent.setAttribute('zone', 'measure:' + String(key) + '|' + me._zoneNonce);
     },
 
-    // Loads / jumps to a movement's first page by setting the `mdiv` attribute.
-    // Uses the same nonce-suffix scheme as gotoMeasure.
+    // Loads / jumps to a movement's first page by setting the `zone` attribute
+    // to the movement's namespaced zone key. Uses the same nonce-suffix scheme
+    // as gotoMeasure.
     gotoMdiv: function(key) {
         var me = this;
         if (!me.webComponent) return;
-        me._mdivNonce = (me._mdivNonce || 0) + 1;
-        me.webComponent.setAttribute('mdiv', String(key) + '|' + me._mdivNonce);
+        me._zoneNonce = (me._zoneNonce || 0) + 1;
+        me.webComponent.setAttribute('zone', 'mdiv:' + String(key) + '|' + me._zoneNonce);
     },
 
     fitInImage: function() {
@@ -568,48 +577,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         if (!me.webComponent) return;
         me.webComponent.setAttribute('visible-categories', JSON.stringify(Ext.Array.toArray(visibleCategories)));
         me.webComponent.setAttribute('visible-priorities', JSON.stringify(Ext.Array.toArray(visiblePriorities)));
-    },
-
-    // Pushes the page's measure-number boxes to the component (push model, like
-    // setAnnotationsData). The component renders the `.measure` overlays from
-    // the measure-numbers-data attribute; the host only toggles their
-    // visibility via setShowMeasureNumbers. `me.shapes` is kept in sync so the
-    // existing removeShapes('measures') / getShapes helpers keep working.
-    // Passing an empty store hides all measure numbers.
-    setMeasureNumbersData: function(measures) {
-
-        var me = this;
-        if (!me.webComponent) return;
-
-        // reset the shapes group some helpers iterate over
-        me.shapes.add('measures', measures || []);
-
-        var data = [];
-
-        if (measures && typeof measures.each === 'function') {
-            measures.each(function(shape) {
-                data.push({
-                    idPrefix: me.id,
-                    id: shape.get('id'),
-                    name: shape.get('name'),
-                    ulx: shape.get('ulx'),
-                    uly: shape.get('uly'),
-                    lrx: shape.get('lrx'),
-                    lry: shape.get('lry'),
-                    type: shape.get('type')
-                });
-            });
-        }
-
-        me.webComponent.setAttribute('measure-numbers-data', JSON.stringify(data));
-    },
-
-    // Shows or hides the already-pushed measure-number overlays via the boolean
-    // `show-measure-numbers` attribute, without discarding the data.
-    setShowMeasureNumbers: function(show) {
-        var me = this;
-        if (!me.webComponent) return;
-        me.webComponent.setAttribute('show-measure-numbers', show ? 'true' : 'false');
     },
 
     // Runs the annotation's host click action (set up server-side as the

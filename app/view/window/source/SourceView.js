@@ -618,9 +618,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
         me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
 
-        // just hide measures first to avoid double display
-        me.hideMeasures();
-
         // fire event
         this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
 
@@ -632,23 +629,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.annotationsVisibilitySetLocaly = true;
 
         this.fireEvent('annotationsVisibilityChange', me, state);
-    },
-
-    showMeasures: function() {
-        var me = this;
-        me.pageBasedView.showMeasures();
-    },
-
-    hideMeasures: function() {
-        var me = this;
-        me.pageBasedView.hideMeasures();
-    },
-
-    // Pushes the page's measure numbers to the image component once (push
-    // model); the toolbar button then only toggles their visibility.
-    setMeasureNumbersData: function(measures) {
-        var me = this;
-        me.pageBasedView.setMeasureNumbersData(measures);
     },
 
     gotoMeasureDialog: function() {
@@ -758,26 +738,6 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         me.annotationsVisible = visible;
         me.annotationsVisibilitySetLocaly = visible;
-    },
-
-    // Mirror the measures toolbar button's pressed state onto the actual
-    // visibility reported by the image component (show-measure-numbers
-    // attribute). Does NOT fire the visibility event.
-    syncMeasuresButton: function(visible) {
-        var me = this;
-        var iconElem = document.getElementById('icon_display-measures-window_'+me.id);
-        if(!iconElem) return;
-
-        if(visible) {
-            iconElem.setAttribute('pressed', '');
-            sessionStorage.setItem('edirom-measures-visible-'+me.id, 'true');
-        } else {
-            iconElem.removeAttribute('pressed');
-            sessionStorage.removeItem('edirom-measures-visible-'+me.id);
-        }
-
-        me.measuresVisible = visible;
-        me.measuresVisibilitySetLocaly = visible;
     },
 
     // Pushes the page's annotations to the image component once (push model);

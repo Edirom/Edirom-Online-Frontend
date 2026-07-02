@@ -125,19 +125,11 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         var me = this;
 
-        // OpenSeadragon web component: rendering + show/hide of measure
-        // overlays is owned by the component. Toggle visibility via the
-        // boolean attribute and (re)load this page's measures when shown.
-        if(typeof viewer.setShowMeasureNumbers === 'function') {
-            viewer.setShowMeasureNumbers(sourceView.measuresVisible);
-            if(sourceView.measuresVisible)
-                me.fetchMeasures(uri, pageId, function(measures) {
-                    me.measuresOnPageLoaded(measures, viewer, pageId);
-                });
-            return;
-        }
+        // Measure overlays are rendered only by the legacy digilib ImageViewer.
+        // The OpenSeadragon web component handles measures via its zones-data,
+        // so it has no addMeasures method and is skipped here.
+        if(typeof viewer.addMeasures !== 'function') return;
 
-        // Legacy ImageViewer fallback: render/remove overlays in ExtJS.
         viewer.removeShapes('measures');
         if(sourceView.measuresVisible)
             me.fetchMeasures(uri, pageId, function(measures) {
@@ -171,12 +163,9 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        // Push the measures to the web component (push model); the component
-        // renders the overlays and owns their show/hide state. Fall back to
-        // the legacy ExtJS renderer for the non-OpenSeadragon ImageViewer.
-        if(typeof viewer.setMeasureNumbersData === 'function')
-            viewer.setMeasureNumbersData(measures);
-        else
+        // Legacy digilib ImageViewer only; the OSD web component handles
+        // measures via zones-data and has no addMeasures method.
+        if(typeof viewer.addMeasures === 'function')
             viewer.addMeasures(measures);
     },
     
