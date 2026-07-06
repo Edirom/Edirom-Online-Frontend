@@ -70,10 +70,9 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   // cannot run past the last image.
  	   me.imageViewer.on('totalPagesChanged', me.onViewerTotalPagesChanged, me);
 
- 	   // When the component's annotation / measure-number visibility changes,
- 	   // mirror it onto the source view's toolbar toggle buttons.
+ 	   // When the component's annotation visibility changes, mirror it onto the
+ 	   // source view's toolbar toggle button.
  	   me.imageViewer.on('showAnnotationsChanged', me.onViewerShowAnnotationsChanged, me);
- 	   me.imageViewer.on('showMeasureNumbersChanged', me.onViewerShowMeasureNumbersChanged, me);
     },
 
     // Trims the image set to match the component's reduced tile-source count so
@@ -110,14 +109,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var me = this;
         if(me.owner && typeof me.owner.syncAnnotationsButton === 'function')
             me.owner.syncAnnotationsButton(show);
-    },
-
-    // Relays a component-driven measure-number visibility change up to the
-    // source view so its measures toolbar toggle button mirrors the actual state.
-    onViewerShowMeasureNumbersChanged: function(viewer, show) {
-        var me = this;
-        if(me.owner && typeof me.owner.syncMeasuresButton === 'function')
-            me.owner.syncMeasuresButton(show);
     },
 
     // Keep the page spinner's number box in sync when the image viewer changes
@@ -298,8 +289,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         }
 
 
-        // check global and local visibility settings for measures and annotations
-        var types = ['measures', 'annotations'];
+        // check global and local visibility settings for annotations
+        var types = ['annotations'];
 
         // for each type, check visibility and fire event if visible
         for(var i = 0; i < types.length; i++) {
@@ -315,11 +306,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 // handler pushes the data once and then applies visibility, so
                 // the toolbar button can show/hide instantly without a re-fetch.
                 me.owner.fireEvent('loadAnnotations', me.owner, visible);
-            } else if(type === 'measures') {
-                // Same push model for measure numbers: preload this page's
-                // measures into the component once; the component remembers the
-                // last show/hide state and applies it to every page.
-                me.owner.fireEvent('loadMeasures', me.owner, visible);
             } else if(visible) {
                 me.owner.fireEvent(type+'VisibilityChange', me.owner, true);
             }
@@ -409,23 +395,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
     fitFacsimile: function() {
         this.imageViewer.fitInImage();
-    },
-
-    // Pushes the page's measure numbers to the image component once (push
-    // model); the toolbar button then only toggles their visibility.
-    setMeasureNumbersData: function(measures) {
-        var me = this;
-        me.imageViewer.setMeasureNumbersData(measures);
-    },
-
-    showMeasures: function() {
-        var me = this;
-        me.imageViewer.setShowMeasureNumbers(true);
-    },
-
-    hideMeasures: function() {
-        var me = this;
-        me.imageViewer.setShowMeasureNumbers(false);
     },
 
     showZone: function(zone) {
