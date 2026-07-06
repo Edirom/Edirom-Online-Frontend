@@ -153,97 +153,78 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     },
 
     //TODO: in mixin verpacken, wenn möglich
-    setAnnotationFilter: function(priorities, categories) {
+    setAnnotationFilter: function(taxonomies) {
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('View: SourceView: setAnnotationFilter');
-            console.log('priorities');
-            console.log(priorities);
-            console.log('categories');
-            console.log(categories);
-
+            console.log('taxonomies');
+            console.log(taxonomies);
         }
 
-        if(priorities.data.length > 0) {
-            var prioritiesItems = [];
-            priorities.each(function(priority) {
-                prioritiesItems.push({
-                    text: priority.get('name'),
-                    priorityId: priority.get('id'),
+        // abort if taxonomies array is empty
+        if (!taxonomies || taxonomies.length === 0) return;
+
+        me.annotTaxonomyMenus = {};
+
+        // iterate over taonomies
+        Ext.Array.each(taxonomies, function(taxonomy) {
+
+            // abort if taxonomy is empty
+            if (!taxonomy.items || taxonomy.items.length === 0) return;
+
+            // process taxonomy items
+            var items = Ext.Array.map(taxonomy.items, function(item) {
+                return {
+                    text: item.name,
+                    classId: item.id,
+                    taxonomyId: taxonomy.id,
                     checked: true,
                     handler: Ext.bind(me.annotationFilterChanged, me)
-                });
+                };
             });
 
-            me.annotPrioritiesMenu = Ext.create('Ext.menu.Menu', {
-                items: prioritiesItems
-            });
+            // create menu for taxonomy items
+            var menu = Ext.create('Ext.menu.Menu', { items: items });
 
+            // push taxonomy menu to taxonomy menus array
+            me.annotTaxonomyMenus[taxonomy.id] = menu;
+
+            // add entry for taxonomy to annotMenu
             me.annotMenu.menu.add({
-                id: me.id + '_annotCategoryFilter',
-                text: getLangString('view.window.source.SourceView_prioMenu'),
-                menu: me.annotPrioritiesMenu
+                // set button text to taxonomy.label if it doesn’t match taxonomy.id, else get from locale files
+                text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
+                menu: menu
             });
-        }
-
-        if(categories.data.length > 0){
-            var categoriesItems = [];
-            categories.each(function(category) {
-                categoriesItems.push({
-                    text: category.get('name'),
-                    categoryId: category.get('id'),
-                    checked: true,
-                    handler: Ext.bind(me.annotationFilterChanged, me)
-                });
-            });
-
-            me.annotCategoriesMenu = Ext.create('Ext.menu.Menu', {
-                items: categoriesItems
-            });
-
-            me.annotMenu.menu.add({
-                id: me.id + '_annotPriorityFilter',
-                text: getLangString('view.window.source.SourceView_categoriesMenu'),
-                menu: me.annotCategoriesMenu
-            });
-        }
+        });
     },
 
     annotationFilterChanged: function(item, event) {
         var me = this;
 
-        // if me.annotationsVisible is false do nothing
-        if(!me.annotationsVisible) return;
+        if (!me.annotationsVisible) return;
 
-        // set visible Priorities
-        var visiblePriorities = [];
-
-        // iterate over corresponding menu to get priorities
-        if(me.annotPrioritiesMenu != null && me.annotPrioritiesMenu.items.length != 0) {
-            me.annotPrioritiesMenu.items.each(function(item) {
-                if(item.checked)
-                    visiblePriorities.push(item.priorityId);
+        var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
+        Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
+            var visibleIds = [];
+            var allIds = [];
+            menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
+                if (menuItem.checked) visibleIds.push(menuItem.classId);
             });
-        } else {
-            visiblePriorities.push('undefined');
+            visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
+        });
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('View: SourceView: annotationFilterChanged');
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
         }
 
-        // set visible categories
-        var visibleCategories = [];
-
-        // iterate over corresponding menu to get categories
-        if(me.annotCategoriesMenu != null && me.annotCategoriesMenu.items.length != 0) {
-            me.annotCategoriesMenu.items.each(function(item) {
-                if(item.checked)
-                    visibleCategories.push(item.categoryId);
-            });
-        } else {
-            visibleCategories.push('undefined');
-        }
-
-        me.pageBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
-        me.measureBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
+        me.pageBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
+        me.measureBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
     },
 
     setMovements: function(movements) {

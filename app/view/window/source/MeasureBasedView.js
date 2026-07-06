@@ -304,7 +304,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         me.parts = parts;
         if(me.parts.getTotalCount() > 0){
             me.voiceFilter.enable();
-        }            
+        }
 
         me.setMdiv(me.mdivSelector);
     },
@@ -332,7 +332,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             modal: true,
             cls: 'ediromWindow voiceSelection',
             items: [
-                // 
+                //
                 me.grid,
                 // buttons for ok/cancel
                 {
@@ -401,11 +401,12 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }catch(e) {}
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
         var me = this;
-        
+
+        // delegate annotationFilterChanged to individual viewers
         me.viewers.each(function(v) {
-            v.annotationFilterChanged(visibleCategories, visiblePriorities);
+            v.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
         });
     }
 });
@@ -650,62 +651,105 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         }
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
         var me = this;
 
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('View: MeasureBasedView: annotationFilterChanged');
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
+        }
+
+        // MeasureBasedView renders each measure in its own viewer instance, so we must
+        // apply the filter across all of them (contrast: PageBasedView has a single imageViewer).
         Ext.Array.each(me.imageViewers, function(viewer) {
             var annotations = viewer.getShapes('annotations');
+            var annotationDivIds = [];
 
-            // define function to apply to relevant element IDs
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log('View: MeasureBasedView: annotationFilterChanged: annotations');
+                console.log(annotations);
+            }
+
+            // Callback applied to each annotation child div id: shows or hides it based on the active taxonomy filters.
+            // Receives a child div id string (contrast: old version received the annotation object directly).
+            // Bound to `me` so `this` refers to the view component inside the function body.
             var fn = Ext.bind(function(annotationId) {
+
                 var annotDiv = Ext.get(annotationId);
-                var classList = annotDiv.dom.classList;
-                var prioritiesCategories = Ext.Array.toArray(classList);
-                Ext.Array.remove(prioritiesCategories, 'measure');
-                Ext.Array.remove(prioritiesCategories, 'annoIcon');
+                // Get the raw DOM class list and convert it to a plain array for Ext manipulation
+                var classes = Ext.Array.toArray(annotDiv.dom.classList);
+                // Strip structural/UI classes that are not taxonomy identifiers
+                Ext.Array.remove(classes, 'measure');
+                Ext.Array.remove(classes, 'annotIcon');
 
-                // create category and priority match variables
-                var matchesCategoryFilter = false;
-                var matchesPriorityFilter = false;
-
-                // iterate over annotation class attribute values to see if they match visibleCategories or visiblePriorities
-                for(var i = 0; i < prioritiesCategories.length; i++) {
-                    matchesCategoryFilter |= Ext.Array.contains(visibleCategories, prioritiesCategories[i]);
-                    matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, prioritiesCategories[i]);
+                if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                    console.log('View: MeasureBasedView: annotationFilterChanged: annotations fn');
+                    console.log(annotationId);
+                    console.log(annotDiv);
+                    console.log(annotDiv.dom.classList);
+                    console.log(classes);
                 }
 
-                // if filter results are false check if visibleCategories are undefined and if so assign true
-                if(matchesCategoryFilter == false && visibleCategories == 'undefined') {
-                    matchesCategoryFilter = true;
-                }
-                // if filter results are false check if visiblePriorities are undefined and if so assign true
-                if(matchesPriorityFilter == false && visiblePriorities == 'undefined') {
-                    matchesPriorityFilter = true;
+                // An annotation is visible only if it matches at least one selected id in every active taxonomy
+                var visible = true;
+                Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                    var allIds = (allTaxonomyIds || {})[taxonomyId] || [];
+
+                    // If the annotation has no class from this taxonomy, skip this taxonomy's check
+                    var hasAnyFromTaxonomy = false;
+                    for (var i = 0; i < classes.length; i++) {
+                        if (Ext.Array.contains(allIds, classes[i])) {
+                            hasAnyFromTaxonomy = true;
+                            break;
+                        }
+                    }
+                    if (!hasAnyFromTaxonomy) return;
+
+                    // Check whether any of the annotation's classes belong to this taxonomy's visible set
+                    var matches = false;
+                    for (var i = 0; i < classes.length; i++) {
+                        if (Ext.Array.contains(visibleIds, classes[i])) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                    if (!matches) visible = false;
+                });
+
+                if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                    console.log(visible);
                 }
 
-                // depending on match results assign or remove class 'hidden'
-                if(matchesCategoryFilter & matchesPriorityFilter)
+                // Toggle visibility by adding/removing the 'hidden' CSS class
+                if (visible)
                     annotDiv.removeCls('hidden');
                 else
                     annotDiv.addCls('hidden');
             }, me);
 
-            var annotationDivIds = [];
-
+            // Guard against viewers that have no annotations yet.
+            // `getShapes` may return an Ext MixedCollection (has `.each`) or a plain array,
+            // so we handle both cases.
             if (typeof annotations !== 'undefined') {
-                // collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
+                // Collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
                 var collectIds = function(annotation) {
                     var annotDiv = viewer.getShapeElem(annotation.id);
                     var children = Ext.Array.toArray(annotDiv.dom.childNodes);
                     Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
                 };
 
-                if(annotations.each)
+                if (annotations.each)
                     annotations.each(collectIds);
                 else
                     Ext.Array.each(annotations, collectIds);
             }
 
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log(annotationDivIds);
+            }
+
+            // Apply the visibility filter function to every collected child div id
             Ext.Array.each(annotationDivIds, fn);
         });
 
