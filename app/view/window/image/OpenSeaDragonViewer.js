@@ -345,19 +345,13 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('controller: OpenseaDragonView: addAnnotaitons');
+            console.log('view: OpenseaDragonViewer: addAnnotaitons');
             console.log('annotations RAW');
             console.log(annotations);
         }
 
         //add empty annotations array to shapes
         me.shapes.add('annotations', []);
-
-        // template for annotation element
-        //TODO: currently unused
-        //var dh = Ext.DomHelper;
-        //var tpl = dh.createTemplate('<div id="{0}" class="annotation {2} {3} {4}" data-edirom-annot-id="{4}"><div id="{0}_inner" class="annotIcon" title="{1}"></div></div>');
-        //tpl.compile();
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('me.shapes annotations');
@@ -375,57 +369,70 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
+            
+            //TODO process annotation’s svgList
 
             //push plist to me.shapes annotations
             Ext.Array.push(me.shapes.get('annotations'), plist);
 
-            //iterate over an annotations plist
+            //iterate over an annotation’s plist
             Ext.Array.each(plist, function(shape) {
 
+                // define participant shape properties
                 var id = shape.id; //pattern from XQL 'annotation_' || $annoId || '_' || string($p/@xml:id)
                 var x = shape.ulx;
                 var y = shape.uly;
                 var width = shape.lrx - shape.ulx;
                 var height = shape.lry - shape.uly;
-                var partType = shape.type;
+                var participantType = shape.type;
 
-                var anno = me.viewer.getOverlayById(me.id + '_' + id);
-                if(anno === null) {
+                // calculate ids for annotation icon container and annotation icon
+                var annoIconContainerId = me.id + '_' + id;
+                var annoIconId = annoIconContainerId + annoId;
+                
+                // reuse existing outer div if already present (multiple annotations on same zone)
+                var annoIconContainer = document.getElementById(annoIconContainerId);
+                
+                if(!annoIconContainer) {
+                    
+                    // no pre-existing annotation icon container
+                    // create container
+                    annoIconContainer = document.createElement('div');
+                    annoIconContainer.id = annoIconContainerId;
+                    annoIconContainer.className = 'annotation';
+                    annoIconContainer.dataset.ediromAnnotId = annoId;
 
-                    var anno = document.createElement('div');
-                    anno.id = me.id + '_' + id;
-                    anno.className = 'annotation';
-
-                    // annoIcon: has to be nearly identical to annoIcon in else
-                    var annoIcon = document.createElement('div');
-                    annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
-                    anno.append(annoIcon);
-
+                    // determine coordinates for placing the annotation icon container
                     var point = me.viewer.viewport.imageToViewportCoordinates(x, y);
                     var rect = me.viewer.viewport.imageToViewportRectangle(x, y, width, height);
 
-                    me.viewer.addOverlay({element:anno, location:new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)});
+                    // add the annotation icon container (with nested icon) to the viewer
+                    me.viewer.addOverlay({element:annoIconContainer, location:new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)});
 
-                }else {
-
-                    // annoIcon: has to be nearly identical to annoIcon in if
-                    var anno = me.el.getById(me.id + '_' + id);
-                    var annoIcon = document.createElement('div');
-                    annoIcon.id = anno.id + annoId;
-                    annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
-                    anno.dom.append(annoIcon);
                 }
 
-                // retrieve dom element of annotationIcon to bind actions
-                var annoIcon = me.el.getById(annoIcon.id);
+                // create annoIcon
+                // annotIcon div carries taxonomy classes (categories and priority)
+                var annoIcon = document.createElement('div');
+                annoIcon.id = annoIconId;
+                annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + participantType;
+                annoIcon.title = name;
+                
+                // insert annotation icon into the icon container
+                annoIconContainer.append(annoIcon);
 
+                // retrieve dom element of annotIcon to bind actions
+                var annoIconEl = me.el.getById(annoIconId);
+
+                //* bind actions to annoIcon div *//
+                annoIconEl.on('mouseenter', me.highlightShape, me, annoIconContainer, true);
+                annoIconEl.on('mouseleave', me.deHighlightShape, me, annoIconContainer, true);
                 // bind onclick action to annotation icon
-                annoIcon.on('click', me.openShapeLink, me, {
+                annoIconEl.on('click', me.openShapeLink, me, {
                     single: false,
                     stopEvent : true,
                     fn: fn
@@ -433,7 +440,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
                 // create the tooltip for the annotation
                 var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: annoIcon.id,
+                    target: annoIconId,
                     cls: 'annotationTip',
                     width: me.annotTipWidth,
                     maxWidth: me.annotTipMaxWidth,
@@ -452,7 +459,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                         {
                             uri: uri,
                             target: 'tip',
-                            edition: EdiromOnline.getApplication().activeEdition
                         },
                         Ext.bind(function(response){
                             this.update(response.responseText);
