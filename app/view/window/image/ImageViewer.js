@@ -672,7 +672,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         me.showRect(0, 0, me.imgWidth, me.imgHeight);
     },
 
-    showRect: function(x, y, width, height, highlight) {
+    showRect: function(x, y, width, height, highlight, fitHeight) {
 
         var me = this;
 
@@ -684,7 +684,8 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             y:y,
             width:width,
             height:height,
-            highlight:highlight
+            highlight:highlight,
+            fitHeight:fitHeight
         };
 
         me.hiResImg.hide();
@@ -698,7 +699,13 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         var diffWidth = 0;
         var diffHeight = 0;
 
-        if((contWidth / width) > (contHeight / height)) {
+        // fitHeight forces the zone height to fill the container and left-aligns it (no centering),
+        // so each part shows its full staff at the common zoom and the measures start at the same x
+        // across the vertically stacked parts in measureBasedView. Otherwise fit to whichever
+        // dimension is more constraining and centre (default, used by the page-based view).
+        if(fitHeight) {
+            me.setSVGZoom((contHeight / height));
+        }else if((contWidth / width) > (contHeight / height)) {
             me.setSVGZoom((contHeight / height));
             diffWidth = Math.round((contWidth - (width * me.zoom)) / 2);
         }else {
@@ -726,7 +733,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         // Re-fit the stored rect to the (now final) container size so the zone keeps the same
         // displayed height across viewers; fall back to a hi-res refresh when nothing is shown.
         if(me.rect && me.rect != null)
-            me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, false);
+            me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, false, me.rect.fitHeight);
         else
             me.calculateHiResImg();
     },
