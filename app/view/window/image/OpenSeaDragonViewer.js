@@ -126,7 +126,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             }]
         });
         me.viewer.addOnceHandler('tile-drawn', function() {
-            if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
+            if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight, me.rect.fitHeight);
         });
         me.fireEvent('imageChanged', me, path, pageId);
     },
@@ -162,15 +162,17 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         };
     },
 
-    showRect: function(x, y, width, height, highlight) {
+    showRect: function(x, y, width, height, highlight, fitHeight, alignment) {
 
         var me = this;
         me.rect = {
-            x:x,
-            y:y,
-            width:width,
-            height:height,
-            highlight:highlight
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            highlight: highlight,
+            fitHeight: fitHeight,
+            alignment: alignment || 'center'
         };
 
         me.fitStoredRect();
@@ -181,7 +183,33 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var me = this;
         if(!me.viewer || !me.rect || me.rect == null) return;
 
-        var rect = me.viewer.viewport.imageToViewportRectangle(me.rect.x, me.rect.y, me.rect.width, me.rect.height);
+        var r = me.rect;
+
+        // fitHeight maps the zone height to the full container height and positions the visible
+        // region horizontally according to r.alignment:
+        //   'left'   – zone's left edge at the left of the viewport  (right-side page in a spread)
+        //   'right'  – zone's right edge at the right of the viewport (left-side page in a spread)
+        //   'center' – zone centred in the viewport (single viewer or inner part)
+        if(r.fitHeight) {
+            var contW = me.getWidth();
+            var contH = me.getHeight();
+            if(contW > 0 && contH > 0) {
+                var visWidth = r.height * (contW / contH);
+                var xStart;
+                if(r.alignment === 'left') {
+                    xStart = r.x;
+                } else if(r.alignment === 'right') {
+                    xStart = r.x + r.width - visWidth;
+                } else {
+                    xStart = r.x + r.width / 2 - visWidth / 2;
+                }
+                var hRect = me.viewer.viewport.imageToViewportRectangle(xStart, r.y, visWidth, r.height);
+                me.viewer.viewport.fitBounds(hRect, true);
+                return;
+            }
+        }
+
+        var rect = me.viewer.viewport.imageToViewportRectangle(r.x, r.y, r.width, r.height);
         me.viewer.viewport.fitBoundsWithConstraints(rect);
     },
 
