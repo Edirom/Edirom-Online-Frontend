@@ -18,9 +18,7 @@
 		line-height: 2em;
 		margin-top: 0;
 	}
-	.textViewContent .teidiv0 > .listhead {
-		margin-left: 4em;
-	}
+
 	h2 {
 		font-weight: bold;
 		font-size: 1.6em;
@@ -222,8 +220,11 @@
 		span.pagebreak {
 
 		}
+
 	/*other*/
-	
+		.figure, .stdheader { 
+			border: none; 
+		}
 
 	
 }
