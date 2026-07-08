@@ -304,14 +304,14 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 filter: true
             },
             {
-                header: getLangString('ediromPriority') + ' (legacy)',
+                header: getLangString('view.window.AnnotationView_Priority') + ' (legacy)',
                 dataIndex: 'priority',
                 flex: 1,
                 filter: true,
                 hidden: legacyFields.includes('priority')
             },
             {
-                header: getLangString('ediromCategory') + ' (legacy)',
+                header: getLangString('view.window.AnnotationView_Category') + ' (legacy)',
                 dataIndex: 'categories',
                 flex: 2,
                 filter: true,
