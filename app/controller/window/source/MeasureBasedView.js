@@ -177,7 +177,8 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                 'GET', 
                 {
                     uri: uri,
-                    pageId: pageId
+                    pageId: pageId,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var me = this;

@@ -244,7 +244,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 'GET',
                 {
                     uri: view.uri,
-                    pageId: pageId
+                    pageId: pageId,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var me = this;

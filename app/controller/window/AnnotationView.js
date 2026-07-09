@@ -66,7 +66,8 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
         window.doAJAXRequest('data/xql/getAnnotationMeta.xql',
             'GET', 
             {
-                uri: uri
+                uri: uri,
+                mode: 'taxonomies'
             },
 
             Ext.bind(function(response){
