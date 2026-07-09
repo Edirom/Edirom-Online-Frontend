@@ -153,7 +153,8 @@ Ext.define('EdiromOnline.controller.window.AnnotationView', {
             'data/xql/getAnnotations.xql',
             'GET',
             {
-                uri: view.uri
+                uri: view.uri,
+                mode: 'taxonomies'
             },
             Ext.bind(function(response) {
                 var data = Ext.JSON.decode(response.responseText);
