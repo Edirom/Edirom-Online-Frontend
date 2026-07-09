@@ -44,9 +44,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.image_server = getPreference('image_server');
     	
     	if(me.image_server === "openseadragon") {
-            me.imageViewer = Ext.create(
-                "EdiromOnline.view.window.image.OpenSeaDragonViewer",
-            );
+            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
         }else{
     		me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
     	}
