@@ -90,7 +90,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             'GET',
             {
                 uri: view.uri,
-                lang: getPreference('application_language')
+                lang: getPreference('application_language'),
+                mode: 'taxonomies'
             },
             Ext.bind(function(response){
                 var me = this;
