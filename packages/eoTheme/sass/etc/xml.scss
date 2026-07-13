@@ -12,5 +12,10 @@
 		top: 0;
 		margin: 0;
 	}
+	/* prevents scroll bars in sourceView windows on Windows */
+	/* copied from todo.scss */
+	.sourceView .x-panel-body {
+		overflow: hidden !important;
+	}
 
 }

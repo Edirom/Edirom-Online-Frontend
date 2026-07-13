@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="EdiromOnline" default="xar">
-    
+<project name="EdiromOnline" default="build">
+
+    <!-- This build script makes use of some extensions point provided by
+         Sencha Cmd. For more information please visit:
+         https://docs.sencha.com/cmd/guides/advanced_cmd/cmd_build.html
+    -->
+
     <import file="${basedir}/.sencha/app/build-impl.xml"/>
-    
+
     <!-- Load local property overrides if available -->
     <property file="local.properties"/>
-    
+
     <!-- info for backend -->
     <property name="backend.protocol" value="http"/>
     <property name="backend.host" value="localhost"/>
@@ -24,15 +29,39 @@
     <property name="temp.dir" value="${build.dir}/${temp.dir.name}"/>
     <property name="euryanthe.dir" value="build-euryanthe"/>
     <property name="exist.dir" value="exist-packaging"/>
-    
+
     <tstamp/>
+
+    <target name="check-dependencies" description="Checks for build dependencies">
+        <exec executable="/bin/sh" os="Linux" failonerror="true">
+            <arg value="-c"/>
+            <arg value="type sencha ant ruby &gt;&amp;2"/>
+        </exec>
+    </target>
+
+    <target name="-after-init">
+        <antcall target="check-dependencies"/>
+    </target>
+
+    <target name="-before-build">
+        <antcall target="clean"/>
+    </target>
+
+    <target name="-clean">
+        <delete dir="${build.temp.dir}"/>
+        <delete includeemptydirs="true">
+            <fileset dir="${build.dir}" erroronmissingdir="false">
+                <include name="**/*"/>
+            </fileset>
+        </delete>
+    </target>
 
     <!-- Download Euryanthe Font Zip file and extract it to ${euryanthe.dir} -->
     <target name="download-euryanthe">
         <mkdir dir="${euryanthe.dir}"/>
         <get src="https://github.com/Edirom/EuryantheFont/archive/refs/tags/v1.0.0.zip" dest="${euryanthe.dir}/v1.0.0.zip"/>
         <unzip src="${euryanthe.dir}/v1.0.0.zip" dest="${euryanthe.dir}"/>
-        
+
         <!-- Copy Euryanthe Font from ${euryanthe.dir} -->
         <mkdir dir="${build.dir}/resources/fonts/euryanthe"/>
         <copy todir="${build.dir}/resources/fonts/euryanthe" preservelastmodified="true">
@@ -50,14 +79,13 @@
                 <filter token="backend.path" value="${backend.path}"/>
             </filterset>
         </copy>
-        <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js"  overwrite="true" preservelastmodified="true"/>
+        <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js" overwrite="true" preservelastmodified="true"/>
         <delete file="${build.dir}/app-temp.js"/>
         <!-- Copy CITATION.cff to resources -->
         <copy file="${basedir}/CITATION.cff" tofile="${build.dir}/resources/CITATION.cff" overwrite="true"/>
     </target>
 
-
-    <target name="xar">
+    <target name="copy-xar-resources">
         <copy todir="${build.dir}" preservelastmodified="true">
             <fileset dir="${exist.dir}">
                 <exclude name="*.png"/>
@@ -72,13 +100,25 @@
         <copy todir="${build.dir}" preservelastmodified="true">
             <fileset dir="${exist.dir}">
                 <include name="*.png"/>
-                <include name="controller.xq"/>            
-            </fileset>       
+                <include name="controller.xq"/>
+            </fileset>
         </copy>
+    </target>
+
+    <target name="-xar">
         <mkdir dir="${dist.dir}"/>
-        <zip basedir="${build.dir}" destfile="${dist.dir}/${project.app}-${project.version}-${DSTAMP}-${TSTAMP}.xar">
+        <zip basedir="${build.dir}"
+            destfile="${dist.dir}/${project.app}-${project.version}-${DSTAMP}-${TSTAMP}.xar">
             <exclude name="${temp.dir.name}/**"/>
         </zip>
     </target>
-    
+
+    <target name="-after-page">
+        <echo message="EDIROM AFTER RESOURCES"/>
+        <antcall target="download-euryanthe"/>
+        <antcall target="inject-properties"/>
+        <antcall target="copy-xar-resources"/>
+        <antcall target="-xar"/>
+    </target>
+
 </project>
