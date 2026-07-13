@@ -46,6 +46,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         view.on('loadAnnotations', me.onLoadAnnotations, me);
+        view.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
+        view.on('loadMeasures', me.onLoadMeasures, me);
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
@@ -218,7 +220,58 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 // Push the data only. The component re-applies its remembered
                 // visibility (_showAnnotations) to the new page's overlays, so
                 // the last show/hide choice carries over to every image.
-                view.setAnnotationsData(annotations);
+                view.setAnnotationsData(annotations, pageId);
+            }
+        );
+    },
+
+    // Toolbar button toggles measure VISIBILITY only; the data is preloaded per
+    // page by onLoadMeasures, so this just shows/hides the already-pushed
+    // measure-number overlays via the component's 'measure' zone type.
+    onMeasuresVisibilityChange: function(view, visible) {
+        var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('controller: SourceView: onMeasuresVisibilityChange: ' + visible);
+        }
+
+        if(visible)
+            view.showMeasures();
+        else
+            view.hideMeasures();
+    },
+
+    // Preloads the current page's measures into the component (push model),
+    // fired on every page load. Mirrors onLoadAnnotations: it only pushes the
+    // new page's data; the component remembers the last show/hide state per
+    // zone type and re-applies it to every freshly rendered page.
+    onLoadMeasures: function(view, visible) {
+        var me = this;
+
+        // If there is no active page, there is nothing to load.
+        if(typeof view.getActivePage() == 'undefined') return;
+
+        var pageId = view.getActivePage().get('id');
+
+        window.doAJAXRequest('data/xql/getMeasuresOnPage.xql',
+            'GET',
+            {
+                uri: view.uri,
+                pageId: pageId
+            },
+            function(response){
+                // Ignore stale responses after a further page change.
+                if(typeof view.getActivePage() == 'undefined'
+                    || pageId != view.getActivePage().get('id')) return;
+
+                var data = response.responseText;
+
+                var measures = Ext.create('Ext.data.Store', {
+                    fields: ['zoneId', 'ulx', 'uly', 'lrx', 'lry', 'id', 'name', 'type', 'rest'],
+                    data: Ext.JSON.decode(data)
+                });
+
+                view.setMeasuresData(measures, pageId);
             }
         );
     },

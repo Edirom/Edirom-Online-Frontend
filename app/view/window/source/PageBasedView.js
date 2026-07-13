@@ -60,7 +60,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
  	   me.imageViewer.on('imageChanged', me.onViewerImageChanged, me);
 
- 	   // When the component reports a filter change (e.g. its visible-categories
+ 	   // When the component reports a filter change (e.g. its hidden-filters
  	   // attribute was set externally), keep the source view's filter menu
  	   // checkboxes in sync.
  	   me.imageViewer.on('annotationFilterChanged', me.onViewerAnnotationFilterChanged, me);
@@ -96,11 +96,11 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     },
 
     // Relays a component-driven filter change up to the source view so its
-    // annotation filter menu checkboxes mirror the visible categories/priorities.
-    onViewerAnnotationFilterChanged: function(viewer, visibleCategories, visiblePriorities) {
+    // annotation filter menu checkboxes mirror the hidden token set.
+    onViewerAnnotationFilterChanged: function(viewer, hiddenFilters) {
         var me = this;
         if(me.owner && typeof me.owner.syncAnnotationFilterMenu === 'function')
-            me.owner.syncAnnotationFilterMenu(visibleCategories, visiblePriorities);
+            me.owner.syncAnnotationFilterMenu(hiddenFilters);
     },
 
     // Relays a component-driven annotation visibility change up to the source
@@ -117,17 +117,35 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var me = this;
         if(me.pageSpinner && typeof me.pageSpinner.syncPage === 'function')
             me.pageSpinner.syncPage(id);
+
+        // A component-initiated page change (a measure jump via the 'zone'
+        // attribute, or native next/prev navigation) does NOT run the host's
+        // setPage flow, so this page's annotations/measures were never loaded
+        // and would render empty. Detect it by comparing to the known active
+        // page: if it differs, adopt the new page and (re)load its overlays.
+        // Host-initiated setPage sets me.activePage first, so this is a no-op
+        // there (no double load).
+        var currentId = (me.activePage && typeof me.activePage.get === 'function')
+            ? me.activePage.get('id') : null;
+        if(id != null && id !== currentId && me.imageSet) {
+            var idx = me.imageSet.findExact('id', id);
+            if(idx >= 0) {
+                me.activePage = me.imageSet.getAt(idx);
+                me.loadPageOverlays();
+            }
+        }
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleCategories, visiblePriorities, hiddenFilters) {
 
         var me = this;
 
         // Component path: the web component owns annotation rendering, so push
-        // the filter to it and let it show/hide badges itself. Falls back to the
-        // legacy ExtJS shadow-DOM class toggling for the non-OSD ImageViewer.
+        // the generic hidden-token set to it and let it show/hide badges itself.
+        // Falls back to the legacy ExtJS shadow-DOM class toggling (driven by the
+        // visible category/priority arrays) for the non-OSD ImageViewer.
         if(typeof me.imageViewer.setAnnotationFilter === 'function') {
-            me.imageViewer.setAnnotationFilter(visibleCategories, visiblePriorities);
+            me.imageViewer.setAnnotationFilter(hiddenFilters);
             return;
         }
 
@@ -289,8 +307,22 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         }
 
 
-        // check global and local visibility settings for annotations
-        var types = ['annotations'];
+        me.loadPageOverlays();
+
+    },
+
+    // Preloads the active page's overlays (annotations, measures) and re-applies
+    // the SVG layer visibility. Always pushes the annotation/measure data so the
+    // toolbar toggles are instant (no re-fetch); the component re-applies its
+    // remembered per-type visibility. Shared by setPage (host-initiated page
+    // change) and onViewerImageChanged (component-initiated page change, e.g. a
+    // measure jump or native next/prev), so a page reached either way always
+    // gets its overlays.
+    loadPageOverlays: function() {
+        var me = this;
+
+        // check global and local visibility settings for annotations & measures
+        var types = ['annotations', 'measures'];
 
         // for each type, check visibility and fire event if visible
         for(var i = 0; i < types.length; i++) {
@@ -306,6 +338,11 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 // handler pushes the data once and then applies visibility, so
                 // the toolbar button can show/hide instantly without a re-fetch.
                 me.owner.fireEvent('loadAnnotations', me.owner, visible);
+            } else if(type === 'measures') {
+                // Same push model for measures: always preload the page's
+                // measures so the toolbar button only toggles the 'measure'
+                // zone type's visibility (no re-fetch).
+                me.owner.fireEvent('loadMeasures', me.owner, visible);
             } else if(visible) {
                 me.owner.fireEvent(type+'VisibilityChange', me.owner, true);
             }
@@ -432,14 +469,67 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     },
 
     // Pushes the page's annotations to the image component once (push model).
-    setAnnotationsData: function(annotations) {
+    // The pageId lets the component render only the current page's annotations.
+    setAnnotationsData: function(annotations, pageId) {
         var me = this;
-        me.imageViewer.setAnnotationsData(annotations);
+        if(typeof me.imageViewer.setAnnotationsData === 'function') {
+            me.imageViewer.setAnnotationsData(annotations, pageId);
+        } else if(typeof me.imageViewer.addAnnotations === 'function') {
+            // legacy digilib ImageViewer: renders directly from the data
+            me.imageViewer.addAnnotations(annotations);
+        }
     },
 
     showAnnotations: function() {
         var me = this;
-        me.imageViewer.setShowAnnotations(true);
+        if(typeof me.imageViewer.setTypeVisible === 'function')
+            me.imageViewer.setTypeVisible('annotation', true);
+    },
+
+    // Pushes the page's measures to the image component once (push model),
+    // mirroring setAnnotationsData. `measures` is the store returned by
+    // getMeasuresOnPage.xql; each record becomes a renderable zone entry
+    // (type:'measure') carrying its number label. The toolbar button then only
+    // toggles the 'measure' type's visibility (no re-fetch).
+    setMeasuresData: function(measures, pageId) {
+        var me = this;
+
+        if(typeof me.imageViewer.setMeasuresData !== 'function') {
+            // legacy digilib ImageViewer renders measures directly from the store
+            if(typeof me.imageViewer.addMeasures === 'function')
+                me.imageViewer.addMeasures(measures);
+            return;
+        }
+
+        var list = [];
+        if(measures && typeof measures.each === 'function') {
+            measures.each(function(m) {
+                list.push({
+                    key: m.get('id'),
+                    pageId: pageId,
+                    ulx: m.get('ulx'),
+                    uly: m.get('uly'),
+                    lrx: m.get('lrx'),
+                    lry: m.get('lry'),
+                    name: m.get('name')
+                });
+            });
+        }
+        me.imageViewer.setMeasuresData(list);
+    },
+
+    showMeasures: function() {
+        var me = this;
+        if(typeof me.imageViewer.setTypeVisible === 'function')
+            me.imageViewer.setTypeVisible('measure', true);
+    },
+
+    hideMeasures: function() {
+        var me = this;
+        if(typeof me.imageViewer.setTypeVisible === 'function')
+            me.imageViewer.setTypeVisible('measure', false);
+        else if(typeof me.imageViewer.removeShapes === 'function')
+            me.imageViewer.removeShapes('measures');
     },
 
     onOverlayVisibilityChange: function(view, state) {
@@ -449,7 +539,10 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
     hideAnnotations: function() {
         var me = this;
-        me.imageViewer.setShowAnnotations(false);
+        if(typeof me.imageViewer.setTypeVisible === 'function')
+            me.imageViewer.setTypeVisible('annotation', false);
+        else if(typeof me.imageViewer.removeShapes === 'function')
+            me.imageViewer.removeShapes('annotations');
     },
 
     updateZoom: function(zoom) {

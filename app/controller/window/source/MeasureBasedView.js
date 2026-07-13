@@ -206,6 +206,11 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
         if(pageId != viewer.imgId) return;
 
         viewer.setAnnotationsData(annotations);
+        // The OSD web component only renders zone types listed in visible-types;
+        // enable the annotation type so the pushed annotations are shown. (The
+        // legacy digilib ImageViewer has no setTypeVisible and renders directly.)
+        if(typeof viewer.setTypeVisible === 'function')
+            viewer.setTypeVisible('annotation', true);
         sourceView.annotationFilterChanged();
     },
     

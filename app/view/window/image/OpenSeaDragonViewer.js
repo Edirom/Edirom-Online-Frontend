@@ -88,10 +88,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'showsequencecontrol="false" ' +
                   'zones-data="{}" ' +
                   'zone="" ' +
-                  'annotations-data="[]" ' +
-                  'show-annotations="false" ' +
-                  'visible-categories="[&quot;undefined&quot;]" ' +
-                  'visible-priorities="[&quot;undefined&quot;]" ' +
+                  'visible-types="[]" ' +
+                  'hidden-filters="[]" ' +
                   'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
@@ -141,21 +139,21 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             }
         });
 
-        // Annotation overlays are rendered by the component from the pushed
-        // annotations-data attribute, including the tooltip (the host preloads
-        // each annotation's server-rendered tooltip HTML into annotations-data).
-        // The only ExtJS-specific interaction left here is the click action,
-        // run from the component's annotation-click event.
-        me.webComponent.addEventListener('annotation-click', function(event) {
-            me.onAnnotationClick(event.detail);
+        // Zone overlays (annotations, measure labels, …) are rendered by the
+        // component from the pushed zones-data attribute, including the tooltip
+        // (the host preloads each zone's server-rendered tooltip HTML into its
+        // zones-data entry). The only host-specific interaction left here is the
+        // click action, run from the component's zone-click event.
+        me.webComponent.addEventListener('zone-click', function(event) {
+            me.onZoneClick(event.detail);
         });
 
-        // The component owns the category/priority filter; when it changes
-        // (including when the visible-categories/visible-priorities attributes
-        // are set externally), forward it so the host can keep its filter menu
-        // checkboxes in sync.
-        me.webComponent.addEventListener('annotation-filter-changed', function(event) {
-            me.fireEvent('annotationFilterChanged', me, event.detail.visibleCategories, event.detail.visiblePriorities);
+        // The component owns the annotation filter; when it changes (including
+        // when the hidden-filters attribute is set externally), forward the
+        // hidden-token set so the host can keep its filter menu checkboxes in
+        // sync.
+        me.webComponent.addEventListener('filter-changed', function(event) {
+            me.fireEvent('annotationFilterChanged', me, event.detail.hiddenFilters);
         });
 
         // Keep the host page list / spinner bounds in sync when the component's
@@ -169,14 +167,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             if (total >= me.pages.length) return;
             me.pages = me.pages.slice(0, total);
             me.fireEvent('totalPagesChanged', me, total);
-        });
-
-        // Forward the component's annotation visibility state so the host can
-        // keep its toolbar toggle button in sync, regardless of how the
-        // show-annotations attribute was changed (button, API or direct edit).
-        me.webComponent.addEventListener('show-annotations-changed', function(event) {
-            var show = (event.detail) ? event.detail.show : false;
-            me.fireEvent('showAnnotationsChanged', me, show);
         });
     },
 
@@ -283,53 +273,67 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         return NaN;
     },
 
-    // Pushes the full measures map to the component (Verovio-style "push"
-    // model). `measures` is an array of records each carrying a key plus a
-    // page id and pixel rectangle; the page id is resolved to a 1-based page
-    // number here so the component stays in page-number space.
-    // Record fields: { key, pageId, ulx, uly, lrx, lry }.
-    // Measures are pushed as ordinary zone entries (namespaced 'measure:<key>')
-    // into the single zones-data map the component understands.
+    // Pushes measures to the component as zone entries carrying `type:'measure'`.
+    // Each measure is both a navigation target (page + pixel rectangle) and,
+    // when the 'measure' type is visible, a rendered number-label overlay
+    // (containerClass 'measure' + innerClass 'measureInner'/'measureInnerEmpty',
+    // matching the existing facsimile CSS). Entries are MERGED into the measure
+    // zone map (keyed 'measure:<key>') so pushing a single navigation measure
+    // does not drop the page's label set and vice-versa.
+    // Record fields: { key, pageId, ulx, uly, lrx, lry, name }.
     setMeasuresData: function(measures) {
         var me = this;
         if (!me.webComponent) return;
 
-        me._measureZones = {};
+        me._measureZones = me._measureZones || {};
         (measures || []).forEach(function(m) {
-            me._measureZones['measure:' + m.key] = {
+            var key = 'measure:' + m.key;
+            var existing = me._measureZones[key];
+            // A navigation-only push (gotoMeasure) carries no name; don't let it
+            // clobber a label already pushed by the page's measure-display load.
+            var hasName = (m.name != null && String(m.name) !== '');
+            var name = hasName ? String(m.name)
+                : (existing && existing.label != null ? existing.label : '');
+            me._measureZones[key] = {
+                type: 'measure',
                 page: me.pageNumberById(m.pageId),
-                ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry
+                ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry,
+                containerClass: 'measure',
+                innerClass: (name === '' ? 'measureInnerEmpty' : 'measureInner'),
+                label: name,
+                group: 'measure:' + m.key
             };
         });
         me.pushZonesData();
     },
 
-    // Pushes the full movements (mdiv) map to the component. `mdivs` is an
-    // array of records each carrying a key plus the movement's first page id,
-    // resolved here to a 1-based page number.
+    // Pushes movements (mdivs) to the component as zone entries carrying
+    // `type:'mdiv'`. A movement only carries its first page (no rectangle), so
+    // it is a navigation target only (never rendered as an overlay). Entries
+    // are MERGED into the mdiv zone map (keyed 'mdiv:<key>').
     // Record fields: { key, pageId }.
-    // Movements are pushed as ordinary zone entries (namespaced 'mdiv:<key>')
-    // into the single zones-data map.
     setMdivsData: function(mdivs) {
         var me = this;
         if (!me.webComponent) return;
 
-        me._mdivZones = {};
+        me._mdivZones = me._mdivZones || {};
         (mdivs || []).forEach(function(m) {
-            me._mdivZones['mdiv:' + m.key] = { page: me.pageNumberById(m.pageId) };
+            me._mdivZones['mdiv:' + m.key] = { type: 'mdiv', page: me.pageNumberById(m.pageId) };
         });
         me.pushZonesData();
     },
 
-    // Serialises the union of the measure and movement zone maps and pushes it
-    // to the component's single `zones-data` attribute. Measures and movements
-    // live in separate local maps (each fully rebuilt on its own push) so that
-    // re-pushing one does not drop the other.
+    // Serialises the union of the measure, movement and annotation zone maps and
+    // pushes it to the component's single `zones-data` attribute. Each sub-map is
+    // rebuilt/merged on its own push so that re-pushing one type does not drop
+    // the others. The component renders overlays for zones whose `type` is in
+    // `visible-types` and navigates to any zone via the `zone` attribute.
     pushZonesData: function() {
         var me = this;
         if (!me.webComponent) return;
         var map = Ext.apply({}, me._measureZones || {});
         Ext.apply(map, me._mdivZones || {});
+        Ext.apply(map, me._annotationZones || {});
         me.webComponent.setAttribute('zones-data', JSON.stringify(map));
     },
 
@@ -446,6 +450,19 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
         var me = this;
 
+        // Annotations and measures are rendered from zones-data now; "removing"
+        // them means dropping their zone sub-map and re-pushing zones-data.
+        if (groupName === 'annotations') {
+            me._annotationZones = {};
+            me.pushZonesData();
+            return;
+        }
+        if (groupName === 'measures') {
+            me._measureZones = {};
+            me.pushZonesData();
+            return;
+        }
+
         //abort if me.shapes does not contain key
         if(!me.shapes.containsKey(groupName)) {
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -481,64 +498,90 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.shapes.add(groupName, []);
     },
 
-    // Pushes the page's annotations to the component (push model, like
-    // setMeasuresData / setMdivsData). The component renders the overlay
-    // badges AND their hover tooltip from the annotations-data attribute; each
-    // record carries its server-rendered tooltip HTML (preloaded below), so the
-    // only ExtJS-specific interaction left is the click action (annotation-click
-    // event). `me.shapes` is still populated here so the existing filter /
-    // shadow-DOM lookup helpers (getShapes / getShapeElem /
-    // annotationFilterChanged) keep working. Passing an empty array hides all
-    // annotations.
-    setAnnotationsData: function(annotations) {
+    // Pushes the page's annotations to the component as zone entries carrying
+    // `type:'annotation'` (unified push model, like setMeasuresData /
+    // setMdivsData). Each annotation's plist yields one zone per image region;
+    // all regions of one annotation share the annotation's data (categories,
+    // priority, tooltip, click fn), and annotations on the same region share a
+    // `group` so their badges stack. The component renders the overlay badges
+    // AND their hover tooltip from zones-data; each zone carries its
+    // server-rendered tooltip HTML (preloaded below), so the only host-specific
+    // interaction left is the click action (zone-click event). `pageId`, when
+    // given, is resolved to a 1-based page number so the component only renders
+    // the annotations on the current page; without it the zones are rendered
+    // page-agnostically (single-image viewers, e.g. measureBasedView).
+    setAnnotationsData: function(annotations, pageId) {
 
         var me = this;
         if (!me.webComponent) return;
 
-        // reset the shapes group the host filter iterates over
-        me.shapes.add('annotations', []);
+        var page = (pageId != null) ? me.pageNumberById(pageId) : NaN;
+        var pageVal = (typeof page === 'number' && !isNaN(page)) ? page : null;
 
-        var data = [];
+        me._annotationZones = {};
+
+        // one entry per annotation: its uri (to preload the tooltip) and the
+        // zone keys built for its regions (so the tooltip can be written to all).
+        var annoRecs = [];
 
         if (annotations && typeof annotations.each === 'function') {
             annotations.each(function(annotation) {
 
+                var annoId = annotation.get('id');
+                var title = annotation.get('title');
+                var uri = annotation.get('uri');
+                var categories = annotation.get('categories');
+                var priority = annotation.get('priority');
+                var fn = annotation.get('fn');
                 var plist = Ext.Array.toArray(annotation.get('plist'));
 
-                // keep me.shapes in sync for annotationFilterChanged / getShapes
-                Ext.Array.push(me.shapes.get('annotations'), plist);
-
-                data.push({
-                    idPrefix: me.id,
-                    id: annotation.get('id'),
-                    title: annotation.get('title'),
-                    uri: annotation.get('uri'),
-                    categories: annotation.get('categories'),
-                    priority: annotation.get('priority'),
-                    fn: annotation.get('fn'),
-                    plist: plist,
-                    tooltip: ''
+                var zoneKeys = [];
+                Ext.Array.each(plist, function(shape) {
+                    var rectId = shape.id;
+                    var key = 'annotation:' + me.id + '_' + rectId + ':' + annoId;
+                    var innerClass = ('annotIcon ' + (categories || '') + ' '
+                        + (priority || '') + ' ' + (shape.type || ''))
+                        .replace(/\s+/g, ' ').trim();
+                    me._annotationZones[key] = {
+                        type: 'annotation',
+                        page: pageVal,
+                        ulx: shape.ulx, uly: shape.uly, lrx: shape.lrx, lry: shape.lry,
+                        containerClass: 'annotation',
+                        innerClass: innerClass,
+                        group: 'annotation:' + me.id + '_' + rectId,
+                        title: title,
+                        tooltip: '',
+                        fn: fn,
+                        dataId: annoId,
+                        // Generic filter tokens for the component's hidden-filters
+                        // mechanism: the annotation's category + priority ids. The
+                        // component treats these as opaque; the CSS classes for the
+                        // icon are carried separately in innerClass.
+                        filters: ((categories || '') + ' ' + (priority || '')).replace(/\s+/g, ' ').trim()
+                    };
+                    zoneKeys.push(key);
                 });
+
+                annoRecs.push({ uri: uri, zoneKeys: zoneKeys });
             });
         }
 
         // Preload each annotation's server-rendered tooltip HTML up front so the
-        // component can render the tooltip itself on hover (push model: the host
-        // sends the data, the component renders it). All tooltips for the page
-        // are fetched in parallel and the annotations-data is pushed once they
-        // have all resolved. A safety-net timeout pushes whatever resolved so a
-        // single failed request never permanently hides the page's annotations.
-        var pending = data.length;
+        // component can render the tooltip itself on hover. All tooltips are
+        // fetched in parallel and zones-data is pushed once they have all
+        // resolved. A safety-net timeout pushes whatever resolved so a single
+        // failed request never permanently hides the page's annotations.
+        var pending = annoRecs.length;
         var pushed = false;
         var pushData = function() {
             if (pushed) return;
             pushed = true;
-            me.webComponent.setAttribute('annotations-data', JSON.stringify(data));
+            me.pushZonesData();
         };
 
         if (pending === 0) { pushData(); return; }
 
-        data.forEach(function(rec) {
+        annoRecs.forEach(function(rec) {
             window.doAJAXRequest('data/xql/getAnnotation.xql',
                 'GET',
                 {
@@ -547,7 +590,9 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     edition: EdiromOnline.getApplication().activeEdition
                 },
                 function(response) {
-                    rec.tooltip = response.responseText;
+                    rec.zoneKeys.forEach(function(k) {
+                        if (me._annotationZones[k]) me._annotationZones[k].tooltip = response.responseText;
+                    });
                     pending--;
                     if (pending === 0) pushData();
                 }
@@ -558,31 +603,35 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         setTimeout(pushData, 8000);
     },
 
-    // Shows or hides the already-pushed annotation overlays via the boolean
-    // `show-annotations` attribute, without discarding the annotations-data.
-    setShowAnnotations: function(show) {
+    // Shows or hides a whole zone TYPE (e.g. 'annotation', 'measure') via the
+    // `visible-types` attribute, without discarding the pushed zones-data. The
+    // component renders only the types currently in the set, so toggling is a
+    // pure visibility switch (no re-fetch / re-push of the data).
+    setTypeVisible: function(type, visible) {
         var me = this;
         if (!me.webComponent) return;
-        me.webComponent.setAttribute('show-annotations', show ? 'true' : 'false');
+        me._visibleTypeSet = me._visibleTypeSet || {};
+        if (visible) me._visibleTypeSet[type] = true;
+        else delete me._visibleTypeSet[type];
+        me.webComponent.setAttribute('visible-types', JSON.stringify(Object.keys(me._visibleTypeSet)));
     },
 
-    // Pushes the active category/priority filter to the component (push model).
-    // The component hides annotation badges whose category/priority ids are not
-    // in the visible sets, without re-pushing annotations-data. `visibleCategories`
-    // and `visiblePriorities` are the same arrays the host's legacy
-    // annotationFilterChanged builds (['undefined'] = no such taxonomy = show all,
-    // [] = nothing checked = hide all).
-    setAnnotationFilter: function(visibleCategories, visiblePriorities) {
+    // Pushes the active annotation filter to the component (push model) as a
+    // single generic `hidden-filters` set. `hiddenFilters` is the union of the
+    // taxonomy tokens the user has UNCHECKED (unchecked categories + unchecked
+    // priorities); the component hides any annotation carrying one of them. An
+    // absent taxonomy simply contributes nothing, so "no filter" is the empty
+    // set and "hide all" is every token — no special sentinels needed.
+    setAnnotationFilter: function(hiddenFilters) {
         var me = this;
         if (!me.webComponent) return;
-        me.webComponent.setAttribute('visible-categories', JSON.stringify(Ext.Array.toArray(visibleCategories)));
-        me.webComponent.setAttribute('visible-priorities', JSON.stringify(Ext.Array.toArray(visiblePriorities)));
+        me.webComponent.setAttribute('hidden-filters', JSON.stringify(Ext.Array.toArray(hiddenFilters)));
     },
 
-    // Runs the annotation's host click action (set up server-side as the
-    // annotation's `fn`), fired from the component's annotation-click event.
-    onAnnotationClick: function(detail) {
-        eval(detail.fn);
+    // Runs a zone's host click action (set up server-side as the zone's `fn`,
+    // e.g. an annotation link), fired from the component's zone-click event.
+    onZoneClick: function(detail) {
+        if (detail && detail.fn) eval(detail.fn);
     },
 
     getShapes: function(groupName) {

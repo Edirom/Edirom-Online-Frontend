@@ -401,11 +401,11 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }catch(e) {}
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleCategories, visiblePriorities, hiddenFilters) {
         var me = this;
         
         me.viewers.each(function(v) {
-            v.annotationFilterChanged(visibleCategories, visiblePriorities);
+            v.annotationFilterChanged(visibleCategories, visiblePriorities, hiddenFilters);
         });
     }
 });
@@ -650,16 +650,17 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         }
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleCategories, visiblePriorities, hiddenFilters) {
         var me = this;
 
         me.imageViewers.forEach(function(viewer) {
 
-            // Component path: push the filter to the web component, which owns
-            // annotation rendering. Fall back to the legacy ExtJS class toggling
-            // for the non-OSD ImageViewer.
+            // Component path: push the generic hidden-token set to the web
+            // component, which owns annotation rendering. Fall back to the legacy
+            // ExtJS class toggling (visible category/priority arrays) for the
+            // non-OSD ImageViewer.
             if(typeof viewer.setAnnotationFilter === 'function') {
-                viewer.setAnnotationFilter(visibleCategories, visiblePriorities);
+                viewer.setAnnotationFilter(hiddenFilters);
                 return;
             }
 

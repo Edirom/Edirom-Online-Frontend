@@ -169,8 +169,11 @@
  * Measure number badge. Duplicated from facsimile.scss because OpenSeadragon
  * renders measure overlays inside the web component's shadow DOM, which the
  * main document stylesheets (scoped to .ediromWindow) cannot reach.
+ *
  */
 .measureInner {
+    display: inline-block;
+    position: relative;
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 15px;
     padding: 3px 5px 0;
@@ -191,13 +194,16 @@
 }
 
 /*
- * Hover highlight for measures. The `highlighted` class is toggled on
- * mouseenter/mouseleave by OpenSeaDragonViewer; this box-shadow is duplicated
- * (unscoped) from the `.ediromWindow .measure.highlighted` rule in
+ * Hover highlight for measures. Pure CSS `:hover` on the measure overlay
+ * container (the whole measure rectangle), so no JS class toggling is needed —
+ * the already-injected stylesheet produces the effect on its own. The
+ * `highlighted` class is kept as an alias in case the host toggles it directly.
+ * Duplicated (unscoped) from the `.ediromWindow .measure.highlighted` rule in
  * facsimile.scss on the develop branch, which never reaches the web component
  * shadow DOM.
  */
-.measure.highlighted {
+.measure.highlighted,
+.measure:hover {
     box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 

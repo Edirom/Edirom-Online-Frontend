@@ -220,12 +220,17 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // set visible Priorities
         var visiblePriorities = [];
+        // Generic exclusion set for the web component: every taxonomy token the
+        // user has UNCHECKED (unchecked priorities + unchecked categories).
+        var hiddenFilters = [];
 
         // iterate over corresponding menu to get priorities
         if(me.annotPrioritiesMenu != null && me.annotPrioritiesMenu.items.length != 0) {
             me.annotPrioritiesMenu.items.each(function(item) {
                 if(item.checked)
                     visiblePriorities.push(item.priorityId);
+                else
+                    hiddenFilters.push(item.priorityId);
             });
         } else {
             visiblePriorities.push('undefined');
@@ -239,40 +244,41 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             me.annotCategoriesMenu.items.each(function(item) {
                 if(item.checked)
                     visibleCategories.push(item.categoryId);
+                else
+                    hiddenFilters.push(item.categoryId);
             });
         } else {
             visibleCategories.push('undefined');
         }
 
-        me.pageBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
-        me.measureBasedView.annotationFilterChanged(visibleCategories, visiblePriorities);
+        me.pageBasedView.annotationFilterChanged(visibleCategories, visiblePriorities, hiddenFilters);
+        me.measureBasedView.annotationFilterChanged(visibleCategories, visiblePriorities, hiddenFilters);
     },
 
     // Updates the annotation filter menu checkboxes to mirror the given visible
-    // category / priority id arrays. Called when the filter changes outside the
-    // menu (e.g. the image component's visible-categories attribute is set
-    // externally). Child handlers are suppressed (setChecked second arg) so this
-    // does not loop back into annotationFilterChanged.
-    syncAnnotationFilterMenu: function(visibleCategories, visiblePriorities) {
+    // Updates the annotation filter menu checkboxes to mirror the given HIDDEN
+    // token set. Called when the filter changes outside the menu (e.g. the
+    // image component's hidden-filters attribute is set externally). Child
+    // handlers are suppressed (setChecked second arg) so this does not loop back
+    // into annotationFilterChanged.
+    syncAnnotationFilterMenu: function(hiddenFilters) {
         var me = this;
 
-        var sync = function(menu, idField, visible) {
+        var hidden = Array.isArray(hiddenFilters) ? hiddenFilters : [];
+
+        var sync = function(menu, idField) {
             if(menu == null || menu.items.length == 0) return;
 
-            // null / undefined (no filter) and the ['undefined'] sentinel (no such
-            // taxonomy) both mean "show everything" -> check all.
-            var showAll = !Array.isArray(visible)
-                || (visible.length == 1 && visible[0] == 'undefined');
-
+            // A menu item is checked (visible) unless its id is in the hidden set.
             menu.items.each(function(item) {
-                var shouldCheck = showAll || visible.indexOf(item[idField]) !== -1;
+                var shouldCheck = hidden.indexOf(item[idField]) === -1;
                 if(item.checked !== shouldCheck)
                     item.setChecked(shouldCheck, true);
             });
         };
 
-        sync(me.annotPrioritiesMenu, 'priorityId', visiblePriorities);
-        sync(me.annotCategoriesMenu, 'categoryId', visibleCategories);
+        sync(me.annotPrioritiesMenu, 'priorityId');
+        sync(me.annotCategoriesMenu, 'categoryId');
     },
 
     setMovements: function(movements) {
@@ -742,9 +748,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     // Pushes the page's annotations to the image component once (push model);
     // the toolbar button then only toggles their visibility.
-    setAnnotationsData: function(annotations) {
+    setAnnotationsData: function(annotations, pageId) {
         var me = this;
-        me.pageBasedView.setAnnotationsData(annotations);
+        me.pageBasedView.setAnnotationsData(annotations, pageId);
         me.annotationFilterChanged();
     },
 
@@ -756,6 +762,23 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     hideAnnotations: function() {
         var me = this;
         me.pageBasedView.hideAnnotations();
+    },
+
+    // Pushes the page's measures to the image component once (push model); the
+    // toolbar button then only toggles their visibility.
+    setMeasuresData: function(measures, pageId) {
+        var me = this;
+        me.pageBasedView.setMeasuresData(measures, pageId);
+    },
+
+    showMeasures: function() {
+        var me = this;
+        me.pageBasedView.showMeasures();
+    },
+
+    hideMeasures: function() {
+        var me = this;
+        me.pageBasedView.hideMeasures();
     },
 
     getContentConfig: function() {
