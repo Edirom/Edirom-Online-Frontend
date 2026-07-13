@@ -17,6 +17,11 @@ $content_baseFont_size: 14px;
 	
 }
 
+.annotationTip {
+	.x-tip-body {
+		overflow: auto;
+	}
+}
 
 .annotView {
 	margin: 10px;

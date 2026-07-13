@@ -277,7 +277,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         me.bottomBar.add(me.openAllButton);
         
         me.closeAllButton =  Ext.create('Ext.button.Button', {
-            html: '<edirom-icon role="icon" name="eo_close_all" title="' + getLangString('view.window.AnnotationView_CloseAll') + '"></edirom-icon>',
+            html: '<edirom-icon role="button" name="eo_close_all" title="' + getLangString('view.window.AnnotationView_CloseAll') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             disabled: true,
             action: 'closeAll'
@@ -521,12 +521,12 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
 				if (me.image_server === 'digilib') {
 
-                    var shape = tplImg.append(div, [id, digilibBaseParams + "dw=600&amp;amp;dh=600" + digilibSizeParams, hiddenData, label], true);
+                    var shape = tplImg.append(div, [id, digilibBaseParams + "dw=600&amp;dh=600" + digilibSizeParams, hiddenData, label], true);
                     shape.on('dblclick', me.participantClickedGrid, me, {participant: id});
     
                     elems.push(shape);
     
-                    var imgData = Ext.JSON.decode(hiddenData);
+                    var imgData = hiddenData;
     
                     if(imgData.height / imgData.width > 2.0)
                         tall |= true;
@@ -638,7 +638,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
             }else{
 				if (me.image_server === 'digilib') {
-                    shape = tplImg.append(div, [digilibBaseParams + "dw=600&amp;amp;dh=600" + digilibSizeParams, hiddenData, label], true);
+                    shape = tplImg.append(div, [digilibBaseParams + "dw=600&amp;dh=600" + digilibSizeParams, hiddenData, label], true);
     
                 	shape.setWidth('100%');
                 	shape.setHeight('100%');

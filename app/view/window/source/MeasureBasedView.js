@@ -40,6 +40,9 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     measures: null,
 
+    pendingMeasureId: null,
+    pendingMeasureCount: null,
+
     initComponent: function () {
 
         var me = this;
@@ -196,26 +199,41 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }else if(me.imageSet.getCount() > 0)
         */
 
-           me.measureSpinner.setMeasure(me.measures.getAt(0));
+        // If there's a pending measure to be set, use that; otherwise use the first measure
+        if (me.pendingMeasureId !== null) {
+            me.measureSpinner.setMeasure(me.pendingMeasureId, me.pendingMeasureCount);
+            me.pendingMeasureId = null;
+            me.pendingMeasureCount = null;
+        } else {
+            me.measureSpinner.setMeasure(me.measures.getAt(0));
+        }
     },
 
     showMeasure: function(movementId, measureId, measureCount) {
         var me = this;
 
+        // Store the pending measure info to be applied after measures are loaded
+        me.pendingMeasureId = measureId;
+        me.pendingMeasureCount = measureCount;
 
-      // if(me.mdivSelector.getValue() != movementId) {
+        // Check if we're changing the mdiv/movement
+        var mdivChanged = me.mdivSelector.getValue() != movementId;
 
         me.mdivSelector.setValue(movementId);
         me.setMdiv(me.mdivSelector);
-      //  }
 
-        if(typeof me.measures === 'undefined' || me.measures === null) {
+        // Only try to set the measure immediately if the mdiv hasn't changed
+        // If it changed, wait for setMeasures to be called (which handles loading new measures for the mdiv)
+        if (!mdivChanged) {
+            if(typeof me.measures === 'undefined' || me.measures === null) {
+                Ext.defer(me.showMeasure, 300, me, [movementId, measureId, measureCount], false);
+                return;
+            }
 
-            Ext.defer(me.showMeasure, 300, me, [movementId, measureId, measureCount], false);
-            return;
+            me.measureSpinner.setMeasure(measureId, measureCount);
+            me.pendingMeasureId = null;
+            me.pendingMeasureCount = null;
         }
-
-        me.measureSpinner.setMeasure(measureId, measureCount);
     },
 
     setMeasure: function(combo, store, measureCount) {
@@ -603,6 +621,8 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
 
         me.forceComponentLayout();
 
+        var partHeight = 0;
+
         for(var i = 0; i < viewerCount; i++) {
 
             var viewer = me.imageViewers[i];
@@ -628,56 +648,94 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             var width = lrx - ulx;
             var height = lry - uly;
 
-            viewer.showRect(ulx, uly, width, height, true);
+            // remember the tallest slice as this part's representative height
+            if(height > partHeight) partHeight = height;
+
+            // fitHeight=true so each part shows its full staff height at the common zoom.
+            // Alignment depends on position in the row:
+            //   single viewer  → center
+            //   two viewers    → right (left viewer) / left (right viewer)
+            //   three or more  → right (first) / left (last) / center (inner)
+            var alignment;
+            if(viewerCount <= 1) {
+                alignment = 'center';
+            } else if(i === 0) {
+                alignment = 'right';
+            } else if(i === viewerCount - 1) {
+                alignment = 'left';
+            } else {
+                alignment = 'center';
+            }
+            viewer.showRect(ulx, uly, width, height, true, true, alignment);
+        }
+
+        // Split the vertical space between parts proportionally to each part's height. Because each
+        // part is fit to its row height, rowHeight ∝ height makes the resulting zoom identical for
+        // every part (the common zoom ≈ windowHeight / Σ partHeight), and every staff is shown in
+        // full. The image viewers re-fit to the new row height via their onResize handler.
+        if(partHeight > 0) {
+            me.flex = partHeight;
+            if(me.ownerCt) me.ownerCt.updateLayout();
         }
     },
 
     annotationFilterChanged: function(visibleCategories, visiblePriorities) {
         var me = this;
 
-        
-		var image_server = getPreference('image_server');
-
         Ext.Array.each(me.imageViewers, function(viewer) {
             var annotations = viewer.getShapes('annotations');
 
-            var fn = Ext.bind(function(annotation) {
-                var annotDiv = viewer.getShapeElem(annotation.id);
+            // define function to apply to relevant element IDs
+            var fn = Ext.bind(function(annotationId) {
+                var annotDiv = Ext.get(annotationId);
+                var classList = annotDiv.dom.classList;
+                var prioritiesCategories = Ext.Array.toArray(classList);
+                Ext.Array.remove(prioritiesCategories, 'measure');
+                Ext.Array.remove(prioritiesCategories, 'annoIcon');
 
-                var className = annotDiv.dom.className.replace('annotIcon', '').trim();
-                var classes = className.split(' ');
-
+                // create category and priority match variables
                 var matchesCategoryFilter = false;
                 var matchesPriorityFilter = false;
 
                 // iterate over annotation class attribute values to see if they match visibleCategories or visiblePriorities
-                for(var i = 0; i < classes.length; i++) {
-                    matchesCategoryFilter |= Ext.Array.contains(visibleCategories, classes[i]);
-
-                    matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, classes[i]);
+                for(var i = 0; i < prioritiesCategories.length; i++) {
+                    matchesCategoryFilter |= Ext.Array.contains(visibleCategories, prioritiesCategories[i]);
+                    matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, prioritiesCategories[i]);
                 }
 
-                // if filter results are falsey check if visibleCategories are undefined and if so assign true
-                if( matchesCategoryFilter == false & visibleCategories == 'undefined') {
+                // if filter results are false check if visibleCategories are undefined and if so assign true
+                if(matchesCategoryFilter == false && visibleCategories == 'undefined') {
                     matchesCategoryFilter = true;
                 }
-                // if filter results are falsey check if visibleCategories are undefined and if so assign true
-                if( matchesPriorityFilter == false & visiblePriorities == 'undefined') {
+                // if filter results are false check if visiblePriorities are undefined and if so assign true
+                if(matchesPriorityFilter == false && visiblePriorities == 'undefined') {
                     matchesPriorityFilter = true;
                 }
 
+                // depending on match results assign or remove class 'hidden'
                 if(matchesCategoryFilter & matchesPriorityFilter)
                     annotDiv.removeCls('hidden');
                 else
                     annotDiv.addCls('hidden');
             }, me);
 
+            var annotationDivIds = [];
+
             if (typeof annotations !== 'undefined') {
+                // collect IDs of inner annotIcon divs (which carry taxonomy classes) from each annotation's outer div
+                var collectIds = function(annotation) {
+                    var annotDiv = viewer.getShapeElem(annotation.id);
+                    var children = Ext.Array.toArray(annotDiv.dom.childNodes);
+                    Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
+                };
+
                 if(annotations.each)
-                    annotations.each(fn);
+                    annotations.each(collectIds);
                 else
-                    Ext.Array.each(annotations, fn);
+                    Ext.Array.each(annotations, collectIds);
             }
+
+            Ext.Array.each(annotationDivIds, fn);
         });
 
     }

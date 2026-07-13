@@ -27,20 +27,22 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
     init: function() {
         this.control({
             'aboutWindow': {
-                afterlayout : this.onAfterLayout
+                render: this.onWindowRendered,
+                single: true
             }
         });
     },
 
-    onAfterLayout: function(view) {
-
+    onWindowRendered: function(win) {
         var me = this;
 
-        var configController = EdiromOnline.getApplication().getController('ConfigController');
-        var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+        // get backend info from config
+        if(win.initialized) return;
+        win.initialized = true;
 
-        if (view.initialized) return;
-        view.initialized = true;
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+        var backendURL = configController.getConfig('backendURL');
+
 
         // Specify URLs of CITATION.cff files of frontend and backend
         const frontendURL = location.origin + location.pathname.replaceAll("/index.html", "/");
@@ -91,7 +93,7 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             fetchContent(frontendURLcitation),
             fetchContent(backendURLcitation)
         ]).then(function([frontend, backend]) {
-            view.setResult(`
+            win.setResult(`
                 <div class="tei_body">
                     <h1>About Edirom-Online</h1>
                     <section class="teidiv0">
@@ -110,7 +112,7 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                 </div>`);
         }).catch(function(error) {
             console.error('Error fetching CITATION.cff files:', error);
-            view.setResult(`
+            win.setResult(`
                 <div class="tei_body">
                     <h1>About Edirom-Online</h1>
                     <section class="teidiv0">

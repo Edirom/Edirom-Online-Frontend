@@ -7,3 +7,6 @@
 [submodule "resources/js/edirom-audio-player"]
 	path = resources/js/edirom-audio-player
 	url = https://github.com/Edirom/edirom-audio-player.git
+[submodule "resources/js/edirom-navigator"]
+	path = resources/js/edirom-navigator
+	url = https://github.com/Edirom/edirom-navigator.git
