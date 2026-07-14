@@ -204,7 +204,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     xStart = r.x + r.width / 2 - visWidth / 2;
                 }
                 var hRect = me.viewer.viewport.imageToViewportRectangle(xStart, r.y, visWidth, r.height);
-                me.viewer.viewport.fitBounds(hRect, true);
+                me.viewer.viewport.fitBounds(hRect);
                 return;
             }
         }
