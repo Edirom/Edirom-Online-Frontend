@@ -552,7 +552,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.add(win);
 
         win.taskButton = me.taskbar.addTaskButton(win);
-        win.animateTarget = win.taskButton.el;
+        win.animateTarget = Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
+            ? Ext.get('icon_openConcordanceNavigator')
+            : win.taskButton.el;
 
         win.on({
             activate: me.updateActiveWindow,
