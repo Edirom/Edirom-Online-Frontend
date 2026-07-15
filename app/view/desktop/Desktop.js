@@ -152,22 +152,20 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             me.addWindow(thisWindow);
             thisWindow.show();
 
-        }else if(!document.getElementById('icon_openConcordanceNavigator').hasAttribute('pressed')){
-
-            // show concordance navigator window
-            thisWindow.show();
-
-            // set attribute pressed of button for opening concordance navigator in task bar
-            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
-        }
-
-        else{
+        }else if(document.getElementById('icon_openConcordanceNavigator').hasAttribute('pressed')){
 
             // hide concordance navigator window
             thisWindow.hide();
 
             // unset attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+        }else {
+
+            // show concordance navigator window
+            thisWindow.show();
+
+            // set attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
         }
             
     },
