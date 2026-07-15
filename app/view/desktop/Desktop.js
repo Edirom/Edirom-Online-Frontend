@@ -152,7 +152,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             me.addWindow(thisWindow);
             thisWindow.show();
 
-        }else if(thisWindow != me.getActiveWindow()){
+        }else if(!document.getElementById('icon_openConcordanceNavigator').hasAttribute('pressed')){
 
             // show concordance navigator window
             thisWindow.show();
