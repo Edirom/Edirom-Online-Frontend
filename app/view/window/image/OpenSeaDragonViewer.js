@@ -103,10 +103,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     showImage: function(path, width, height, pageId) {
         var me = this;
 
-        // Coerce to numbers: width/height arrive as strings from the image store. String values
-        // leak into getActualRect() and break OpenSeadragon's imageToViewportRectangle (a string
-        // height collapses the rect to zero height), which mis-centres the facsimile when the
-        // viewpoint is restored after re-arranging windows (see issue #250).
         me.imageHeight = Number(height);
         me.imageWidth = Number(width);
         me.imgPath = path;
