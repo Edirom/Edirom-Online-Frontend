@@ -298,6 +298,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         var me = this;
 
         var isSearchWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.search.SearchWindow');
+        var isConcordanceNavigatorWin = (Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator');
 
         var config = {
             iconCls: win.iconCls,
@@ -315,7 +316,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             win: win
         };
 
-        if(isSearchWin) {
+        if(isSearchWin || isConcordanceNavigatorWin) {
             Ext.apply(config, {hidden: true});
         }
 
