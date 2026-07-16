@@ -10,6 +10,10 @@
 		margin-bottom: 1em;
 		margin-right: 3em;
   		margin-left: 3em;
+		/* keep long lines and words from overflowing the right border (#237) */
+		max-width: 100%;
+		overflow-wrap: break-word;
+		word-wrap: break-word;
 	}
 	
 	h1 {
@@ -70,6 +74,21 @@
 		dt {font-weight: bold;}
 		span.hi {font-weight: bold;}
 		li.headless {display: none;}
+
+		/* Definition lists rendered as tables: stable two-column layout (#237) */
+		dl {
+			display: grid;
+			grid-template-columns: minmax(80px, max-content) auto;
+			width: 100%;
+			margin: 0;
+			padding: 0;
+			overflow: auto;
+		}
+		dd {
+			margin-left: 0;
+			overflow-wrap: break-word;
+			word-wrap: break-word;
+		}
 		
 	//todo	
 		span.smallcaps { font-variant: small-caps; }
@@ -224,6 +243,17 @@
 	/*other*/
 		.figure, .stdheader { 
 			border: none; 
+		}
+
+		/* keep figures and their images inside the text column (#237) */
+		figure.figure, div.figure {
+			max-width: 100%;
+			margin: auto;
+		}
+
+		figure.figure img, div.figure img {
+			max-width: 100%;
+			height: auto;
 		}
 
 	
