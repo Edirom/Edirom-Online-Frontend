@@ -103,8 +103,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     showImage: function(path, width, height, pageId) {
         var me = this;
 
-        me.imageHeight = height;
-        me.imageWidth = width;
+        me.imageHeight = Number(height);
+        me.imageWidth = Number(width);
         me.imgPath = path;
         me.imgId = pageId;
 
