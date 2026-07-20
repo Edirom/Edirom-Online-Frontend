@@ -243,18 +243,32 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         if(typeof store.getById !== 'function')
             store = combo.store;
 
+        var id = combo.getValue();
 
+        var measure = store.getById(id);
+
+       
+        if(measure === null && typeof id === 'string' && id.indexOf('measure_') === 0) {
+            var measureNumber = id.substring(id.lastIndexOf('_') + 1);
+            var index = store.findExact('name', measureNumber);
+            if(index !== -1) {
+                measure = store.getAt(index);
+                combo.setValue(measure.get('id'));
+            }
+        }
+
+        // Nothing resolvable: keep the current display instead of blanking the view.
+        if(measure === null){
+        	return;
+        }
+
+        me.measures = measure;
+
+        // Hide viewers only once a measure has been resolved, to avoid a blank window
+        // when an internal/concordance link cannot be mapped to this source.
         me.viewers.each(function(v) {
             v.hide();
         });
-
-        var id = combo.getValue();
-
-        me.measures = store.getById(id);
-
-        if(me.measures === null){
-        	return;
-        }
 
         Ext.Array.each(me.measures.get('measures'), function(m) {
 
