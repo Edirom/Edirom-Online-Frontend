@@ -740,6 +740,7 @@ Ext.define('EdiromOnline.view.window.source.GotoMsg', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id',
+            editable: false,
             cls: 'gotoMovement',
             disabled: isDisabled,
             disabledCls: 'x-disabled'

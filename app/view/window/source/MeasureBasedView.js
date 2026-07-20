@@ -75,6 +75,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id',
+            editable: false,
             margin: '0 0 0 0',
             id: 'mdiv_combo_' + me.id,
             hidden: true,
