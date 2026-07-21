@@ -35,9 +35,12 @@ authors:
   - given-names: Dennis
     family-names: Friedl
     orcid: https://orcid.org/0009-0000-4410-4627
+  - given-names: Francesco
+    family-names: Maccarini
+    orcid: https://orcid.org/0000-0002-0219-5898
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.19450761
+    value: 10.5281/zenodo.21394137
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
 commit: 6c790a3d02680976f319ab4ce3efb218a5601588
@@ -47,5 +50,5 @@ abstract: >-
   analysis of critical musical editions in a digital format,
   particularly in the fields of musicology and philology.
 license: GPL-3.0
-version: v1.3.1
-date-released: 2026-04-14
+version: v1.4.0
+date-released: 2026-07-21
