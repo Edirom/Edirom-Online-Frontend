@@ -17,10 +17,10 @@ Release preparation timeline
 
 Preparations on [zenodo.org](https://zenodo.org)
 - [ ] go to previous version and click "New version"
-- [ ] reserve a DOI -> *insert here*
+- [ ] reserve a DOI -> *insert DOI here*
 - [ ] update version
 - [ ] upload a placeholder file
-- [ ] save draft -> *link here*
+- [ ] save draft -> *insert link to draft here*
 
 Checkout develop branch: `git checkout develop`
 - [ ] check third party dependencies
@@ -29,28 +29,28 @@ Checkout develop branch: `git checkout develop`
 
 Prepare and checkout new release in branch
 - [ ] have a look into release milestone and manage last issues and PRs
-- [ ] `git checkout develop` and `git pull`
+- [ ] `git checkout develop`
+- [ ] `git pull`
 - [ ] `git checkout -b release/vX.Y.Z develop`
 - [ ] update CITATION.cff (date, contributors, version, DOI)
 - [ ] bump version number everywhere (find/replace in code), e.g. in build.xml
-- [ ] `git add [... changed files ...]` and `git commit -m "new version updates"`
+- [ ] `git add [... changed files ...]`
+- [ ] `git commit -m "new version updates"`
 - [ ] build and test it
 
-Checkout main branch: `git checkout main`
-- [ ] `git merge --no-ff release/vX.Y.Z` (release branch into main)
-- [ ] (potentially) resolve merge conflicts and `git continue merge`
-- [ ] `git tag` returns a list of all tags
+Merge release into main branch: 
+- [ ] `git checkout main`
+- [ ] `git merge release/vX.Y.Z`
 - [ ] `git tag -a vX.Y.Z -m "vX.Y.Z"`
-- [ ] (potentially) `git tag` for review
 - [ ] `git push --follow-tags`
+- [ ] `git branch -d release/vX.Y.Z`
 
 Release on [github.com](https://github.com) 
 - [ ] Go to tag vX.Y.Z and click "Release from Tag"
 - [ ] auto-generate the release description
 - [ ] upload tested xar as Edirom-Online-Frontend-X.Y.Z.xar (as release asset)
-- [ ] publish the release on GitHub - * insert link to GitHub release here*
-- [ ] create PR to merge main branch back to develop
-- [ ] remove release/vX.Y.Z branch
+- [ ] publish the release on GitHub - *insert link to GitHub release here*
+- [ ] create PR to merge main branch into develop
 
 Publication on [zenodo.org](https://zenodo.org)
 - [ ] edit publication draft

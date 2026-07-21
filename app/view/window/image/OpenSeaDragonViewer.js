@@ -72,6 +72,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.callParent();
 
         me.on('afterrender', me.initSurface, me, {single: true});
+        me.on('resize', me.onResize, me);
     },
 
     initSurface: function() {
@@ -81,6 +82,13 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             id: me.id + '_openseadragon',
             showNavigator:  false,
             showNavigationControl: false,
+            // Disable OSD's own resize polling: its built-in resize branches either freeze the
+            // pixel scale or re-fit the full (letterboxed) viewport bounds, neither of which
+            // keeps the displayed zone height equal across the horizontal viewers in
+            // measureBasedView. We handle resize ourselves in onResize() and re-fit the stored
+            // zone instead, so every viewer renders its zone at the same height – also after a
+            // viewer is added or removed.
+            autoResize: false,
             tileSources:   []
         });
         me.viewer.addHandler('zoom', function(event){ me.fireEvent('zoomChanged', event.zoom);});
@@ -95,8 +103,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     showImage: function(path, width, height, pageId) {
         var me = this;
 
-        me.imageHeight = height;
-        me.imageWidth = width;
+        me.imageHeight = Number(height);
+        me.imageWidth = Number(width);
         me.imgPath = path;
         me.imgId = pageId;
 
@@ -118,7 +126,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             }]
         });
         me.viewer.addOnceHandler('tile-drawn', function() {
-            if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
+            if(me.rect && me.rect != null) me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight, me.rect.fitHeight);
         });
         me.fireEvent('imageChanged', me, path, pageId);
     },
@@ -154,19 +162,72 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         };
     },
 
-    showRect: function(x, y, width, height, highlight) {
+    showRect: function(x, y, width, height, highlight, fitHeight, alignment) {
 
         var me = this;
         me.rect = {
-            x:x,
-            y:y,
-            width:width,
-            height:height,
-            highlight:highlight
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            highlight: highlight,
+            fitHeight: fitHeight,
+            alignment: alignment || 'center'
         };
 
-        var rect = me.viewer.viewport.imageToViewportRectangle(x, y, width, height);
+        me.fitStoredRect();
+    },
+
+    fitStoredRect: function() {
+
+        var me = this;
+        if(!me.viewer || !me.rect || me.rect == null) return;
+
+        var r = me.rect;
+
+        // fitHeight maps the zone height to the full container height and positions the visible
+        // region horizontally according to r.alignment:
+        //   'left'   – zone's left edge at the left of the viewport  (right-side page in a spread)
+        //   'right'  – zone's right edge at the right of the viewport (left-side page in a spread)
+        //   'center' – zone centred in the viewport (single viewer or inner part)
+        if(r.fitHeight) {
+            var contW = me.getWidth();
+            var contH = me.getHeight();
+            if(contW > 0 && contH > 0) {
+                var visWidth = r.height * (contW / contH);
+                var xStart;
+                if(r.alignment === 'left') {
+                    xStart = r.x;
+                } else if(r.alignment === 'right') {
+                    xStart = r.x + r.width - visWidth;
+                } else {
+                    xStart = r.x + r.width / 2 - visWidth / 2;
+                }
+                var hRect = me.viewer.viewport.imageToViewportRectangle(xStart, r.y, visWidth, r.height);
+                me.viewer.viewport.fitBounds(hRect);
+                return;
+            }
+        }
+
+        var rect = me.viewer.viewport.imageToViewportRectangle(r.x, r.y, r.width, r.height);
         me.viewer.viewport.fitBoundsWithConstraints(rect);
+    },
+
+    // Auto-resize is disabled (see initSurface), so we drive OSD's viewport sizing here.
+    // measureBasedView fires this whenever a viewer is laid out, resized, or its siblings
+    // change because one was added/removed. We sync the viewport to the new container size and
+    // re-fit the stored zone, so the zone keeps the same displayed height across all viewers.
+    onResize: function() {
+
+        var me = this;
+        if(!me.viewer) return;
+
+        var w = me.getWidth();
+        var h = me.getHeight();
+        if(w <= 0 || h <= 0) return;
+
+        me.viewer.viewport.resize(new OpenSeadragon.Point(w, h), false);
+        me.fitStoredRect();
     },
 
     addMeasures: function(shapes) {
