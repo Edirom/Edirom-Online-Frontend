@@ -196,7 +196,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
                 text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
                 menu: menu
             });
-        });
+        },
+
+        me.annotMenu.enable());
     },
 
     annotationFilterChanged: function(item, event) {
@@ -394,11 +396,12 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         });
         me.window.getTopbar().addViewSpecificItem(me.layersMenu, me.id);
 
-        // annotations menu (used for priority and category filter)
+        // annotations menu (used for priority and category filter, disabled until priority and categories are available — see setAnnotationFilter)
         me.annotMenu =  Ext.create('Ext.button.Button', {
             text: getLangString('view.window.source.SourceView_annotationsMenu'),
             indent: false,
             cls: 'menuButton',
+            disabled: true,
             menu : {
                 items: [  ]
             }
@@ -716,6 +719,7 @@ Ext.define('EdiromOnline.view.window.source.GotoMsg', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id',
+            editable: false,
             cls: 'gotoMovement',
             disabled: isDisabled,
             disabledCls: 'x-disabled'
