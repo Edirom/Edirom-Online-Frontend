@@ -24,6 +24,10 @@ jobs:
       - name: Build Frontend xar with Dockerfile
         run: |
           docker run --rm -i -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ant
+
+      - name: Rename xar in build-xar
+        run: |
+          mv build-xar/*.xar build-xar/develop.xar
       
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
