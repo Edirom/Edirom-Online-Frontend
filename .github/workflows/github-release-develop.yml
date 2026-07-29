@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Frontend xar with Dockerfile
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
+          docker buildx build --load --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
 
       - name: Copy build-xar from image
         run: |
