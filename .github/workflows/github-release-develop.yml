@@ -23,14 +23,7 @@ jobs:
 
       - name: Build Frontend xar with Dockerfile
         run: |
-          docker buildx build --load --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
-
-      - name: Copy build-xar from image
-        run: |
-          container_id=$(docker create edirom-online-frontend:develop)
-          mkdir -p build-xar
-          docker cp "$container_id:/app/build-xar/." build-xar/
-          docker rm "$container_id"
+          docker run --rm -it -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 
       
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
