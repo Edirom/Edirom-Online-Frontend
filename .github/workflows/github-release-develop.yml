@@ -21,7 +21,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build develop.xar with Dockerfile
+      - name: Build develop.xar with bwbohl/sencha-cmd:2.1.0
         run: |
           docker run --rm  -i -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ant
           sudo chown -R "$(id -u):$(id -g)" build-xar
