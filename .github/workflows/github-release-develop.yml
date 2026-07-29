@@ -21,12 +21,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build Frontend xar with Dockerfile
+      - name: Build develop.xar with Dockerfile
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" -i -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ant
-
-      - name: Rename xar in build-xar
-        run: |
+          docker run --rm  -i -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ant
+          sudo chown -R "$(id -u):$(id -g)" build-xar
           mv build-xar/*.xar build-xar/develop.xar
       
       - name: Create GitHub Release
