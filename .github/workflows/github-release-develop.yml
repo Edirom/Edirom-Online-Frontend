@@ -23,12 +23,21 @@ jobs:
 
       - name: Build Frontend xar with Dockerfile
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
+          docker buildx build --target builder --load --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
 
+     - name: Copy build-xar from image
+        run: |
+          container_id=$(docker create edirom-online-frontend:develop)
+          mkdir -p build-xar
+          docker cp "$container_id:/app/build-xar/." build-xar/
+          docker rm "$container_id"
+      
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: develop
+          overwrite: true
+          prerelease: true
           name: "Development build"
           body: "Automatic release from the develop branch."
           artifacts: build-xar/**/*
