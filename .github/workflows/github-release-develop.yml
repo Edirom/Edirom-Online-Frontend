@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Frontend xar with Dockerfile
         run: |
-          docker run --rm -it -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 
+          docker run --rm -it -v "$GITHUB_WORKSPACE:/app" --name sencha ghcr.io/bwbohl/sencha-cmd:2.1.0 ant
       
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
