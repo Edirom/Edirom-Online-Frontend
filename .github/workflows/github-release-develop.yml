@@ -27,13 +27,18 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" build-xar
           mv build-xar/*.xar build-xar/develop.xar
       
+      - name: Move develop tag
+        run: |
+          git tag -f develop "$GITHUB_SHA"
+          git push origin refs/tags/develop --force
+
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: develop
-          prerelease: true    
-          allowUpdates: true
-          replacesArtifacts: true
           name: "Development build"
           body: "Automatic release from the develop branch."
+          prerelease: true    
+          allowUpdates: true
+          removeArtifacts: true
           artifacts: build-xar/**/*
