@@ -3,7 +3,7 @@ name: Release develop state
 on:
   push:
     branches:
-      - ftr-github-release-develop
+      - develop
 
 jobs:
   release:
