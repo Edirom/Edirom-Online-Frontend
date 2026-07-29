@@ -29,7 +29,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: develop
-          overwrite: true
           prerelease: true
           name: "Development build"
           body: "Automatic release from the develop branch."
