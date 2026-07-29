@@ -29,7 +29,9 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: develop
-          prerelease: true
+          prerelease: true    
+          allowUpdates: true
+          replacesArtifacts: true
           name: "Development build"
           body: "Automatic release from the develop branch."
           artifacts: build-xar/**/*
