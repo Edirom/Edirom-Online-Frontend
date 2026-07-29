@@ -269,12 +269,12 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             console.log(storeFields);
         }
 
-        // Legacy fields declared by the backend — hidden by default in favour of taxonomy map
-        // entries when the annotation_hide_legacy_fields preference is true (default). The columns
-        // are still created so the user can re-enable them via the grid header menu.
-        // Falls back to [] for older backends that don't send this key, or when pref is false.
-        const hideLegacyFields = getPreference('annotation_hide_legacy_fields', true) === 'true';
-        const legacyFields = hideLegacyFields && me.data && me.data.legacyFields ? me.data.legacyFields : [];
+        // The flattened legacy fields are only delivered when the backend could not express the
+        // document's classification as taxonomy fields. Their absence is the signal to drop the
+        // columns entirely — there is no data behind them.
+        const storeFieldNames = storeFields.map(field =>
+            typeof field === 'string' ? field : field.name);
+        const legacyColumns = ['priority', 'categories'];
 
         // default columns configuration
         var columns = [
@@ -307,18 +307,17 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 header: getLangString('view.window.AnnotationView_Priority') + ' (legacy)',
                 dataIndex: 'priority',
                 flex: 1,
-                filter: true,
-                hidden: legacyFields.includes('priority')
+                filter: true
             },
             {
                 header: getLangString('view.window.AnnotationView_Category') + ' (legacy)',
                 dataIndex: 'categories',
                 flex: 2,
-                filter: true,
-                hidden: legacyFields.includes('categories')
+                filter: true
             }
 
-        ];
+        ].filter(column =>
+            !legacyColumns.includes(column.dataIndex) || storeFieldNames.includes(column.dataIndex));
 
         // save existing dataIndex entries as column names
         const existingColumnNames = columns.map(column =>
@@ -326,7 +325,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
 
         //iterate over storeFields to create missing grid columns
         storeFields.forEach(field => {
-            if (legacyFields.includes(typeof field === 'string' ? field : field.name)) return;
             if (!existingColumnNames.includes(typeof field === 'string' ? field : field.name)) {
                 // if existingColumnNames does not include the value of field or field.name
                 // create fieldObject
