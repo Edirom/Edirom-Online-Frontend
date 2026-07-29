@@ -25,7 +25,7 @@ jobs:
         run: |
           docker buildx build --target builder --load --platform linux/amd64,linux/arm64 -t edirom-online-frontend:develop -f Dockerfile .
 
-     - name: Copy build-xar from image
+      - name: Copy build-xar from image
         run: |
           container_id=$(docker create edirom-online-frontend:develop)
           mkdir -p build-xar
