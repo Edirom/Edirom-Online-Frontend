@@ -85,7 +85,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             'GET',
             {
                 uri: view.uri,
-                lang: getPreference('application_language')//TODO lang
+                lang: getPreference('application_language'), //TODO lang
+                mode: 'taxonomies'
             },
             Ext.bind(function(response){
                 var me = this;
@@ -243,7 +244,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 'GET',
                 {
                     uri: view.uri,
-                    pageId: pageId
+                    pageId: pageId,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var me = this;
