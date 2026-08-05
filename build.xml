@@ -73,7 +73,7 @@
 
     <target name="inject-properties">
         <!-- copy app.js to build dir -->
-        <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true"/>
+        <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true">
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
                 <filter token="backend.path" value="${backend.path}"/>
