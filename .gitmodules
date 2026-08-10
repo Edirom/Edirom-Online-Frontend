@@ -13,3 +13,6 @@
 [submodule "resources/js/edirom-concordance-navigator"]
 	path = resources/js/edirom-concordance-navigator
 	url = https://github.com/Edirom/edirom-concordance-navigator
+[submodule "resources/js/edirom-qr-code-scanner"]
+	path = resources/js/edirom-qr-code-scanner
+	url = https://github.com/Edirom/edirom-qr-code-scanner
