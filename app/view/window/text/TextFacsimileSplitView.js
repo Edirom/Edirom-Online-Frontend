@@ -44,9 +44,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.image_server = getPreference('image_server');
     	
     	if(me.image_server === "openseadragon") {
-            me.imageViewer = Ext.create(
-                "EdiromOnline.view.window.image.OpenSeaDragonViewer",
-            );
+            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
         }else{
     		me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
     	}
@@ -80,8 +78,8 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         me.callParent();
         
-        me.on('afterrender', this.createToolbarEntries, me, {single: true});
-        me.window.on('loadInternalLink', this.loadInternalId, me);
+        me.on('afterrender', me.createToolbarEntries, me, {single: true});
+        me.window.on('loadInternalLink', me.loadInternalId, me);
     },
 
     createToolbarEntries: function() {
@@ -116,22 +114,51 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.bottomBar.add(me.pageSpinner);
     },
 
-    checkGlobalAnnotationVisibility: function(visible) {
+    checkGlobalVisibility: function(type) {
+        
+        // TODO: align with checkGlobalVisibility in SourceView.js
+
+        var me = this;
+        
+        // If: measures visibility was set locally, do nothing
+        if(me[type+'VisibilitySetLocaly']) return;
+        
+        // Otherwise: check local visibility state and decide on next visibility state        
+        // only if local state is null (case in which window does not override global) fire event with global visibility
+        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
+        if(localState === null) {
+            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+            me[type+'Visible'] = visible;
+            me.fireEvent(type+'VisibilityChange', me, visible);
+        }
+
+    },
+
+    /*
+    checkGlobalAnnotationsVisibility: function(visible) {
         
         var me = this;
         
         if(me.annotationsVisibilitySetLocaly) return;
         
         me.annotationsVisible = visible;
-        if(typeof me.toggleAnnotationVisibility != 'undefined')
-            me.toggleAnnotationVisibility.setChecked(visible, true);
+        if(typeof me.toggleAnnotationsVisibility != 'undefined')
+            me.toggleAnnotationsVisibility.setChecked(visible, true);
         
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)
             me.showAnnotations();
         else
             this.fireEvent('annotationsVisibilityChange', me, visible);
+
+        // set pressed state of toggle button in taskbar
+        if(visible){
+            document.getElementById('icon_toggleAnnotations').setAttribute('pressed', '');
+        } else {
+            document.getElementById('icon_toggleAnnotations').removeAttribute('pressed');
+        }
     },
+    */
 
     toggleAnnotations: function(item, state) {
         var me = this;
@@ -271,7 +298,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
 
-        me.toggleAnnotationVisibility = Ext.create('Ext.menu.CheckItem', {
+        me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
             text: getLangString('view.window.text.TextView_showAnnotations'),
@@ -283,7 +310,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             indent: false,
             menu : {
                 items: [
-                    me.toggleAnnotationVisibility
+                    me.toggleAnnotationsVisibility
                 ]
             }
         });

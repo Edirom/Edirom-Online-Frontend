@@ -7,3 +7,5 @@ build-euryanthe
 local.properties
 .env
 sencha-error-*
+.git/
+.github/

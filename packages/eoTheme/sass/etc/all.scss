@@ -1,5 +1,9 @@
 @import 'webfonts.scss';
+@import 'global.scss';
 @import 'mixins.scss';
+@import 'searchWindow.scss';
+
+
 
 /*Edirom*/
 @import 'facsimile.scss';
@@ -19,4 +23,4 @@
 @import 'annotation.scss';
 
 /*renderingView (Verovio)*/
-@import 'renderingViewContent.scss'
+@import 'renderingViewContent.scss';

@@ -39,6 +39,11 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
         if(win.initialized) return;
         win.initialized = true;
 
+        // get backend info from config
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+		var backendURL = configController.getConfig('backendURL');
+		var backendPath = configController.getConfig('backendPath');
+
         window.doAJAXRequest('data/xql/getHelp.xql',
             'GET', 
             {
@@ -46,7 +51,11 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
                 idPrefix: win.id
             },
             Ext.bind(function(response){
-                win.setContent(response.responseText);
+
+                var windowContent = response.responseText;
+
+                // set window content
+                win.setContent(windowContent);
             }, me)
         );
     }

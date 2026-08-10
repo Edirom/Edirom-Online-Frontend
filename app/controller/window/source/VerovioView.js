@@ -63,24 +63,12 @@ Ext.define('EdiromOnline.controller.window.source.VerovioView', {
 	},
 
 	movementsLoaded: function (movements, view) {
-		view.setMovements(movements);
+		view.setMovements(movements); 
 	},
 
 	onGotoMeasureByName: function (view, measure, movementId) {
-		var me = this;
-		
-		window.doAJAXRequest('data/xql/getMeasurePage.xql',
-            'GET', 
-            {
-                id: view.uri,
-				measure: measure,
-				movementId: movementId
-            },
-            Ext.bind(function(response){
-                var data = response.responseText;
-				this.gotoMeasure(Ext.JSON.decode(data)[0], view);
-            }, me)
-        );
+		// Delegate to the view to properly access the verovioRenderer element inside the iframe
+		view.gotoMeasureByAttributes(measure, movementId);
 	},
 
 	onGotoMeasure: function (view, measureId) {

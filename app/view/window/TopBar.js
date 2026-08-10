@@ -37,7 +37,7 @@ Ext.define('EdiromOnline.view.window.TopBar', {
         me.viewSpecificItems = new Ext.util.MixedCollection();
         me.viewToMenuItem = new Ext.util.MixedCollection();
 
-        var initViewText = getLangString('view.window.TobBar_View');
+        var initViewText = getLangString('view.window.TopBar_View');
         var views = [];
 
         me.viewSwitchMenu = Ext.create('Ext.menu.Menu', {
@@ -49,14 +49,6 @@ Ext.define('EdiromOnline.view.window.TopBar', {
             indent: false,
             cls: 'menuButton',
             menu: me.viewSwitchMenu
-        });
-
-        me.helpButton = Ext.create('Ext.button.Button', {
-            id: this.id + '_helpButton',
-            text: '?',
-            //indent: false,
-            enableToggle: true,
-            handler: Ext.bind(me.showViewSpecificHelp, me)
         });
 
         me.spaceAfterGenItems = Ext.create('Ext.toolbar.Spacer',{ xtype: 'tbspacer',
@@ -71,8 +63,7 @@ Ext.define('EdiromOnline.view.window.TopBar', {
             me.viewSwitch,
             me.spaceAfterGenItems/*, TODO
             me.spaceAfterViewItems,
-            '->',
-            me.helpButton*/
+            '->'*/
         ];
 
         me.viewSwitch.hide();

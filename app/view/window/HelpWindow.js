@@ -38,13 +38,10 @@ Ext.define('EdiromOnline.view.window.HelpWindow', {
     maximizable: false,
     closable: true,
     shadow: false,
-
     layout: 'fit',
     border: 0,
     bodyBorder: false,
-
-    padding: 0,
-    
+    padding: 0,    
     bodyPadding: '0',
 
     cls: 'ediromWindow helpWindow',
@@ -73,6 +70,6 @@ Ext.define('EdiromOnline.view.window.HelpWindow', {
     }, 
     
     close: function() {
-        this.hide();
+        this.destroy();
     }
 });
