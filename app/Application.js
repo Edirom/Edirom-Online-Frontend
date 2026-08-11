@@ -187,6 +187,13 @@ Ext.define('EdiromOnline.Application', {
         var workParam = me.getURLParameter('work');
         if(workParam !== null)
             me.activeWork = workParam;
+
+        var connectionParam = me.getURLParameter('connection');
+        // connection requires work (hierarchy: edition > work > connection)
+        if (connectionParam !== null && workParam !== null)
+            me.activeConnection = connectionParam;
+        else
+            me.activeConnection = null;
         
         window.doAJAXRequest('data/xql/getWorkID.xql',
             'GET', 
