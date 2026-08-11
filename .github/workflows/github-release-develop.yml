@@ -29,13 +29,13 @@ jobs:
       
       - name: Move develop tag
         run: |
-          git tag -f develop "$GITHUB_SHA"
-          git push origin refs/tags/develop --force
+          git tag -f dev "$GITHUB_SHA"
+          git push origin refs/tags/dev --force
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          tag: develop
+          tag: dev
           name: "Development build"
           body: "Automatic release from the develop branch."
           prerelease: true    
