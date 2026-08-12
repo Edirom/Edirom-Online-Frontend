@@ -18,6 +18,9 @@
     <property name="backend.path" value="/exist/apps/Edirom-Online-Backend/"/>
     <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
+    <!-- info for WebSocket -->
+    <property name="ws.url" value=""/>
+
     <!-- other properties -->
     <property name="project.version" value="1.4.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
@@ -78,12 +81,20 @@
         <delete file="${build.dir}/app-temp.js"/>
         <!-- Copy CITATION.cff to resources -->
         <copy file="${basedir}/CITATION.cff" tofile="${build.dir}/resources/CITATION.cff" overwrite="true"/>
+        <echo message="DEBUG: Injecting config.json properties..."/>
+        <echo message="DEBUG: backend.url = ${backend.url}"/>
+        <echo message="DEBUG: backend.path = ${backend.path}"/>
+        <echo message="DEBUG: ws.url = [${ws.url}]"/>
         <copy file="${basedir}/config.json" tofile="${build.dir}/config.json" overwrite="true">
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
                 <filter token="backend.path" value="${backend.path}"/>
+                <filter token="ws.url" value="${ws.url}"/>
             </filterset>
         </copy>
+        <echo message="DEBUG: Built config.json content:"/>
+        <loadfile property="built.config.content" srcFile="${build.dir}/config.json"/>
+        <echo message="${built.config.content}"/>
     </target>
 
     <target name="copy-xar-resources">

@@ -26,6 +26,7 @@ Ext.define('EdiromOnline.controller.ConfigController', {
 
             this.config = await response.json();
             console.info('config.json loaded.');
+            console.info('DEBUG: Full config:', JSON.stringify(this.config));
 
             if (callback) {
                 callback.call(scope || this, this.config);
