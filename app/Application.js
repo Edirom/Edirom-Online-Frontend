@@ -65,6 +65,7 @@ Ext.define('EdiromOnline.Application', {
     
     activeEdition: '',
     activeWork: '', 
+    activeConnection: null,
     
     init: function () {
         
