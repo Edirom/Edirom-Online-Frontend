@@ -75,6 +75,7 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id',
+            editable: false,
             margin: '0 0 0 0',
             id: 'mdiv_combo_' + me.id,
             hidden: true,
@@ -243,18 +244,44 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         if(typeof store.getById !== 'function')
             store = combo.store;
 
+        var id = combo.getValue();
 
+        var measure = store.getById(id);
+
+        // Fallback for concordance / internal links:
+        // Single-part sources (e.g. parts prints or arrangements) store the real measure
+        // xml:id, while the concordance references a virtual id of the form
+        // 'measure_<mdivId>_<measureNumber>'. This branch is only entered when the id did
+        // not resolve directly (measure === null) AND it looks like such a virtual id
+        // (a string starting with 'measure_'). We then recover the measure by its trailing
+        // number, matched against the store's 'name' field, and sync the combo to the
+        // resolved record so the spinner shows the real measure number.
+        if(measure === null && typeof id === 'string' && id.indexOf('measure_') === 0) {
+            var measureNumber = id.substring(id.lastIndexOf('_') + 1);
+            var index = store.findExact('name', measureNumber);
+            if(index !== -1) {
+                measure = store.getAt(index);
+                combo.setValue(measure.get('id'));
+            } else {
+                console.warn('MeasureBasedView.setMeasure: could not resolve virtual measure id "' + id +
+                    '" (measure number "' + measureNumber + '" not found in the current mdiv store).');
+            }
+        }
+
+        // Nothing resolvable: keep the current display instead of blanking the view.
+        if(measure === null){
+            console.warn('MeasureBasedView.setMeasure: measure id "' + id + '" could not be resolved to a ' +
+                'measure in this source; keeping the current display.');
+        	return;
+        }
+
+        me.measures = measure;
+
+        // Hide viewers only once a measure has been resolved, to avoid a blank window
+        // when an internal/concordance link cannot be mapped to this source.
         me.viewers.each(function(v) {
             v.hide();
         });
-
-        var id = combo.getValue();
-
-        me.measures = store.getById(id);
-
-        if(me.measures === null){
-        	return;
-        }
 
         Ext.Array.each(me.measures.get('measures'), function(m) {
 
