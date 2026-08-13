@@ -303,7 +303,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         }else {
             me.imageViewer.showImage(me.activePage.get('path'),
-                me.activePage.get('width'), me.activePage.get('height'));
+                me.activePage.get('width'), me.activePage.get('height'), id);
         }
 
 
