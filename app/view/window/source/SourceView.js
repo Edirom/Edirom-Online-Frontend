@@ -165,6 +165,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         }
 
+        if(priorities.getCount() == 0 && categories.getCount() == 0) return;
+
         if(priorities.data.length > 0) {
             var prioritiesItems = [];
             priorities.each(function(priority) {
@@ -208,6 +210,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
                 menu: me.annotCategoriesMenu
             });
         }
+
+        me.annotMenu.enable();
 
         // Push the actual category/priority id lists to the viewer right away so
         // the component starts with the real filter (all visible) instead of the
@@ -448,11 +452,12 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         });
         me.window.getTopbar().addViewSpecificItem(me.layersMenu, me.id);
 
-        // annotations menu (used for priority and category filter)
+        // annotations menu (used for priority and category filter, disabled until priority and categories are available — see setAnnotationFilter)
         me.annotMenu =  Ext.create('Ext.button.Button', {
             text: getLangString('view.window.source.SourceView_annotationsMenu'),
             indent: false,
             cls: 'menuButton',
+            disabled: true,
             menu : {
                 items: [  ]
             }
@@ -839,6 +844,7 @@ Ext.define('EdiromOnline.view.window.source.GotoMsg', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id',
+            editable: false,
             cls: 'gotoMovement',
             disabled: isDisabled,
             disabledCls: 'x-disabled'

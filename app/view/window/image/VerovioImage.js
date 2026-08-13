@@ -35,7 +35,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		var me = this;
 
 		var configController = EdiromOnline.getApplication().getController('ConfigController');
-		var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+		var backendURL = configController.getConfig('backendURL');
 
 		var html = `<html>
         		<head>
@@ -43,8 +43,8 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 					<script
 						src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 					<script
-						src="https://code.jquery.com/jquery-3.5.1.min.js"
-						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+						src="https://code.jquery.com/jquery-4.0.0.min.js"
+						integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao="
 						crossorigin="anonymous"></script>
 				<!-- Edirom Verovio Renderer Component -->
 				<script

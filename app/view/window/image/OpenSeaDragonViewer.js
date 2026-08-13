@@ -99,6 +99,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.callParent();
 
         me.on('afterrender', me.initSurface, me, {single: true});
+        me.on('resize', me.onResize, me);
     },
 
     initSurface: function() {
@@ -121,7 +122,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             }
 
             if (me.rect && me.rect != null) {
-                me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, me.rect.highlight);
+                me.fitStoredRect();
             }
         });
 
@@ -387,25 +388,60 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         return me.webComponent.getImageViewportRect();
     },
 
-    showRect: function(x, y, width, height, highlight) {
+    showRect: function(x, y, width, height, highlight, fitHeight, alignment) {
 
         var me = this;
         me.rect = {
-            x:x,
-            y:y,
-            width:width,
-            height:height,
-            highlight:highlight
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            highlight: highlight,
+            fitHeight: fitHeight,
+            alignment: alignment || 'center'
         };
 
-        if (me.webComponent) {
-            // Drive the component declaratively via the 'fitrect' attribute. A
-            // monotonic nonce is appended so that jumping to the SAME region
-            // again still changes the attribute value and re-fires the handler.
-            me._fitNonce = (me._fitNonce || 0) + 1;
-            me.webComponent.setAttribute('fitrect',
-                [x, y, width, height, me._fitNonce].join(','));
+        me.fitStoredRect();
+    },
+
+    fitStoredRect: function() {
+
+        var me = this;
+        if(!me.webComponent || !me.rect) return;
+
+        var r = me.rect;
+        var x = r.x;
+        var width = r.width;
+
+        // fitHeight maps the zone height to the full container height. Expand
+        // the fitted rectangle horizontally to the component's aspect ratio and
+        // align it consistently across adjacent measure viewers.
+        if(r.fitHeight) {
+            var contW = me.getWidth();
+            var contH = me.getHeight();
+            if(contW > 0 && contH > 0) {
+                width = r.height * (contW / contH);
+                if(r.alignment === 'left') {
+                    x = r.x;
+                } else if(r.alignment === 'right') {
+                    x = r.x + r.width - width;
+                } else {
+                    x = r.x + r.width / 2 - width / 2;
+                }
+            }
         }
+
+        // Drive the component declaratively via the 'fitrect' attribute. A
+        // monotonic nonce ensures repeated fits and resize re-fits are applied.
+        me._fitNonce = (me._fitNonce || 0) + 1;
+        me.webComponent.setAttribute('fitrect',
+            [x, r.y, width, r.height, me._fitNonce].join(','));
+    },
+
+    // Re-fit the stored zone after layout changes so measure-based viewers keep
+    // the same displayed staff height when viewers are added or removed.
+    onResize: function() {
+        this.fitStoredRect();
     },
 
     addSVGOverlay: function(overlayId, overlay, name, uri, fn) {

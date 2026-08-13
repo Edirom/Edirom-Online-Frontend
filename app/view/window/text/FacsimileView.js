@@ -49,14 +49,10 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         var image_server = getPreference("image_server");
 
         if (image_server === "openseadragon") {
-            me.imageViewer = Ext.create(
-                "EdiromOnline.view.window.image.OpenSeaDragonViewer",
-            );
+            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
         } else {
             /*TODO: test agains 'digilib'? -> what should be the fallback? */
-            me.imageViewer = Ext.create(
-                "EdiromOnline.view.window.image.ImageViewer",
-            );
+            me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
         }
 
         me.imageViewer.region = "center";
@@ -143,7 +139,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         me.imageViewer.showImage(
             me.activePage.get("path"),
             me.activePage.get("width"),
-            me.activePage.get("height"),
+            me.activePage.get("height")
         );
     },
 
@@ -232,7 +228,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
                     {
                         id: me.id + "_fitFacsimile",
                         text: getLangString(
-                            "view.window.source.SourceView_fitView",
+                            "view.window.source.SourceView_fitView"
                         ),
                         handler: Ext.bind(me.fitFacsimile, me, [], 0),
                     },
@@ -290,7 +286,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
                 width: 121,
                 cls: "pageSpinner",
                 owner: me,
-            },
+            }
         );
 
         me.separator = Ext.create("Ext.toolbar.Separator");
@@ -381,7 +377,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
                     me.gotoChapter,
                     me,
                     chapter.get("pageId"),
-                    true,
+                    true
                 ),
             });
         });
