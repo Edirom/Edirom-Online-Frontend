@@ -220,7 +220,10 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 // Push the data only. The component re-applies its remembered
                 // visibility (_showAnnotations) to the new page's overlays, so
                 // the last show/hide choice carries over to every image.
-                view.setAnnotationsData(annotations, pageId);
+                // `visible` is also passed through for the legacy (non-OSD)
+                // ImageViewer, which has no such memory of its own and must be
+                // told whether to render the overlays right away.
+                view.setAnnotationsData(annotations, pageId, visible);
             }
         );
     },
@@ -271,7 +274,9 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                     data: Ext.JSON.decode(data)
                 });
 
-                view.setMeasuresData(measures, pageId);
+                // `visible` lets the legacy (non-OSD) ImageViewer know whether
+                // to render the overlays immediately (see onLoadAnnotations).
+                view.setMeasuresData(measures, pageId, visible);
             }
         );
     },

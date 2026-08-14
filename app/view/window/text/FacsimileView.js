@@ -21,7 +21,6 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
     extend: "EdiromOnline.view.window.View",
 
     requires: [
-        "EdiromOnline.view.window.image.ImageViewer",
         "EdiromOnline.view.window.image.OpenSeaDragonViewer"
     ],
 
@@ -46,14 +45,9 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         me.addEvents();
 
-        var image_server = getPreference("image_server");
-
-        if (image_server === "openseadragon") {
-            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
-        } else {
-            /*TODO: test agains 'digilib'? -> what should be the fallback? */
-            me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
-        }
+        // Always use the OSD web component; digilib renders through its
+        // buildTileSource digilib branch (see OpenSeaDragonViewer.js).
+        me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
 
         me.imageViewer.region = "center";
 
@@ -171,25 +165,9 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         var image_server = getPreference("image_server");
 
-        if (image_server === "digilib") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 10,
-                maxValue: 400,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-        if (image_server === "openseadragon") {
+        // digilib now also renders through the OSD web component, so it uses
+        // the same viewport zoom-level range as openseadragon.
+        if (image_server === "digilib" || image_server === "openseadragon") {
             me.zoomSlider = Ext.create("Ext.slider.Single", {
                 width: 140,
                 value: 100,
@@ -243,25 +221,9 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         var image_server = getPreference("image_server");
 
-        if (image_server === "digilib") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 10,
-                maxValue: 400,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-        if (image_server === "openseadragon") {
+        // digilib now also renders through the OSD web component, so it uses
+        // the same viewport zoom-level range as openseadragon.
+        if (image_server === "digilib" || image_server === "openseadragon") {
             me.zoomSlider = Ext.create("Ext.slider.Single", {
                 width: 140,
                 value: 100,

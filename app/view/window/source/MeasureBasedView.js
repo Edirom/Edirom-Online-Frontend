@@ -21,7 +21,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
     extend: 'EdiromOnline.view.window.View',
 
     requires: [
-        'EdiromOnline.view.window.image.ImageViewer',
         'EdiromOnline.view.window.image.OpenSeaDragonViewer',
         'Ext.selection.CheckboxModel',
         'Ext.layout.container.Border'
@@ -481,13 +480,9 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         me.owner.owner.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         me.owner.owner.on('overlayVisiblityChange', me.onOverlayVisibilityChange, me);
 
-        var image_server = getPreference('image_server');
-        var viewer = null;
-    	if(image_server === 'openseadragon'){
-    		viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {flex: 1, width: '100%', partLabel: me.partLabel});
-    	}else {
-    		viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {flex: 1, partLabel: me.partLabel});
-    	}
+        // Always use the OSD web component; digilib renders through its
+        // buildTileSource digilib branch (see OpenSeaDragonViewer.js).
+        var viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {flex: 1, width: '100%', partLabel: me.partLabel});
 
         viewer.on('imageChanged', me.onViewerImageChange, me);
 
@@ -562,8 +557,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         var actSystem = 0;
         var lastULX = 0;
 
-        var image_server = getPreference('image_server');
-
         Ext.Array.each(data, function(d) {
 
             var pageId = d['pageId'];
@@ -597,12 +590,9 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             if(typeof me.imageViewers[viewerCount - 1] == 'undefined') {
 
 
-           	var viewer = null;
-       		if(image_server === 'openseadragon'){
-       			viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {height: '100%', flex:1});
-       		} else{
-       			viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {flex: 1});
-       		}
+                // Always use the OSD web component; digilib renders through its
+                // buildTileSource digilib branch (see OpenSeaDragonViewer.js).
+                var viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {height: '100%', flex:1});
 
                 viewer.on('imageChanged', me.onViewerImageChange, me);
 

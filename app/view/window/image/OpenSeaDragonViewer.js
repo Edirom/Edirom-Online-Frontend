@@ -42,6 +42,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     shapes: null,
     partLabel: null,
 
+    // Host-side cache of pushed layer overlays (layerId -> raw svg string) and
+    // currently visible layer ids, mirrored onto the component's
+    // layers-data/visible-layers attributes. See addSVGOverlay/removeSVGOverlay.
+    _layersData: null,
+    _visibleLayers: null,
+
     initComponent: function () {
 
         var me = this;
@@ -90,6 +96,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'zone="" ' +
                   'visible-types="[]" ' +
                   'hidden-filters="[]" ' +
+                  'layers-data="{}" ' +
+                  'visible-layers="[]" ' +
                   'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
@@ -176,9 +184,28 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.rect = null;
     },
 
-    // Builds a IIIF level2 tile source descriptor for a single image.
+    // Builds a tile source descriptor for a single image: a IIIF level2
+    // descriptor by default, or (image_server=digilib) a plain digilib
+    // descriptor that the web component resolves into real region-tiled
+    // requests against the digilib Scaler API (see edirom-image-viewer.js
+    // _resolveTileSource - there is no IIIF/DZI endpoint to rely on there).
     buildTileSource: function(path, width, height) {
         var me = this;
+
+        // An already-absolute http(s) path points at some OTHER external image
+        // server (e.g. an external IIIF host), never this edition's own digilib
+        // Scaler - appending digilib's ?wx=/dw=/mo= query syntax to it breaks
+        // that server (observed: infinite redirect loop against a Staatsbibliothek
+        // IIIF endpoint). Only relative paths are resolved against the digilib
+        // Scaler; absolute URLs always fall through to the IIIF branch below.
+        if(getPreference('image_server') === 'digilib' && !path.startsWith("http")) {
+            return {
+                type: 'digilib',
+                url: me.imagePrefix + path,
+                width: Number(width),
+                height: Number(height)
+            };
+        }
 
         var iiifPath = path;
         if(!path.startsWith("http")) {
@@ -444,37 +471,38 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         this.fitStoredRect();
     },
 
+    // Pushes a named SVG layer's raw markup + visibility to the component via
+    // the layers-data/visible-layers attributes (component owns rendering and
+    // the readiness-safe retry - see edirom-image-viewer.js _renderLayers).
     addSVGOverlay: function(overlayId, overlay, name, uri, fn) {
 
         var me = this;
         if (!me.webComponent) return;
 
-        var svgId = me.id + '_' + overlayId;
-        var overlayOSD = me.webComponent.getOverlayById(svgId);
-        if (overlayOSD !== null ) {
-            return;
-        }
+        me._layersData = me._layersData || {};
+        me._visibleLayers = me._visibleLayers || [];
 
         overlay.each(function(overlay){
             if (overlay.get('svg') !== null) {
-                parser = new DOMParser;
-                var overlayXML = parser.parseFromString(overlay.get('svg'), 'text/xml');
-                var svg = overlayXML.documentElement;
-                svg.id = me.id + '_' + overlayId;
-                var x = 0;
-                var y = 0;
-                var width = svg.width.baseVal.value;
-                var height = svg.height.baseVal.value;
-                me.webComponent.addImageOverlay(overlayXML.documentElement, x, y, width, height);
+                me._layersData[overlayId] = overlay.get('svg');
             }
         });
+
+        if (Ext.Array.indexOf(me._visibleLayers, overlayId) === -1) {
+            me._visibleLayers.push(overlayId);
+        }
+
+        me.webComponent.setAttribute('layers-data', Ext.JSON.encode(me._layersData));
+        me.webComponent.setAttribute('visible-layers', Ext.JSON.encode(me._visibleLayers));
     },
 
     removeSVGOverlay: function(overlayId) {
         var me = this;
         if (!me.webComponent) return;
-        var svgId = me.id + '_' + overlayId;
-        me.webComponent.removeOverlay(svgId);
+
+        me._visibleLayers = me._visibleLayers || [];
+        Ext.Array.remove(me._visibleLayers, overlayId);
+        me.webComponent.setAttribute('visible-layers', Ext.JSON.encode(me._visibleLayers));
     },
 
     removeShapes: function(groupName) {

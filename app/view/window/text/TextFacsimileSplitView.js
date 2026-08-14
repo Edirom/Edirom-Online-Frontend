@@ -43,11 +43,9 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             
         me.image_server = getPreference('image_server');
     	
-    	if(me.image_server === "openseadragon") {
-            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
-        }else{
-    		me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
-    	}
+    	// Always use the OSD web component; digilib renders through its
+    	// buildTileSource digilib branch (see OpenSeaDragonViewer.js).
+        me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
 
         me.imageViewer.region = 'center';
 

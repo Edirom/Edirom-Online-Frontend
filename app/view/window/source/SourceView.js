@@ -753,9 +753,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     // Pushes the page's annotations to the image component once (push model);
     // the toolbar button then only toggles their visibility.
-    setAnnotationsData: function(annotations, pageId) {
+    setAnnotationsData: function(annotations, pageId, visible) {
         var me = this;
-        me.pageBasedView.setAnnotationsData(annotations, pageId);
+        me.pageBasedView.setAnnotationsData(annotations, pageId, visible);
         me.annotationFilterChanged();
     },
 
@@ -771,9 +771,9 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     // Pushes the page's measures to the image component once (push model); the
     // toolbar button then only toggles their visibility.
-    setMeasuresData: function(measures, pageId) {
+    setMeasuresData: function(measures, pageId, visible) {
         var me = this;
-        me.pageBasedView.setMeasuresData(measures, pageId);
+        me.pageBasedView.setMeasuresData(measures, pageId, visible);
     },
 
     showMeasures: function() {

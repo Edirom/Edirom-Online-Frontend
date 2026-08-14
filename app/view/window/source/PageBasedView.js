@@ -21,7 +21,6 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     extend: 'EdiromOnline.view.window.View',
 
     requires: [
-        'EdiromOnline.view.window.image.ImageViewer',
         'EdiromOnline.view.window.image.OpenSeaDragonViewer'
     ],
 
@@ -43,13 +42,9 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.addEvents('overlayVisibilityChange');
         me.owner.on('overlayVisiblityChange', me.onOverlayVisibilityChange, me);
 
-    	var image_server = getPreference('image_server');
-
-        if(image_server === 'openseadragon') {
-    	    me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
-    	}else{
-    		me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
-    	}
+        // Always use the OSD web component; digilib renders through its
+        // buildTileSource digilib branch (see OpenSeaDragonViewer.js).
+        me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
 
         this.items = [
             me.imageViewer
@@ -389,8 +384,10 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 width: 100,
                 value: 100,
                 increment: 5,
-                minValue: ( image_server === 'openseadragon' ) ? 90 : 10,
-                maxValue: ( image_server === 'openseadragon' ) ? 700 : 400,
+                // digilib now also renders through the OSD web component, so it
+                // uses the same viewport zoom-level range as 'openseadragon'.
+                minValue: 90,
+                maxValue: 700,
                 checkChangeBuffer: 100,
                 useTips: true,
                 cls: 'zoomSlider',
@@ -470,13 +467,17 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
     // Pushes the page's annotations to the image component once (push model).
     // The pageId lets the component render only the current page's annotations.
-    setAnnotationsData: function(annotations, pageId) {
+    setAnnotationsData: function(annotations, pageId, visible) {
         var me = this;
         if(typeof me.imageViewer.setAnnotationsData === 'function') {
             me.imageViewer.setAnnotationsData(annotations, pageId);
         } else if(typeof me.imageViewer.addAnnotations === 'function') {
-            // legacy digilib ImageViewer: renders directly from the data
-            me.imageViewer.addAnnotations(annotations);
+            // legacy digilib ImageViewer: renders directly from the data and has
+            // no visibility memory of its own, so cache it for showAnnotations()
+            // and only render now if annotations are currently supposed to be visible.
+            me.pendingAnnotations = annotations;
+            if(visible)
+                me.imageViewer.addAnnotations(annotations);
         }
     },
 
@@ -484,6 +485,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var me = this;
         if(typeof me.imageViewer.setTypeVisible === 'function')
             me.imageViewer.setTypeVisible('annotation', true);
+        else if(typeof me.imageViewer.addAnnotations === 'function' && me.pendingAnnotations)
+            me.imageViewer.addAnnotations(me.pendingAnnotations);
     },
 
     // Pushes the page's measures to the image component once (push model),
@@ -491,12 +494,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     // getMeasuresOnPage.xql; each record becomes a renderable zone entry
     // (type:'measure') carrying its number label. The toolbar button then only
     // toggles the 'measure' type's visibility (no re-fetch).
-    setMeasuresData: function(measures, pageId) {
+    setMeasuresData: function(measures, pageId, visible) {
         var me = this;
 
         if(typeof me.imageViewer.setMeasuresData !== 'function') {
             // legacy digilib ImageViewer renders measures directly from the store
-            if(typeof me.imageViewer.addMeasures === 'function')
+            // and has no visibility memory of its own, so cache it for
+            // showMeasures() and only render now if measures should be visible.
+            me.pendingMeasures = measures;
+            if(visible && typeof me.imageViewer.addMeasures === 'function')
                 me.imageViewer.addMeasures(measures);
             return;
         }
@@ -522,6 +528,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var me = this;
         if(typeof me.imageViewer.setTypeVisible === 'function')
             me.imageViewer.setTypeVisible('measure', true);
+        else if(typeof me.imageViewer.addMeasures === 'function' && me.pendingMeasures)
+            me.imageViewer.addMeasures(me.pendingMeasures);
     },
 
     hideMeasures: function() {
