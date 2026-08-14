@@ -125,9 +125,20 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         var me = this;
 
-        // Measure overlays are rendered only by the legacy digilib ImageViewer.
-        // The OpenSeadragon web component handles measures via its zones-data,
-        // so it has no addMeasures method and is skipped here.
+        // OSD web component: push model, mirrors PageBasedView.showMeasures/
+        // hideMeasures - toggling visibility does not need a re-fetch once the
+        // zone data for this page has already been pushed by measuresOnPageLoaded.
+        if(typeof viewer.setTypeVisible === 'function') {
+            if(sourceView.measuresVisible)
+                me.fetchMeasures(uri, pageId, function(measures) {
+                    me.measuresOnPageLoaded(measures, viewer, pageId);
+                });
+            else
+                viewer.setTypeVisible('measure', false);
+            return;
+        }
+
+        // Legacy digilib ImageViewer only: renders measures directly from the store.
         if(typeof viewer.addMeasures !== 'function') return;
 
         viewer.removeShapes('measures');
@@ -163,8 +174,30 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        // Legacy digilib ImageViewer only; the OSD web component handles
-        // measures via zones-data and has no addMeasures method.
+        // OSD web component: push the page's measures as zone entries
+        // (type:'measure'), then show that type. Mirrors
+        // PageBasedView.setMeasuresData / showMeasures.
+        if(typeof viewer.setMeasuresData === 'function') {
+            var list = [];
+            if(measures && typeof measures.each === 'function') {
+                measures.each(function(m) {
+                    list.push({
+                        key: m.get('id'),
+                        pageId: pageId,
+                        ulx: m.get('ulx'),
+                        uly: m.get('uly'),
+                        lrx: m.get('lrx'),
+                        lry: m.get('lry'),
+                        name: m.get('name')
+                    });
+                });
+            }
+            viewer.setMeasuresData(list);
+            viewer.setTypeVisible('measure', true);
+            return;
+        }
+
+        // Legacy digilib ImageViewer only.
         if(typeof viewer.addMeasures === 'function')
             viewer.addMeasures(measures);
     },

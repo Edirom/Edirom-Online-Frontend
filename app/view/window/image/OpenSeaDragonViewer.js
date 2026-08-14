@@ -308,7 +308,12 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     // matching the existing facsimile CSS). Entries are MERGED into the measure
     // zone map (keyed 'measure:<key>') so pushing a single navigation measure
     // does not drop the page's label set and vice-versa.
-    // Record fields: { key, pageId, ulx, uly, lrx, lry, name }.
+    // Record fields: { key, pageId, ulx, uly, lrx, lry, name }. `pageId` is
+    // resolved to a 1-based page number so the component only renders a
+    // measure's overlay on its own page; when it can't be resolved (e.g.
+    // single-image viewers like the measure-based view's HorizontalMeasureViewer,
+    // which never loads a page sequence via setImages) the zone is pushed
+    // page-agnostically instead, mirroring setAnnotationsData.
     setMeasuresData: function(measures) {
         var me = this;
         if (!me.webComponent) return;
@@ -322,9 +327,11 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             var hasName = (m.name != null && String(m.name) !== '');
             var name = hasName ? String(m.name)
                 : (existing && existing.label != null ? existing.label : '');
+            var page = me.pageNumberById(m.pageId);
+            var pageVal = (typeof page === 'number' && !isNaN(page)) ? page : null;
             me._measureZones[key] = {
                 type: 'measure',
-                page: me.pageNumberById(m.pageId),
+                page: pageVal,
                 ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry,
                 containerClass: 'measure',
                 innerClass: (name === '' ? 'measureInnerEmpty' : 'measureInner'),
@@ -447,7 +454,15 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             var contW = me.getWidth();
             var contH = me.getHeight();
             if(contW > 0 && contH > 0) {
-                width = r.height * (contW / contH);
+                // Never go narrower than the actual content width: when the
+                // container is proportionally taller/narrower than the zone
+                // (common with many measures per row, e.g. a high measure
+                // count), this ratio comes out smaller than r.width. Using it
+                // as-is would crop away real measures (the alignment offset
+                // below then anchors on the wrong edge, hiding e.g. the first
+                // measure of a right-aligned group). Only ever EXPAND the
+                // rect to fill the container aspect, never shrink it.
+                width = Math.max(r.width, r.height * (contW / contH));
                 if(r.alignment === 'left') {
                     x = r.x;
                 } else if(r.alignment === 'right') {
