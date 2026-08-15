@@ -84,6 +84,12 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 		        uri = uri + "#" + config["internalId"];
 	        }
 
+	        // Audio content opens in its own WinBox popup instead of an ExtJS tab.
+	        if(view.type == "audioView") {
+		        this.application.getController('desktop.Desktop').openAudioView(uri, view.label);
+		        return;
+	        }
+
             views.push(this.createView(view.type, {
                 window:win,
                 type:config.type,
