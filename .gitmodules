@@ -19,3 +19,8 @@
 [submodule "resources/js/edirom-connected-workspace"]
 	path = resources/js/edirom-connected-workspace
 	url = https://github.com/Edirom/edirom-connected-workspace.git
+
+[submodule "mobile"]
+	path = mobile
+	url = https://github.com/DennisFriedl/edirom-mobile
+
