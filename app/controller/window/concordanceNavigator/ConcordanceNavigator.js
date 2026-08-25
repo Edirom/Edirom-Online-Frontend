@@ -36,19 +36,9 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
                 single: true
             }
         });
-        
-        this.control({
-            'concordanceNavigator': {
-                showConnection: this.onShowConnection
-            }
-        });
     },
     
-    onWorkSelected: function(workId) {
-	    //console.log('Werk gewechselt, von Conc registriert!');
-	    //console.log(workId);
-	    
-
+    onWorkSelected: function (workId) {
 	    var me = this;
 	    if(me.navwin != null) {
 	    	var app = me.application;
@@ -65,19 +55,34 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         
         this.navwin = win;
 
-        //win.on('showConnection', me.onShowConnection, me);
-
         var app = me.application;
         app.callFunctionOfEdition(win, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [win], true));
+
+        me.ediromConcordanceNavigator = document.querySelector(`#${win.id}-concordance-navigator`);
+        me.ediromConcordanceNavigator.addEventListener('show-connection-request', function (e) {
+            var plist = e.detail.plist;
+            loadLink(plist, { useExisting: true, onlyExisting: true });
+        });
+        me.ediromConcordanceNavigator.addEventListener('changed-play-pause-status', function (e) {
+            // Or should it's own controller be responsible for this?
+            var newStatus = e.detail.newStatus;
+            var ediromVideoplayer = document.querySelector(`edirom-videoplayer`);
+            if (ediromVideoplayer) {
+                ediromVideoplayer.setAttribute("state", newStatus);
+            }
+        });
+        me.ediromConcordanceNavigator.addEventListener('layout-change', function (e) {
+            win.updateLayout();
+        });
     },
 
-    concordancesLoaded: function(concordanceStore, concordanceWindow) {
-        concordanceWindow.setConcordances(concordanceStore);
-    },
-
-    onShowConnection: function(navigator, plist) {
+    concordancesLoaded: function (concordanceStore, concordanceWindow) {
         var me = this;
-        var linkController = me.application.getController('LinkController');
-        linkController.loadLink(plist, {useExisting: true, onlyExisting: true}); //TODO: in Preferences einbauen; TODO: grid sorting vorerst rausgenommen
+        console.log("Concordances loaded: " + concordanceStore.getCount() + " concordances");
+        let concordanceStoreRaw = [];
+        for (let concordance of concordanceStore.data.items) {
+            concordanceStoreRaw.push(concordance.raw);
+        }
+        me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
     }
 });
