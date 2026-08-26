@@ -16,6 +16,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Edirom Online.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+// Annotation category -> host-supplied icon markup (see issue #271: the
+// edirom-image-viewer component has no icon-system knowledge itself, it just
+// inserts whichever zone.iconHtml this bridge decides to supply).
+var ANNOTATION_ICON_MARKUP = {
+    'annotation.category.beschreibung': '<edirom-icon name="description"></edirom-icon>',
+    'annotation.category.rasurTektur': '<edirom-icon name="ink_eraser"></edirom-icon>'
+};
+
 Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     extend: 'Ext.panel.Panel',
 
@@ -610,12 +619,21 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     var innerClass = ('annotIcon ' + (categories || '') + ' '
                         + (priority || '') + ' ' + (shape.type || ''))
                         .replace(/\s+/g, ' ').trim();
+                    var iconHtml = '';
+                    (categories || '').split(/\s+/).some(function(cat) {
+                        if (ANNOTATION_ICON_MARKUP[cat]) {
+                            iconHtml = ANNOTATION_ICON_MARKUP[cat];
+                            return true;
+                        }
+                        return false;
+                    });
                     me._annotationZones[key] = {
                         type: 'annotation',
                         page: pageVal,
                         ulx: shape.ulx, uly: shape.uly, lrx: shape.lrx, lry: shape.lry,
                         containerClass: 'annotation',
                         innerClass: innerClass,
+                        iconHtml: iconHtml,
                         group: 'annotation:' + me.id + '_' + rectId,
                         title: title,
                         tooltip: '',
