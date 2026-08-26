@@ -45,7 +45,15 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
 
     onTaskbarRendered: function(taskbar) {
         this.taskbars.push(taskbar);
-        /*this.updateLanguageButton();*/
+
+        // Restore global toggle button states from sessionStorage on page load
+        var types = { measures: 'icon_toggleMeasuresGlobally', annotations: 'icon_toggleAnnotationsGlobally' };
+        Ext.Object.each(types, function(type, iconId) {
+            if (sessionStorage.getItem('edirom-' + type + '-visible-global') === 'true') {
+                var icon = document.getElementById(iconId);
+                if (icon) icon.setAttribute('pressed', '');
+            }
+        });
     },
     
     onSwitchDesktop: function(num) {
