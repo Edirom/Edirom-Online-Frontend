@@ -60,7 +60,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             {
                 xtype: 'component',
                 html: `
-                    <div id="iconsDiv">
+                    <div id="ediromTaskbarIcons" class="ediromTaskbarIcons">
                         <edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="` + getLangString('view.desktop.TaskBar_Sort_grid') + `"></edirom-icon>
                         <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
                         <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
@@ -68,11 +68,12 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         <edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
                         <edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
                         <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
+                        <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
                     </div>
                 `,
                 listeners: {
                     afterrender: function(c) {
-                        var iconsDivElem = document.getElementById('iconsDiv');
+                        var iconsDivElem = document.getElementById('ediromTaskbarIcons');
 
                         // sortGrid button
                         var sortGridIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_grid"]');
@@ -125,12 +126,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             },
 
             //me.desktopSwitch,
-
-            // separator icon
-            {
-                xtype: 'component', 
-                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
-            },
 
             me.windowBar1,
             me.windowBar2,
