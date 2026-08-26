@@ -98,6 +98,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'hidden-filters="[]" ' +
                   'layers-data="{}" ' +
                   'visible-layers="[]" ' +
+                  'overlay-stylesheets="[]" ' +
                   'view-mode="">' +
                   '</edirom-image-viewer>' +
                   '</div>' + openseadragonEvents;
@@ -113,6 +114,18 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     initSurface: function() {
         var me = this;
         me.webComponent = document.getElementById(me.id + '_wc');
+
+        // Tell the component which host stylesheets to clone into its shadow root
+        // (annotation category glyph rules + the current edition's own CSS, read
+        // from the 'additional_css_path' preference). The component itself has no
+        // knowledge of file paths or the preference system - that lookup belongs
+        // here, in the Edirom-specific bridge.
+        var overlayStylesheets = ['resources/css/annotation-style.css'];
+        var additionalCssPath = getPreference('additional_css_path', true);
+        if (additionalCssPath && additionalCssPath.indexOf('/db/') !== -1) {
+            overlayStylesheets.push(additionalCssPath.split('/db/')[1]);
+        }
+        me.webComponent.setAttribute('overlay-stylesheets', Ext.JSON.encode(overlayStylesheets));
 
         // Forward the web component's zoom events as ExtJS 'zoomChanged' events.
         me.webComponent.addEventListener('zoom', function(event) {
@@ -301,19 +314,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         return NaN;
     },
 
-    // Pushes measures to the component as zone entries carrying `type:'measure'`.
-    // Each measure is both a navigation target (page + pixel rectangle) and,
-    // when the 'measure' type is visible, a rendered number-label overlay
-    // (containerClass 'measure' + innerClass 'measureInner'/'measureInnerEmpty',
-    // matching the existing facsimile CSS). Entries are MERGED into the measure
-    // zone map (keyed 'measure:<key>') so pushing a single navigation measure
-    // does not drop the page's label set and vice-versa.
-    // Record fields: { key, pageId, ulx, uly, lrx, lry, name }. `pageId` is
-    // resolved to a 1-based page number so the component only renders a
-    // measure's overlay on its own page; when it can't be resolved (e.g.
-    // single-image viewers like the measure-based view's HorizontalMeasureViewer,
-    // which never loads a page sequence via setImages) the zone is pushed
-    // page-agnostically instead, mirroring setAnnotationsData.
+
     setMeasuresData: function(measures) {
         var me = this;
         if (!me.webComponent) return;
@@ -577,18 +578,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.shapes.add(groupName, []);
     },
 
-    // Pushes the page's annotations to the component as zone entries carrying
-    // `type:'annotation'` (unified push model, like setMeasuresData /
-    // setMdivsData). Each annotation's plist yields one zone per image region;
-    // all regions of one annotation share the annotation's data (categories,
-    // priority, tooltip, click fn), and annotations on the same region share a
-    // `group` so their badges stack. The component renders the overlay badges
-    // AND their hover tooltip from zones-data; each zone carries its
-    // server-rendered tooltip HTML (preloaded below), so the only host-specific
-    // interaction left is the click action (zone-click event). `pageId`, when
-    // given, is resolved to a 1-based page number so the component only renders
-    // the annotations on the current page; without it the zones are rendered
-    // page-agnostically (single-image viewers, e.g. measureBasedView).
     setAnnotationsData: function(annotations, pageId) {
 
         var me = this;
@@ -695,12 +684,6 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.webComponent.setAttribute('visible-types', JSON.stringify(Object.keys(me._visibleTypeSet)));
     },
 
-    // Pushes the active annotation filter to the component (push model) as a
-    // single generic `hidden-filters` set. `hiddenFilters` is the union of the
-    // taxonomy tokens the user has UNCHECKED (unchecked categories + unchecked
-    // priorities); the component hides any annotation carrying one of them. An
-    // absent taxonomy simply contributes nothing, so "no filter" is the empty
-    // set and "hide all" is every token — no special sentinels needed.
     setAnnotationFilter: function(hiddenFilters) {
         var me = this;
         if (!me.webComponent) return;
