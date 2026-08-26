@@ -56,8 +56,77 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         me.tray = new Ext.toolbar.Toolbar(me.getTrayConfig());
 
+        iconsDiv = `
+            <div id="iconsDiv">
+                <edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="` + getLangString('view.desktop.TaskBar_Sort_grid') + `"></edirom-icon>
+                <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
+                <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
+                <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
+                <edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
+                <edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
+                <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
+            </div>
+        `;
+
         me.items = [
 
+            {
+                xtype: 'component',
+                html: iconsDiv,
+                listeners: {
+                    afterrender: function(c) {
+                        var iconsDivElem = document.getElementById('iconsDiv');
+
+                        // sortGrid button
+                        var sortGridIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_grid"]');
+                        sortGridIconElem.addEventListener('click', function() { me.fireEvent('sortGrid'); });
+
+                        // sortVertically button
+                        var sortVerticallyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_vertical"]');
+                        sortVerticallyIconElem.addEventListener('click', function() { me.fireEvent('sortVertically'); });
+
+                        // sortHorizontally button
+                        var sortHorizontallyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_horizontal"]');
+                        sortHorizontallyIconElem.addEventListener('click', function() { me.fireEvent('sortHorizontally'); });
+
+                        // toggle measure numbers button
+                        var toggleMeasuresGloballyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_toggle_measures"]');
+                        toggleMeasuresGloballyIconElem.addEventListener('click', function() {
+
+                            // toggle pressed state
+                            var newState = toggleMeasuresGloballyIconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-measures-visible-global', newState);
+
+                            // fire event
+                            me.fireEvent('toggleMeasuresGlobally');
+
+                        });
+
+                        // toggle annotations button
+                        var toggleAnnotationsGloballyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_toggle_annotations"]');
+                        toggleAnnotationsGloballyIconElem.addEventListener('click', function() {
+
+                            // toggle pressed state
+                            var newState = toggleAnnotationsGloballyIconElem.toggleAttribute('pressed');
+                            
+                            // save new state in session storage
+                            sessionStorage.setItem('edirom-annotations-visible-global', newState);
+
+                            // fire event
+                            me.fireEvent('toggleAnnotationsGlobally');
+
+                        });
+
+                        // open concordance navigator button
+                        var openConcordanceNavigatorIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_concordance_navigator"]');
+                        openConcordanceNavigatorIconElem.addEventListener('click', function() { me.fireEvent('openConcordanceNavigator'); });
+                    }
+
+                }
+            },
+/*
             // sortGrid button
             {
                 xtype: 'component',
@@ -153,7 +222,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     }
                 }                
             },
-
+            */
 
             //me.desktopSwitch,
 
