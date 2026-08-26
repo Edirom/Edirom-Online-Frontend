@@ -56,23 +56,20 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         me.tray = new Ext.toolbar.Toolbar(me.getTrayConfig());
 
-        iconsDiv = `
-            <div id="iconsDiv">
-                <edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="` + getLangString('view.desktop.TaskBar_Sort_grid') + `"></edirom-icon>
-                <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
-                <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
-                <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
-                <edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
-                <edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
-                <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
-            </div>
-        `;
-
         me.items = [
-
             {
                 xtype: 'component',
-                html: iconsDiv,
+                html: `
+                    <div id="iconsDiv">
+                        <edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="` + getLangString('view.desktop.TaskBar_Sort_grid') + `"></edirom-icon>
+                        <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
+                        <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
+                        <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
+                        <edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
+                        <edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
+                        <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
+                    </div>
+                `,
                 listeners: {
                     afterrender: function(c) {
                         var iconsDivElem = document.getElementById('iconsDiv');
@@ -126,103 +123,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
                 }
             },
-/*
-            // sortGrid button
-            {
-                xtype: 'component',
-                html: '<edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="' + getLangString('view.desktop.TaskBar_Sort_grid') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('sortGrid'); });
-                    }
-                }
-            },
-
-            // sortVertically button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon role="button" name="eo_sort_vertical" title="' + getLangString('view.desktop.TaskBar_Sort_vertical') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('sortVertically'); });
-                    }
-                }
-            },
-
-            // sortHorizontally button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon role="button" name="eo_sort_horizontal" title="' + getLangString('view.desktop.TaskBar_Sort_horizontal') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { me.fireEvent('sortHorizontally'); });
-                    }
-                }
-            },
-
-            // separator icon
-            {
-                xtype: 'component', 
-                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
-            },
-
-            // toggle measure numbers button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="' + getLangString('view.desktop.TaskBar_showMeasures') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { 
-
-                            // toggle pressed state
-                            var iconElem = document.getElementById('icon_toggleMeasuresGlobally');
-                            var newState = iconElem.toggleAttribute('pressed');
-                            
-                            // save new state in session storage
-                            sessionStorage.setItem('edirom-measures-visible-global', newState);
-
-                            // fire event
-                            me.fireEvent('toggleMeasuresGlobally');
-
-                        });
-                    }
-                }
-            },
-
-            // toggle annotations button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="' + getLangString('view.desktop.TaskBar_showAnnotations') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function() { 
-
-                            // toggle pressed state
-                            var iconElem = document.getElementById('icon_toggleAnnotationsGlobally');
-                            var newState = iconElem.toggleAttribute('pressed');
-                            
-                            // save new state in session storage
-                            sessionStorage.setItem('edirom-annotations-visible-global', newState);
-
-                            // fire event
-                            me.fireEvent('toggleAnnotationsGlobally');
-
-                        });
-                    }
-                }
-            },
-
-            // open concordance navigator button
-            {
-                xtype: 'component', 
-                html: '<edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="' + getLangString('view.desktop.TaskBar_concordanceNav') + '"></edirom-icon>',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function(e) { me.fireEvent('openConcordanceNavigator'); });
-                    }
-                }                
-            },
-            */
 
             //me.desktopSwitch,
 
