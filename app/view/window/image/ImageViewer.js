@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Edirom Online.  If not, see <http://www.gnu.org/licenses/>.
  */
-Ext.define('EdiromOnline.view.window.image.ImageViewer', {
+Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     extend: 'Ext.panel.Panel',
 
     mixins: {
@@ -25,53 +25,42 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
     layout: 'fit',
 
-    offX: 0,
-    offY: 0,
+    border: 0,
 
-    mouseOffX: 0,
-    mouseOffY: 0,
+    webComponent: null,
 
-    posX: 0,
-    posY: 0,
+    imageWidth: 0,
+    imageHeight: 0,
 
-    zoom: 1,
-    maxZoom: 4,
-    minZoom: 0.1,
-    lastZoom: 0,
+    imagePrefix: null,
 
-    imgWidth: 0,
-    imgHeight: 0,
+    // Ordered list of pages currently loaded as an OpenSeadragon sequence.
+    pages: null,
+    // Page index requested before the viewer finished initializing.
+    pendingPageIndex: null,
 
-    imgPrefix: null,
-    
     shapes: null,
-    shapesHidden: false,
     partLabel: null,
 
-    svgOverlays: null,
-    annotSVGOverlays: null,
-    
-    annotTipWidth: 500,
-    annotTipMaxWidth: 500,
-    annotTipHeight: 300,
-    annotTipMaxHeight: 300,
-    
-    border: 0,
+    // Host-side cache of pushed layer overlays (layerId -> raw svg string) and
+    // currently visible layer ids, mirrored onto the component's
+    // layers-data/visible-layers attributes. See addSVGOverlay/removeSVGOverlay.
+    _layersData: null,
+    _visibleLayers: null,
 
     initComponent: function () {
 
         var me = this;
-        
-        me.imgPrefix = getPreference('image_prefix');
-        
+
+        me.imagePrefix = getPreference('image_prefix');
+
         me.addEvents('zoomChanged',
                     'imageChanged');
-       
-/*       from OPERA*/
-       var facsContEvents;
+
+       var openseadragonEvents;
 
         if (me.partLabel != null) {
-         facsContEvents = '<div id="' + me.id + '_facsContEvents" class="facsContEvents">' +
+         openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents">' +
             '<div  id="' + me.id + '_' + me.partLabel + '" class="part">' +
               '<span class="partInner" id="' + me.id + '_' + me.partLabel + '_inner">' +
               me.partLabel + '</span>' +
@@ -79,24 +68,41 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
          '</div>';
         }
         else {
-          facsContEvents = '<div id="' + me.id + '_facsContEvents" class="facsContEvents"></div>';
+          openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents"></div>';
          };
-         
-        me.html = '<div id="' + me.id + '_facsCont" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;"></div>' + facsContEvents;
 
-/*       from OPERA END*/
-                    
-/*                    */
-/*        me.html = '<div id="' + me.id + '_facsCont" style="overflow: hidden; background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;"></div>' +*/
-/*                  '<div id="' + me.id + '_facsContEvents" class="facsContEvents"></div>';*/
-/*                    */
-        me.imageLoader = new EdiromOnline.view.window.image.ImageLoader({
-            viewer: me
-        });
+        // All configurable attributes are listed here with their default values
+        // so the component is easy to test/tweak. The data-driven attributes
+        // (tilesources, pagenumber, sequencemode, *-data) are also set at runtime
+        // by this class; the values below are just the initial defaults.
+        me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;">' +
+                  '<edirom-image-viewer id="' + me.id + '_wc' + '" ' +
+                  'style="width:100%;height:100%;display:block;" ' +
+                  'tilesources="[]" ' +
+                  'pagenumber="1" ' +
+                  'zoom="1" ' +
+                  'rotation="0" ' +
+                  'preserveviewport="false" ' +
+                  'clicktozoom="false" ' +
+                  'minzoomlevel="0.5" ' +
+                  'maxzoomlevel="10" ' +
+                  'shownavigationcontrol="false" ' +
+                  'shownavigator="false" ' +
+                  'showzoomcontrol="false" ' +
+                  'showhomecontrol="false" ' +
+                  'showfullpagecontrol="false" ' +
+                  'showsequencecontrol="false" ' +
+                  'zones-data="{}" ' +
+                  'zone="" ' +
+                  'visible-types="[]" ' +
+                  'hidden-filters="[]" ' +
+                  'layers-data="{}" ' +
+                  'visible-layers="[]" ' +
+                  'view-mode="">' +
+                  '</edirom-image-viewer>' +
+                  '</div>' + openseadragonEvents;
 
         me.shapes = new Ext.util.MixedCollection();
-        me.svgOverlays = new Ext.util.MixedCollection();
-        me.annotSVGOverlays = [];
 
         me.callParent();
 
@@ -106,176 +112,636 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
     initSurface: function() {
         var me = this;
+        me.webComponent = document.getElementById(me.id + '_wc');
 
-        var eventEl = me.el.getById(me.id + '_facsContEvents');
-        eventEl.unselectable();
-        eventEl.on('mousedown', me.onMouseDown, me);
-        eventEl.on('mousewheel', me.onScroll, me);
-    },
+        // Forward the web component's zoom events as ExtJS 'zoomChanged' events.
+        me.webComponent.addEventListener('zoom', function(event) {
+            me.fireEvent('zoomChanged', event.detail.zoom);
+        });
 
-    showImage: function(path, width, height, pageId) {
-    
-        var me = this;
+        // Re-apply a pending rectangle once the image's tiles have been drawn.
+        me.webComponent.addEventListener('image-ready', function() {
+            // Apply an initial page requested before the viewer was ready
+            // (e.g. a deep link to a page other than the first one).
+            if (me.pendingPageIndex != null) {
+                var idx = me.pendingPageIndex;
+                me.pendingPageIndex = null;
+                if (idx > 0) me.webComponent.setAttribute('pagenumber', String(idx + 1));
+            }
 
-        me.imgWidth = width;
-        me.imgHeight = height;
-        me.imgPath = path;
-        me.imgId = pageId;
+            if (me.rect && me.rect != null) {
+                me.fitStoredRect();
+            }
+        });
 
-        me.svg = Raphael(me.id + '_facsCont', me.imgWidth, me.imgHeight);
-        me.svg.setViewBox(0, 0, me.imgWidth, me.imgHeight, false);
-        me.svgEl = me.svg.canvas;
+        // Forward the web component's native sequence page changes so the
+        // ExtJS layer (page spinner, overlays) can stay in sync.
+        me.webComponent.addEventListener('page-changed', function(event) {
+            var pageNumber = event.detail.pageNumber; // 1-based
+            var page = (me.pages && me.pages.length >= pageNumber) ? me.pages[pageNumber - 1] : null;
+            if (page) {
+                me.imageHeight = page.height;
+                me.imageWidth = page.width;
+                me.imgPath = page.path;
+                me.imgId = page.id;
+                me.fireEvent('imageChanged', me, page.path, page.id);
+            }
+        });
 
-        me.baseImg = me.svg.image(me.imgPrefix + me.imgPath + '?dw=' + me.getWidth() + '&amp;mo=fit', 0, 0, me.imgWidth, me.imgHeight);
-        me.baseImgZoom = me.getWidth() / me.imgWidth;
+        // Zone overlays (annotations, measure labels, …) are rendered by the
+        // component from the pushed zones-data attribute, including the tooltip
+        // (the host preloads each zone's server-rendered tooltip HTML into its
+        // zones-data entry). The only host-specific interaction left here is the
+        // click action, run from the component's zone-click event.
+        me.webComponent.addEventListener('zone-click', function(event) {
+            me.onZoneClick(event.detail);
+        });
 
-        me.hiResImg = me.svg.image('', 0, 0, 0, 0);
-        me.hiResImg.attr({'stroke-width': 0});
-        me.hiResImg.hide();
+        // The component owns the annotation filter; when it changes (including
+        // when the hidden-filters attribute is set externally), forward the
+        // hidden-token set so the host can keep its filter menu checkboxes in
+        // sync.
+        me.webComponent.addEventListener('filter-changed', function(event) {
+            me.fireEvent('annotationFilterChanged', me, event.detail.hiddenFilters);
+        });
 
-        me.fitInImage();
-        
-        me.fireEvent('imageChanged', me, path, pageId);
+        // Keep the host page list / spinner bounds in sync when the component's
+        // tile sources change to a SMALLER set (e.g. a page was removed). The
+        // initial setImages reports the same count the store already has, so this
+        // is a no-op then; only a genuine shrink trims the trailing pages and
+        // notifies the owning view.
+        me.webComponent.addEventListener('total-pages-changed', function(event) {
+            var total = (event.detail) ? event.detail.totalPages : null;
+            if (!me.pages || typeof total !== 'number' || total < 0) return;
+            if (total >= me.pages.length) return;
+            me.pages = me.pages.slice(0, total);
+            me.fireEvent('totalPagesChanged', me, total);
+        });
     },
 
     clear: function() {
-    
         var me = this;
-        //console.log("clear");
-        //console.log(me.shapes);
+        me.rect = null;
+    },
 
-        // remove all shapes
-        var keys = [];
-        me.shapes.eachKey(function(key) {
-	       keys.push(key); 
-        });
-        
-        for(var i = 0; i < keys.length; i++) {
-	        var groupName = keys[i];
-	        //console.log(groupName);
-            me.removeShapes(groupName);
+    // Builds a tile source descriptor for a single image: a IIIF level2
+    // descriptor by default, or (image_server=digilib) a plain digilib
+    // descriptor that the web component resolves into real region-tiled
+    // requests against the digilib Scaler API (see edirom-image-viewer.js
+    // _resolveTileSource - there is no IIIF/DZI endpoint to rely on there).
+    buildTileSource: function(path, width, height) {
+        var me = this;
+
+        // An already-absolute http(s) path points at some OTHER external image
+        // server (e.g. an external IIIF host), never this edition's own digilib
+        // Scaler - appending digilib's ?wx=/dw=/mo= query syntax to it breaks
+        // that server (observed: infinite redirect loop against a Staatsbibliothek
+        // IIIF endpoint). Only relative paths are resolved against the digilib
+        // Scaler; absolute URLs always fall through to the IIIF branch below.
+        if(getPreference('image_server') === 'digilib' && !path.startsWith("http")) {
+            return {
+                type: 'digilib',
+                url: me.imagePrefix + path,
+                width: Number(width),
+                height: Number(height)
+            };
+        }
+
+        var iiifPath = path;
+        if(!path.startsWith("http")) {
+            iiifPath = me.imagePrefix + path.replace(new RegExp('\/', 'g'), '!');
+        }
+
+        return {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": iiifPath,
+            "height": Number(height),
+            "width": Number(width),
+            "profile": [ "http://iiif.io/api/image/2/level2.json" ],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [ 1, 2, 4, 8, 16, 32 ],
+                "width": 1024
+            }]
         };
+    },
 
-        me.svgOverlays.each(function(svg) {
-           svg.destroy();
+    showImage: function(path, width, height, pageId) {
+        var me = this;
+
+        me.imageHeight = height;
+        me.imageWidth = width;
+        me.imgPath = path;
+        me.imgId = pageId;
+
+        me.webComponent.setAttribute('tilesources', JSON.stringify([me.buildTileSource(path, width, height)]));
+
+        me.fireEvent('imageChanged', me, path, pageId);
+    },
+
+    // Loads an entire page set as an OpenSeadragon sequence so the component's
+    // native pagination (goToPage / pagenumber) can switch pages without
+    // reloading the whole viewer. `store` is the imageSet (Ext.data.Store).
+    setImages: function(store) {
+        var me = this;
+
+        me.pages = [];
+        var tileSources = [];
+
+        store.each(function(rec) {
+            me.pages.push({
+                id: rec.get('id'),
+                path: rec.get('path'),
+                width: rec.get('width'),
+                height: rec.get('height')
+            });
+            tileSources.push(me.buildTileSource(rec.get('path'), rec.get('width'), rec.get('height')));
         });
-        me.svgOverlays.removeAll();
 
-        me.el.getById(me.id + '_facsCont').update('');
+        if (!me.webComponent) return;
 
-        me.offX = 0;
-        me.offY = 0;
+        me.webComponent.setAttribute('sequencemode', 'true');
+        me.webComponent.setAttribute('tilesources', JSON.stringify(tileSources));
+    },
 
-        me.zoom = 1;
-        me.lastZoom = 0;
+    // Navigates the loaded sequence to the page with the given id by setting
+    // the web component's 1-based `pagenumber` attribute. Returns true if the
+    // page was found.
+    goToPageById: function(id) {
+        var me = this;
 
-        me.imgWidth = 0;
-        me.imgHeight = 0;
+        if (!me.webComponent || !me.pages) return false;
+
+        var index = -1;
+        for (var i = 0; i < me.pages.length; i++) {
+            if (me.pages[i].id === id) { index = i; break; }
+        }
+        if (index < 0) return false;
 
         me.rect = null;
 
+        // getCurrentPage() returns 0 until OpenSeadragon is initialized; defer
+        // the navigation to the first 'image-ready' event in that case.
+        if (me.webComponent.getCurrentPage && me.webComponent.getCurrentPage() > 0) {
+            me.webComponent.setAttribute('pagenumber', String(index + 1));
+        } else {
+            me.pendingPageIndex = index;
+        }
+        return true;
     },
 
-    addAnnotations: function(annotations) {
-    	
+    // Resolves a page id to its 1-based page number within the loaded sequence,
+    // or NaN if the id is unknown.
+    pageNumberById: function(id) {
         var me = this;
+        if (!me.pages) return NaN;
+        for (var i = 0; i < me.pages.length; i++) {
+            if (me.pages[i].id === id) return i + 1;
+        }
+        return NaN;
+    },
 
-        me.shapes.add('annotations', []);
+    // Pushes measures to the component as zone entries carrying `type:'measure'`.
+    // Each measure is both a navigation target (page + pixel rectangle) and,
+    // when the 'measure' type is visible, a rendered number-label overlay
+    // (containerClass 'measure' + innerClass 'measureInner'/'measureInnerEmpty',
+    // matching the existing facsimile CSS). Entries are MERGED into the measure
+    // zone map (keyed 'measure:<key>') so pushing a single navigation measure
+    // does not drop the page's label set and vice-versa.
+    // Record fields: { key, pageId, ulx, uly, lrx, lry, name }. `pageId` is
+    // resolved to a 1-based page number so the component only renders a
+    // measure's overlay on its own page; when it can't be resolved (e.g.
+    // single-image viewers like the measure-based view's HorizontalMeasureViewer,
+    // which never loads a page sequence via setImages) the zone is pushed
+    // page-agnostically instead, mirroring setAnnotationsData.
+    setMeasuresData: function(measures) {
+        var me = this;
+        if (!me.webComponent) return;
 
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-        annotations.each(function(annotation) {
+        me._measureZones = me._measureZones || {};
+        (measures || []).forEach(function(m) {
+            var key = 'measure:' + m.key;
+            var existing = me._measureZones[key];
+            // A navigation-only push (gotoMeasure) carries no name; don't let it
+            // clobber a label already pushed by the page's measure-display load.
+            var hasName = (m.name != null && String(m.name) !== '');
+            var name = hasName ? String(m.name)
+                : (existing && existing.label != null ? existing.label : '');
+            var page = me.pageNumberById(m.pageId);
+            var pageVal = (typeof page === 'number' && !isNaN(page)) ? page : null;
+            me._measureZones[key] = {
+                type: 'measure',
+                page: pageVal,
+                ulx: m.ulx, uly: m.uly, lrx: m.lrx, lry: m.lry,
+                containerClass: 'measure',
+                innerClass: (name === '' ? 'measureInnerEmpty' : 'measureInner'),
+                label: name,
+                group: 'measure:' + m.key
+            };
+        });
+        me.pushZonesData();
+    },
 
-            var name = annotation.get('title');
-            var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
-            var priority = annotation.get('priority');
-            var fn = annotation.get('fn');
-            var plist = Ext.Array.toArray(annotation.get('plist'));
+    // Pushes movements (mdivs) to the component as zone entries carrying
+    // `type:'mdiv'`. A movement only carries its first page (no rectangle), so
+    // it is a navigation target only (never rendered as an overlay). Entries
+    // are MERGED into the mdiv zone map (keyed 'mdiv:<key>').
+    // Record fields: { key, pageId }.
+    setMdivsData: function(mdivs) {
+        var me = this;
+        if (!me.webComponent) return;
 
-            Ext.Array.each(annotation.get('svgList'), function(svg) {
-                this.addSVGOverlay(svg.id, svg.svg, name, uri, fn);
-                Ext.Array.push(this.annotSVGOverlays, svg.id);
-            }, me);
+        me._mdivZones = me._mdivZones || {};
+        (mdivs || []).forEach(function(m) {
+            me._mdivZones['mdiv:' + m.key] = { type: 'mdiv', page: me.pageNumberById(m.pageId) };
+        });
+        me.pushZonesData();
+    },
 
-            Ext.Array.insert(me.shapes.get('annotations'), 0, plist);
+    // Serialises the union of the measure, movement and annotation zone maps and
+    // pushes it to the component's single `zones-data` attribute. Each sub-map is
+    // rebuilt/merged on its own push so that re-pushing one type does not drop
+    // the others. The component renders overlays for zones whose `type` is in
+    // `visible-types` and navigates to any zone via the `zone` attribute.
+    pushZonesData: function() {
+        var me = this;
+        if (!me.webComponent) return;
+        var map = Ext.apply({}, me._measureZones || {});
+        Ext.apply(map, me._mdivZones || {});
+        Ext.apply(map, me._annotationZones || {});
+        me.webComponent.setAttribute('zones-data', JSON.stringify(map));
+    },
 
-            Ext.Array.each(plist, function(shape) {
+    // Jumps to a measure by setting the semantic `zone` attribute to the
+    // measure's namespaced zone key. A nonce is appended after a '|' separator
+    // so that repeating the same measure still changes the attribute value and
+    // re-fires the component's attributeChangedCallback; the component strips
+    // the nonce.
+    gotoMeasure: function(key) {
+        var me = this;
+        if (!me.webComponent) return;
+        me._zoneNonce = (me._zoneNonce || 0) + 1;
+        me.webComponent.setAttribute('zone', 'measure:' + String(key) + '|' + me._zoneNonce);
+    },
 
-                var id = shape.id;
-                var x = shape.ulx;
-                var y = shape.uly;
-                var width = shape.lrx - shape.ulx;
-                var height = shape.lry - shape.uly;
-                var outerId = me.id + '_' + id;
-                var innerId = outerId + annotation.get('id');
+    // Loads / jumps to a movement's first page by setting the `zone` attribute
+    // to the movement's namespaced zone key. Uses the same nonce-suffix scheme
+    // as gotoMeasure.
+    gotoMdiv: function(key) {
+        var me = this;
+        if (!me.webComponent) return;
+        me._zoneNonce = (me._zoneNonce || 0) + 1;
+        me.webComponent.setAttribute('zone', 'mdiv:' + String(key) + '|' + me._zoneNonce);
+    },
 
-                // reuse existing outer div if already present (multiple annotations on same zone)
-                var outerDiv = Ext.get(outerId);
-                if (!outerDiv) {
-                    outerDiv = Ext.DomHelper.append(shapeDiv, {
-                        tag: 'div',
-                        id: outerId,
-                        cls: 'annotation',
-                        'data-edirom-annot-id': annotation.get('id')
-                    }, true);
-                    outerDiv.setStyle({
-                        position: 'absolute'
-                    });
+    fitInImage: function() {
+
+        var me = this;
+        // Drive the component declaratively: bump the 'triggerhome' attribute so
+        // attributeChangedCallback fires even on repeated fits.
+        if (me.webComponent) {
+            me._homeNonce = (me._homeNonce || 0) + 1;
+            me.webComponent.setAttribute('triggerhome', String(me._homeNonce));
+        }
+    },
+
+    setZoomAndCenter: function(z) {
+
+        var me = this;
+        // Drive the zoom via the 'zoom' attribute. The slider stays in sync with
+        // the actual viewport zoom (via the 'zoomChanged' event), so consecutive
+        // values differ and attributeChangedCallback fires reliably.
+        if (me.webComponent) me.webComponent.setAttribute('zoom', String(z));
+    },
+
+    getActualRect: function() {
+
+        var me = this;
+        if (!me.webComponent) return { x: 0, y: 0, width: 0, height: 0 };
+
+        return me.webComponent.getImageViewportRect();
+    },
+
+    showRect: function(x, y, width, height, highlight, fitHeight, alignment) {
+
+        var me = this;
+        me.rect = {
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            highlight: highlight,
+            fitHeight: fitHeight,
+            alignment: alignment || 'center'
+        };
+
+        me.fitStoredRect();
+    },
+
+    fitStoredRect: function() {
+
+        var me = this;
+        if(!me.webComponent || !me.rect) return;
+
+        var r = me.rect;
+        var x = r.x;
+        var width = r.width;
+
+        // fitHeight maps the zone height to the full container height. Expand
+        // the fitted rectangle horizontally to the component's aspect ratio and
+        // align it consistently across adjacent measure viewers.
+        if(r.fitHeight) {
+            var contW = me.getWidth();
+            var contH = me.getHeight();
+            if(contW > 0 && contH > 0) {
+                // Never go narrower than the actual content width: when the
+                // container is proportionally taller/narrower than the zone
+                // (common with many measures per row, e.g. a high measure
+                // count), this ratio comes out smaller than r.width. Using it
+                // as-is would crop away real measures (the alignment offset
+                // below then anchors on the wrong edge, hiding e.g. the first
+                // measure of a right-aligned group). Only ever EXPAND the
+                // rect to fill the container aspect, never shrink it.
+                width = Math.max(r.width, r.height * (contW / contH));
+                if(r.alignment === 'left') {
+                    x = r.x;
+                } else if(r.alignment === 'right') {
+                    x = r.x + r.width - width;
+                } else {
+                    x = r.x + r.width / 2 - width / 2;
                 }
+            }
+        }
 
-                // inner annotIcon div carries taxonomy classes (categories and priority)
-                var innerDiv = Ext.DomHelper.append(outerDiv, {
-                    tag: 'div',
-                    id: innerId,
-                    cls: 'annotIcon ' + categories + ' ' + priority,
-                    title: name
-                }, true);
+        // Drive the component declaratively via the 'fitrect' attribute. A
+        // monotonic nonce ensures repeated fits and resize re-fits are applied.
+        me._fitNonce = (me._fitNonce || 0) + 1;
+        me.webComponent.setAttribute('fitrect',
+            [x, r.y, width, r.height, me._fitNonce].join(','));
+    },
 
-                innerDiv.on('mouseenter', me.highlightShape, me, outerDiv, true);
-                innerDiv.on('mouseleave', me.deHighlightShape, me, outerDiv, true);
-                innerDiv.on('mousedown', me.listenForShapeLink, me, {
-                    stopEvent : true,
-                    elem: innerDiv,
-                    fn: fn
-                });
-                innerDiv.setStyle({
-                    position: 'relative'
-                });
+    // Re-fit the stored zone after layout changes so measure-based viewers keep
+    // the same displayed staff height when viewers are added or removed.
+    onResize: function() {
+        this.fitStoredRect();
+    },
 
-                var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: innerId,
-                    cls: 'annotationTip',
-                    width: me.annotTipWidth,
-                    maxWidth: me.annotTipMaxWidth,
-                    height: me.annotTipHeight,
-                    maxHeight: me.annotTipMaxHeight,
-                    dismissDelay: 0,
-                    anchor: 'left',
-                    html: getLangString('Annotation_plus_Title', name)
-                });
+    // Pushes a named SVG layer's raw markup + visibility to the component via
+    // the layers-data/visible-layers attributes (component owns rendering and
+    // the readiness-safe retry - see edirom-image-viewer.js _renderLayers).
+    addSVGOverlay: function(overlayId, overlay, name, uri, fn) {
 
-                tip.on('afterrender', function() {
-                    window.doAJAXRequest('data/xql/getAnnotation.xql',
-                        'GET',
-                        {
-                            uri: uri,
-                            target: 'tip',
-                            lang: getPreference('application_language'),
-                            edition: EdiromOnline.getApplication().activeEdition
-                        },
-                        Ext.bind(function(response){
-                            this.update(response.responseText);
-                        }, this)
-                    );
-                }, tip);
-            });
+        var me = this;
+        if (!me.webComponent) return;
+
+        me._layersData = me._layersData || {};
+        me._visibleLayers = me._visibleLayers || [];
+
+        overlay.each(function(overlay){
+            if (overlay.get('svg') !== null) {
+                me._layersData[overlayId] = overlay.get('svg');
+            }
         });
 
-        me.repositionShapes();
+        if (Ext.Array.indexOf(me._visibleLayers, overlayId) === -1) {
+            me._visibleLayers.push(overlayId);
+        }
+
+        me.webComponent.setAttribute('layers-data', Ext.JSON.encode(me._layersData));
+        me.webComponent.setAttribute('visible-layers', Ext.JSON.encode(me._visibleLayers));
+    },
+
+    removeSVGOverlay: function(overlayId) {
+        var me = this;
+        if (!me.webComponent) return;
+
+        me._visibleLayers = me._visibleLayers || [];
+        Ext.Array.remove(me._visibleLayers, overlayId);
+        me.webComponent.setAttribute('visible-layers', Ext.JSON.encode(me._visibleLayers));
+    },
+
+    removeShapes: function(groupName) {
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: OpenSeaDragonView: removeShapes');
+            console.log(groupName);
+        }
+
+        var me = this;
+
+        // Annotations and measures are rendered from zones-data now; "removing"
+        // them means dropping their zone sub-map and re-pushing zones-data.
+        if (groupName === 'annotations') {
+            me._annotationZones = {};
+            me.pushZonesData();
+            return;
+        }
+        if (groupName === 'measures') {
+            me._measureZones = {};
+            me.pushZonesData();
+            return;
+        }
+
+        //abort if me.shapes does not contain key
+        if(!me.shapes.containsKey(groupName)) {
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log('me.shapes does not contain key: ' + groupName);
+            }
+            return;
+        }
+
+        // create function for each shape
+        var fn = function(shape) {
+
+            var id;
+
+            try {
+                id = shape.get('id');
+            }catch(e) {
+                id = shape.id;
+            }
+
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log('me.id: ' + me.id);
+                console.log('+shape.id: ' + me.id + '_' + id);
+            }
+
+            if (me.webComponent) me.webComponent.removeOverlay(me.id + '_' + id);
+        };
+
+        if(me.shapes.get(groupName).each)
+            me.shapes.get(groupName).each(fn);
+        else
+            (me.shapes.get(groupName) || []).forEach(fn);
+
+        me.shapes.add(groupName, []);
+    },
+
+    // Pushes the page's annotations to the component as zone entries carrying
+    // `type:'annotation'` (unified push model, like setMeasuresData /
+    // setMdivsData). Each annotation's plist yields one zone per image region;
+    // all regions of one annotation share the annotation's data (categories,
+    // priority, tooltip, click fn), and annotations on the same region share a
+    // `group` so their badges stack. The component renders the overlay badges
+    // AND their hover tooltip from zones-data; each zone carries its
+    // server-rendered tooltip HTML (preloaded below), so the only host-specific
+    // interaction left is the click action (zone-click event). `pageId`, when
+    // given, is resolved to a 1-based page number so the component only renders
+    // the annotations on the current page; without it the zones are rendered
+    // page-agnostically (single-image viewers, e.g. measureBasedView).
+    setAnnotationsData: function(annotations, pageId) {
+
+        var me = this;
+        if (!me.webComponent) return;
+
+        var page = (pageId != null) ? me.pageNumberById(pageId) : NaN;
+        var pageVal = (typeof page === 'number' && !isNaN(page)) ? page : null;
+
+        me._annotationZones = {};
+
+        // one entry per annotation: its uri (to preload the tooltip) and the
+        // zone keys built for its regions (so the tooltip can be written to all).
+        var annoRecs = [];
+
+        if (annotations && typeof annotations.each === 'function') {
+            annotations.each(function(annotation) {
+
+                var annoId = annotation.get('id');
+                var title = annotation.get('title');
+                var uri = annotation.get('uri');
+                var categories = annotation.get('categories');
+                var priority = annotation.get('priority');
+                var fn = annotation.get('fn');
+                var plist = Ext.Array.toArray(annotation.get('plist'));
+
+                var zoneKeys = [];
+                Ext.Array.each(plist, function(shape) {
+                    var rectId = shape.id;
+                    var key = 'annotation:' + me.id + '_' + rectId + ':' + annoId;
+                    var innerClass = ('annotIcon ' + (categories || '') + ' '
+                        + (priority || '') + ' ' + (shape.type || ''))
+                        .replace(/\s+/g, ' ').trim();
+                    me._annotationZones[key] = {
+                        type: 'annotation',
+                        page: pageVal,
+                        ulx: shape.ulx, uly: shape.uly, lrx: shape.lrx, lry: shape.lry,
+                        containerClass: 'annotation',
+                        innerClass: innerClass,
+                        group: 'annotation:' + me.id + '_' + rectId,
+                        title: title,
+                        tooltip: '',
+                        fn: fn,
+                        dataId: annoId,
+                        // Generic filter tokens for the component's hidden-filters
+                        // mechanism: the annotation's category + priority ids. The
+                        // component treats these as opaque; the CSS classes for the
+                        // icon are carried separately in innerClass.
+                        filters: ((categories || '') + ' ' + (priority || '')).replace(/\s+/g, ' ').trim()
+                    };
+                    zoneKeys.push(key);
+                });
+
+                annoRecs.push({ uri: uri, zoneKeys: zoneKeys });
+            });
+        }
+
+        // Preload each annotation's server-rendered tooltip HTML up front so the
+        // component can render the tooltip itself on hover. All tooltips are
+        // fetched in parallel and zones-data is pushed once they have all
+        // resolved. A safety-net timeout pushes whatever resolved so a single
+        // failed request never permanently hides the page's annotations.
+        var pending = annoRecs.length;
+        var pushed = false;
+        var pushData = function() {
+            if (pushed) return;
+            pushed = true;
+            me.pushZonesData();
+        };
+
+        if (pending === 0) { pushData(); return; }
+
+        annoRecs.forEach(function(rec) {
+            window.doAJAXRequest('data/xql/getAnnotation.xql',
+                'GET',
+                {
+                    uri: rec.uri,
+                    target: 'tip',
+                    edition: EdiromOnline.getApplication().activeEdition
+                },
+                function(response) {
+                    rec.zoneKeys.forEach(function(k) {
+                        if (me._annotationZones[k]) me._annotationZones[k].tooltip = response.responseText;
+                    });
+                    pending--;
+                    if (pending === 0) pushData();
+                }
+            );
+        });
+
+        // safety net in case some requests never call back
+        setTimeout(pushData, 8000);
+    },
+
+    // Shows or hides a whole zone TYPE (e.g. 'annotation', 'measure') via the
+    // `visible-types` attribute, without discarding the pushed zones-data. The
+    // component renders only the types currently in the set, so toggling is a
+    // pure visibility switch (no re-fetch / re-push of the data).
+    setTypeVisible: function(type, visible) {
+        var me = this;
+        if (!me.webComponent) return;
+        me._visibleTypeSet = me._visibleTypeSet || {};
+        if (visible) me._visibleTypeSet[type] = true;
+        else delete me._visibleTypeSet[type];
+        me.webComponent.setAttribute('visible-types', JSON.stringify(Object.keys(me._visibleTypeSet)));
+    },
+
+    // Pushes the active annotation filter to the component (push model) as a
+    // single generic `hidden-filters` set. `hiddenFilters` is the union of the
+    // taxonomy tokens the user has UNCHECKED (unchecked categories + unchecked
+    // priorities); the component hides any annotation carrying one of them. An
+    // absent taxonomy simply contributes nothing, so "no filter" is the empty
+    // set and "hide all" is every token — no special sentinels needed.
+    setAnnotationFilter: function(hiddenFilters) {
+        var me = this;
+        if (!me.webComponent) return;
+        me.webComponent.setAttribute('hidden-filters', JSON.stringify(Ext.Array.toArray(hiddenFilters)));
+    },
+
+    // Runs a zone's host click action (set up server-side as the zone's `fn`,
+    // e.g. an annotation link), fired from the component's zone-click event.
+    onZoneClick: function(detail) {
+        if (detail && detail.fn) eval(detail.fn);
+    },
+
+    getShapes: function(groupName) {
+
+        var me = this;
+        var shapes = me.shapes.get(groupName);
+        return (shapes == null || typeof shapes === 'undefined'?[]:shapes);
+    },
+
+    getShapeElem: function(shapeId) {
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: OpenSeaDragonView: getShapeElem: ' + shapeId);
+        }
+        var me = this;
+        // OpenSeaDragon renders overlays inside the web component's shadow DOM,
+        // so they cannot be found via me.el (which searches the main document).
+        return me.getElemByRawId(me.id + '_' + shapeId);
+    },
+
+    getElemByRawId: function(rawId) {
+
+        var me = this;
+        if(!me.webComponent || !me.webComponent.shadowRoot)
+            return null;
+        var dom = me.webComponent.shadowRoot.getElementById(rawId);
+        return dom ? Ext.get(dom) : null;
     },
 
     listenForShapeLink: function(e, dom, args) {
-    
+
         var me = this;
 
         if(e.button != 0) return;
@@ -288,671 +754,6 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     },
 
     openShapeLink: function(e, dom, args) {
-    	
         eval(args.fn);
-    },
-
-    addMeasures: function(shapes) {
-   
-        var me = this;
-
-        me.shapes.add('measures', shapes);
-
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-
-        var dh = Ext.DomHelper;
-        var tpl = dh.createTemplate({tag:'div', id: '{0}', cls: 'measure', html:'<span class="{2}" id="{0}_inner">{1}</span>'});
-        tpl.compile();
-
-        me.shapes.get('measures').each(function(shape) {
-
-            var id = shape.get('id');
-            var name = shape.get('name');
-            var x = shape.get('ulx');
-            var y = shape.get('uly');
-            var width = shape.get('lrx') - shape.get('ulx');
-            var height = shape.get('lry') - shape.get('uly');
-
-            var measure = tpl.append(shapeDiv, [me.id + '_' + id, name, (name === ''?'measureInnerEmpty':'measureInner')], true);
-
-            measure.setStyle({
-                position: 'absolute'
-            });
-            var text = measure.getById(me.id + '_' + id + '_inner');
-            text.on('mouseenter', me.highlightShape, me, measure, true);
-            text.on('mouseleave', me.deHighlightShape, me, measure, true);
-            text.setStyle({
-                position: 'relative'
-            });
-        });
-
-        me.repositionShapes();
-    },
-
-    highlightShape: function(event, owner, shape) {
-    
-        shape.addCls('highlighted');
-        
-        var annotId = shape.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
-    },
-
-    deHighlightShape: function(event, owner, shape) {
-    
-        shape.removeCls('highlighted');
-        
-        var annotId = shape.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
-    },
-
-    repositionShapes: function() {
-    
-        var me = this;
-
-        if(me.shapesHidden) return;
-
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-
-        var shapeRects = new Ext.util.MixedCollection();
-
-        me.shapes.eachKey(function(groupName) {
-
-            var fn = function(shape) {
-
-                var id, x, y, width, height;
-
-                try {
-                    id = shape.get('id');
-                    x = shape.get('ulx');
-                    y = shape.get('uly');
-                    width = shape.get('lrx') - shape.get('ulx');
-                    height = shape.get('lry') - shape.get('uly');
-                }catch (e) {
-                    id = shape.id;
-                    x = shape.ulx;
-                    y = shape.uly;
-                    width = shape.lrx - shape.ulx;
-                    height = shape.lry - shape.uly;
-                }
-
-                var shapeEl = shapeDiv.getById(me.id + '_' + id);
-                shapeEl.setStyle({
-                    top: Math.round((y * me.zoom) + me.offY) + "px",
-                    left: Math.round((x * me.zoom) + me.offX) + "px",
-                    width: Math.round(width * me.zoom) + "px",
-                    height: Math.round(height * me.zoom) + "px"
-                });
-
-                var rectKey = x + "_" + y + "_" + width + "_" + height + "_" + Math.round(width * me.zoom) + "_" + Math.round(height * me.zoom);
-
-                var innerShapeEl = shapeEl.getById(me.id + '_' + id + '_inner');
-
-                if(innerShapeEl) {
-                    if(shapeEl.hasCls("measure")) {
-
-                        innerShapeEl.setStyle({
-                            top: Math.round((shapeEl.getHeight() / 2.0) - (innerShapeEl.getHeight() / 2.0)) - 10 + "px",
-                            left: Math.round((shapeEl.getWidth() / 2.0) - (innerShapeEl.getWidth() / 2.0)) + "px"
-                        });
-
-                    }else {
-
-                        if(!shapeRects.containsKey(rectKey))
-                            shapeRects.add(rectKey, []);
-
-                        Ext.Array.include(shapeRects.get(rectKey), innerShapeEl);
-                    }
-                }
-            };
-
-            if(me.shapes.get(groupName).each)
-                me.shapes.get(groupName).each(fn);
-            else
-                Ext.Array.each(me.shapes.get(groupName), fn);
-        });
-
-        var re = /(\d+)_(\d+)_(\d+)_(\d+)_(\d+)_(\d+)/;
-
-        shapeRects.eachKey(function(rectKey) {
-            var shapes = shapeRects.get(rectKey);
-
-            var result = re.exec(rectKey);
-            var shapeWidth = result[5];
-            var shapeHeight = result[6];
-
-            //TODO: Taktzahlen an Ausschnitt ausrichten
-            if(shapes.length == 1) {
-                shapes[0].setStyle({
-                    top: Math.round((shapeHeight / 2.0) - (shapes[0].getHeight() / 2.0)) + "px",
-                    left: Math.round((shapeWidth / 2.0) - (shapes[0].getWidth() / 2.0)) + "px"
-                });
-            }else{
-                //TODO: Anmerkungsicons verteilen
-                var num = shapes.length;
-                var cols = Math.ceil(Math.sqrt(num));
-                var rows = Math.ceil(num / cols);
-
-                for(var i = 0; i < cols; i++) {
-                    for(var j = 0; j < rows; j++) {
-
-                        var index = (i * rows) + j;
-
-                        if(index >= num) continue;
-
-                        shapes[index].setStyle({
-                            top: Math.round((shapeHeight / 2.0) - (shapes[index].getHeight() / 2.0) - ((rows - 1)* 10) + (j * 20)) + "px",
-                            left: Math.round((shapeWidth / 2.0) - (shapes[index].getWidth() / 2.0) - ((cols - 1) * 12) + (i * 24)) + "px"
-                        });
-                    }
-                }
-            }
-        });
-    },
-
-    getShapes: function(groupName) {
-    
-        var me = this;
-        return me.shapes.get(groupName);
-    },
-
-    getShapeElem: function(shapeId) {
-   
-        var me = this;
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-        return shapeDiv.getById(me.id + '_' + shapeId);
-    },
-
-    getElemByRawId: function(rawId) {
-
-        return Ext.get(rawId);
-    },
-
-    removeShapes: function(groupName) {
-        var me = this;
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-
-        if(!me.shapes.containsKey(groupName)) return;
-
-        var fn = function(shape) {
-
-            var id;
-
-            try {
-                id = shape.get('id');
-            }catch(e) {
-                id = shape.id;
-            }
-			//console.log(shapeDiv.getById(me.id + '_' + id));
-            var shapeElem = shapeDiv.getById(me.id + '_' + id);
-            if(shapeElem) Ext.removeNode(shapeElem.dom);
-        };
-
-        if(me.shapes.get(groupName).each)
-            me.shapes.get(groupName).each(fn);
-        else
-            Ext.Array.each(me.shapes.get(groupName), fn);
-
-        me.shapes.add(groupName, []);
-        
-        Ext.Array.each(me.annotSVGOverlays, function(svg) {
-            this.removeSVGOverlay(svg);
-        }, me);
-        me.annotSVGOverlays = [];
-    },
-
-    hideShapes: function() {
-    
-        var me = this;
-        if(!me.shapesHidden) {
-            me.shapesHidden = true;
-            var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-            shapeDiv.addCls('hiddenShapes');
-        }
-    },
-
-    showShapes: function() {
-    
-        var me = this;
-        if(me.shapesHidden) {
-            me.shapesHidden = false;
-            var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-            shapeDiv.removeCls('hiddenShapes');
-            me.repositionShapes();
-        }
-    },
-
-    addSVGOverlay: function(overlayId, overlay, name, uri, fn) {
-    
-        var me = this;
-        var sibling = me.el.getById(me.id + '_facsContEvents');
-
-        var dh = Ext.DomHelper;
-        var id = Ext.id({});
-        var svg = dh.append(sibling, {
-            id: me.id + '_' + id,
-            tag: 'div',
-            cls: 'overlay',
-            html: overlay
-        }, true);
-
-        svg.child('svg', true).setAttribute("width", me.imgWidth * me.zoom);
-        svg.child('svg', true).setAttribute("height", me.imgHeight * me.zoom);
-        svg.child('svg', true).setAttribute("style", "top:" +  me.offY + "px; left:" +  me.offX + "px; position: absolute;");
-
-        if(typeof uri != 'undefined' || typeof fn != 'undefined') {
-            var children = svg.child('svg', true).children;
-            for(var i = 0; i < children.length; i++) {
-                var elem = children[i];
-                elem.setAttribute("id", me.id + '_' + Ext.id({}));
-                
-                if(typeof fn != 'undefined')
-                    elem.setAttribute('onmousedown', fn);
-                
-                if(typeof uri != 'undefined') {
-                    var tip = Ext.create('Ext.tip.ToolTip', {
-                        target: elem.id,
-                        cls: 'annotationTip',
-                        width: me.annotTipWidth,
-                        maxWidth: me.annotTipMaxWidth,
-                        height: me.annotTipHeight,
-                        maxHeight: me.annotTipMaxHeight,
-                        dismissDelay: 0,
-                        anchor: 'left',
-                        html: getLangString('Annotation_plus_Title', name)
-                    });
-                    tip.on('afterrender', function() {
-                        window.doAJAXRequest('data/xql/getAnnotation.xql', 'GET', {
-                            uri: uri,
-                            target: 'tip',
-                            edition: EdiromOnline.getApplication().activeEdition
-                        }, Ext.bind(function(response) {
-                            this.update(response.responseText);
-                        }, this));
-                    }, tip);
-                }
-            }
-        }
-
-        me.svgOverlays.add(overlayId, svg);
-    },
-
-    removeSVGOverlay: function(overlayId) {
-    
-        var me = this;
-        me.svgOverlays.get(overlayId).destroy();
-        me.svgOverlays.removeAtKey(overlayId);
-    },
-
-    onMouseDown: function(e) {
-   
-        var me = this;
-
-        me.hiResImg.hide();
-        me.hideShapes();
-
-        me.mouseOffX = me.offX;
-        me.mouseOffY = me.offY;
-
-        me.posX = e.getPageX();
-        me.posY = e.getPageY();
-
-        Ext.getDoc().on('mousemove', me.onMouseMove, me);
-        Ext.getDoc().on('mouseup', me.onMouseUp, me);
-    },
-
-    onMouseMove: function(e) {
-    
-        var me = this;
-
-        var offX = me.mouseOffX - (me.posX - e.getPageX());
-        var offY = me.mouseOffY - (me.posY - e.getPageY());
-
-        me.setSVGOffset(offX, offY);
-    },
-
-    onMouseUp: function(e) {
-   
-        var me = this;
-
-        Ext.getDoc().un('mousemove', me.onMouseMove, me);
-        Ext.getDoc().un('mouseup', me.onMouseUp, me);
-
-        var offX = me.mouseOffX - (me.posX - e.getPageX());
-        var offY = me.mouseOffY - (me.posY - e.getPageY());
-
-        me.setSVGOffset(offX, offY);
-
-        me.calculateHiResImg();
-        me.showShapes();
-    },
-
-    onScroll: function(e) {
-    
-        var me = this, delta;
-
-        me.hiResImg.hide();
-        me.hideShapes();
-
-        delta = e.getWheelDelta();
-
-        var factor = 5;
-        if(me.zoom < 0.5) factor = 6;
-
-        var newZoom = me.zoom + (delta * factor / 100);
-
-        newZoom = Math.min(newZoom, me.maxZoom);
-        newZoom = Math.max(newZoom, me.minZoom);
-
-        var mousePosX = e.getPageX() - me.el.getX();
-        var mousePosY = e.getPageY() - me.el.getY();
-
-        var centerX = Math.round((mousePosX - me.offX) / me.zoom); //
-        var centerY = Math.round((mousePosY - me.offY) / me.zoom); //
-
-        me.setSVGOffset(mousePosX - Math.round(centerX * newZoom), mousePosY - Math.round(centerY * newZoom));
-
-        me.setSVGZoom(newZoom);
-
-        e.stopEvent();
-
-        me.lastZoom = (new Date()).getTime();
-        Ext.defer(me.hiResAfterScroll, 300, me, [me.lastZoom]);
-    },
-
-    hiResAfterScroll: function(zoomTime) {
-    
-        var me = this;
-
-        if(me.lastZoom == zoomTime) {
-            me.calculateHiResImg();
-            me.showShapes();
-        }
-    },
-
-    fitInImage: function() {
-    
-        var me = this;
-
-        me.showRect(0, 0, me.imgWidth, me.imgHeight);
-    },
-
-    showRect: function(x, y, width, height, highlight, fitHeight) {
-
-        var me = this;
-
-        // Remember the rect so onResize can re-fit it: this keeps the displayed zone height
-        // equal across the horizontal viewers in measureBasedView even when the layout settles
-        // its container sizes over several passes – matching OpenSeaDragonViewer.
-        me.rect = {
-            x:x,
-            y:y,
-            width:width,
-            height:height,
-            highlight:highlight,
-            fitHeight:fitHeight
-        };
-
-        me.hiResImg.hide();
-
-        var contWidth = me.getWidth();
-        var contHeight = me.getHeight();
-
-        var offX;
-        var offY;
-
-        var diffWidth = 0;
-        var diffHeight = 0;
-
-        // fitHeight forces the zone height to fill the container and left-aligns it (no centering),
-        // so each part shows its full staff at the common zoom and the measures start at the same x
-        // across the vertically stacked parts in measureBasedView. Otherwise fit to whichever
-        // dimension is more constraining and centre (default, used by the page-based view).
-        if(fitHeight) {
-            me.setSVGZoom((contHeight / height));
-        }else if((contWidth / width) > (contHeight / height)) {
-            me.setSVGZoom((contHeight / height));
-            diffWidth = Math.round((contWidth - (width * me.zoom)) / 2);
-        }else {
-            me.setSVGZoom((contWidth / width));
-            diffHeight = Math.round((contHeight - (height * me.zoom)) / 2);
-        }
-
-        offY = y * me.zoom;
-        offX = x * me.zoom;
-
-        me.setSVGOffset(((offX * - 1) + diffWidth), ((offY * - 1) + diffHeight));
-
-        if(highlight)
-            Ext.defer(me.createTempRect, 1000, me, [x, y, width, height], false);
-
-        me.calculateHiResImg();
-
-        Ext.defer(me.calculateHiResImg, 500, me);
-    },
-
-    onResize: function() {
-
-        var me = this;
-
-        // Re-fit the stored rect to the (now final) container size so the zone keeps the same
-        // displayed height across viewers; fall back to a hi-res refresh when nothing is shown.
-        if(me.rect && me.rect != null)
-            me.showRect(me.rect.x, me.rect.y, me.rect.width, me.rect.height, false, me.rect.fitHeight);
-        else
-            me.calculateHiResImg();
-    },
-
-    getActualRect: function() {
-    
-        var me = this;
-        return {
-            x: Math.max(Math.round(- me.offX / me.zoom), 0),
-            y: Math.max(Math.round(- me.offY / me.zoom), 0),
-            width: Math.min(Math.round(me.getWidth() / me.zoom), me.imgWidth),
-            height: Math.min(Math.round(me.getHeight() / me.zoom), me.imgHeight)
-        };
-    },
-
-    createTempRect: function(x, y, width, height) {
-    
-        var me = this;
-
-        if(!me.shapes.containsKey('temp'))
-            me.shapes.add('temp', []);
-
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-
-        var dh = Ext.DomHelper;
-        var id = Ext.id({});
-        var zone = dh.append(shapeDiv, {
-            id: me.id + '_' + id,
-            tag: 'div',
-            cls: 'measure'
-        }, true);
-
-        zone.setStyle({
-            position: 'absolute'
-        });
-
-        var shape = {
-            id: id,
-            ulx: x,
-            uly: y,
-            lrx: x + width,
-            lry: y + height
-        };
-
-        me.shapes.get('temp').push(shape);
-
-        me.highlightShape(null, null, zone);
-
-        Ext.defer(me.destroyTempRect, 3000, me, [shape], false);
-
-        me.repositionShapes();
-    },
-
-    destroyTempRect: function(shape) {
-    
-        var me = this;
-        
-        if(typeof me.el == 'undefined') return;
-        
-        var shapeDiv = me.el.getById(me.id + '_facsContEvents');
-        var id;
-
-        try {
-            id = shape.get('id');
-        }catch(e) {
-            id = shape.id;
-        }
-
-        if(shapeDiv.getById(me.id + '_' + id) != null) 
-            Ext.removeNode(shapeDiv.getById(me.id + '_' + id).dom);
-            
-        Ext.Array.remove(me.shapes.get('temp'), shape);
-    },
-
-    setZoomAndCenter: function(z) {
-    
-        var me = this;
-
-        me.hiResImg.hide();
-
-        var centerX = Math.round(((me.getWidth() / 2.0) - me.offX) / me.zoom);
-        var centerY = Math.round(((me.getHeight() / 2.0) - me.offY) / me.zoom);
-
-        me.setSVGZoom(z);
-
-        me.setSVGOffset(Math.round((me.getWidth() / 2.0) - (centerX * me.zoom)),
-                        Math.round((me.getHeight() / 2.0) - (centerY * me.zoom)));
-
-        me.lastZoom = (new Date()).getTime();
-        Ext.defer(me.hiResAfterScroll, 300, me, [me.lastZoom]);
-    },
-
-    setSVGZoom: function(z) {
-    
-        var me = this;
-
-        me.zoom = z;
-        me.svgEl.setAttribute("width", me.imgWidth * z);
-        me.svgEl.setAttribute("height", me.imgHeight * z);
-
-        me.svgOverlays.each(function(svg) {
-            svg.child('svg', true).setAttribute("width", me.imgWidth * z);
-            svg.child('svg', true).setAttribute("height", me.imgHeight * z);
-        });
-
-        me.repositionShapes();
-        me.fireEvent('zoomChanged', me.zoom);
-    },
-
-    setSVGOffset: function(x, y) {
-    
-        var me = this;
-
-        me.offX = x;
-        me.offY = y;
-
-        me.svgEl.setAttribute("style", "top:" +  y + "px; left:" +  x + "px; position: absolute;");
-
-        me.svgOverlays.each(function(svg) {
-            svg.child('svg', true).setAttribute("style", "top:" +  y + "px; left:" +  x + "px; position: absolute;");
-        });
-
-        me.repositionShapes();
-    },
-
-    calculateHiResImg: function() {
-    
-        var me = this;
-
-        if(me.zoom < me.baseImgZoom || typeof me.hiResImg == 'undefined') return;
-
-        var imgX = (-me.offX / me.zoom);
-        var imgY = (-me.offY / me.zoom);
-        var imgWidth = (me.getWidth() / me.zoom);
-        var imgHeight = (me.getHeight() / me.zoom);
-
-        if(imgWidth > me.imgWidth - imgX) imgWidth = me.imgWidth - imgX;
-        if(imgHeight > me.imgHeight - imgY) imgHeight = me.imgHeight - imgY;
-
-        if(imgX < 0) {
-            imgWidth = imgWidth + imgX;
-            imgX = 0;
-        }
-
-        if(imgY < 0) {
-            imgHeight = imgHeight + imgY;
-            imgY = 0;
-        }
-
-        //Ext.log("imgX: " + imgX + ", imgY: " + imgY + ", imgWidth: " + imgWidth + ", imgHeight: " + imgHeight);
-
-        if(imgWidth < 0 || imgHeight < 0) return;
-
-        var dw = Math.round(imgWidth * me.zoom);
-        var dh = Math.round(imgHeight * me.zoom);
-        var wx = imgX / me.imgWidth;
-        var wy = imgY / me.imgHeight;
-        var ww = imgWidth / me.imgWidth;
-        var wh = imgHeight / me.imgHeight;
-
-        //Ext.log("dw: " + dw + ", dh: " + dh + ", wx: " + wx + ", wy: " + wy + ", ww: " + ww + ", wh: " + wh);
-
-        me.imageLoader.addJob({
-            img: me.hiResImg,
-            path: me.imgPrefix + me.imgPath + '?dw=' + dw + '&amp;dh=' + dh + '&amp;wx=' + wx + '&amp;wy=' + wy + '&amp;ww=' + ww + '&amp;wh=' + wh + '&amp;mo=fit',
-            width: dw / me.zoom,
-            height: dh / me.zoom,
-            x: imgX,
-            y: imgY
-        });
-    }
-});
-
-Ext.define('EdiromOnline.view.window.image.ImageLoader', {
-
-    queue: [],
-    img: null,
-
-    constructor: function(config) {
-        var me = this;
-
-        Ext.apply(me, config);
-        me.img = new Image();
-        
-    },
-
-    addJob: function(job) {
-   
-        var me = this;
-
-        me.queue.push(job);
-
-        me.img.onload = function() {
-            me.runJob(me, job);
-        };
-        me.img.src = job.path;
-    },
-
-    runJob: function(me, job) {
-    
-        if(Ext.Array.indexOf(me.queue, job) != me.queue.length - 1) {
-            return;
-        }
-
-        me.queue = [];
-
-        job.img.attr({
-            src: job.path,
-            width: job.width,
-            height: job.height,
-            x: job.x,
-            y: job.y
-        });
-        job.img.show();
     }
 });
