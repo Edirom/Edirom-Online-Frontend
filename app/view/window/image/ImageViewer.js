@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Edirom Online.  If not, see <http://www.gnu.org/licenses/>.
  */
-Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
+Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     extend: 'Ext.panel.Panel',
 
     mixins: {
