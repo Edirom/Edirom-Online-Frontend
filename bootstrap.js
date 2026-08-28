@@ -7,7 +7,6 @@
 Ext.Loader.addClassPathMappings({
   "EdiromOnline": "app",
   "EdiromOnline.view.desktop.TrayClock": "app/view/desktop/TaskBar.js",
-  "EdiromOnline.view.window.image.ImageLoader": "app/view/window/image/ImageViewer.js",
   "EdiromOnline.view.window.source.GotoMsg": "app/view/window/source/SourceView.js",
   "EdiromOnline.view.window.source.HorizontalMeasureViewer": "app/view/window/source/MeasureBasedView.js",
   "EdiromOnline.view.window.source.IntervalSpinner": "app/view/window/source/MeasureBasedView.js",
@@ -88,9 +87,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.window.audio.AudioView": [],
   "EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator": [],
   "EdiromOnline.view.window.iFrameView": [],
-  "EdiromOnline.view.window.image.ImageLoader": [],
   "EdiromOnline.view.window.image.ImageViewer": [],
-  "EdiromOnline.view.window.image.OpenSeaDragonViewer": [],
   "EdiromOnline.view.window.image.VerovioImage": [],
   "EdiromOnline.view.window.search.SearchWindow": [],
   "EdiromOnline.view.window.source.GotoMsg": [],
@@ -1036,9 +1033,7 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.view.window.iFrameView": [
     "widget.iFrameView"
   ],
-  "EdiromOnline.view.window.image.ImageLoader": [],
   "EdiromOnline.view.window.image.ImageViewer": [],
-  "EdiromOnline.view.window.image.OpenSeaDragonViewer": [],
   "EdiromOnline.view.window.image.VerovioImage": [],
   "EdiromOnline.view.window.search.SearchWindow": [
     "widget.searchWindow"
