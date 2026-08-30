@@ -26,7 +26,6 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         'EdiromOnline.view.window.SummaryView',
         'EdiromOnline.view.window.iFrameView',
         'EdiromOnline.view.window.XmlView',
-        'EdiromOnline.view.window.audio.AudioView',
 	'EdiromOnline.view.window.source.VerovioView',
         'EdiromOnline.view.window.source.SourceView',
         'EdiromOnline.view.window.text.FacsimileView',
@@ -39,15 +38,13 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
     ],
 
     init: function() {
-        this.control({
-            'ediromWindow': {
-                show: this.onWindowRendered,
-                single: true
-            }
-        });
     },
 
-    onWindowRendered: function(win) {
+    // Called by WindowController right after the window is created, while it is
+    // STILL HIDDEN. The window is only ever shown once we know its content (see
+    // onMetaDataLoaded) — audio-only resources are never shown at all, so no empty
+    // ExtJS window flashes on screen before the audio popup appears.
+    loadWindowContent: function(win) {
         var me = this;
         var lang = getPreference('application_language');
 
@@ -72,6 +69,7 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 
         var me = this;
         var views = [];
+        var hasAudioView = false;
         
         Ext.Array.each(config.views, function(view) {
 	        var uri = view.uri;
@@ -84,11 +82,12 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 		        uri = uri + "#" + config["internalId"];
 	        }
 
-	        // Audio content opens in its own WinBox popup instead of an ExtJS tab.
-	        if(view.type == "audioView") {
-		        this.application.getController('desktop.Desktop').openAudioView(uri, view.label);
-		        return;
-	        }
+            // Audio content opens in its own WinBox popup instead of an ExtJS tab.
+            if(view.type == "audioView") {
+                hasAudioView = true;
+                this.application.getController('desktop.Desktop').openAudioView(uri, view.label);
+                return;
+            }
 
             views.push(this.createView(view.type, {
                 window:win,
@@ -101,8 +100,18 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 
         }, me);
 
+        // Audio resources open exclusively in the audio-player popup. The window
+        // was never shown (see loadWindowContent), so just discard it — nothing
+        // was ever painted, unlike the old win.close() which closed an already-
+        // visible window.
+        if(hasAudioView) {
+            win.destroy();
+            return;
+        }
+
         config.views = views;
         win.setWindowConfig(config);
+        win.show();
     },
 
     createView: function(type, config) {
@@ -126,7 +135,6 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             case 'iFrameView': return getLangString('controller.window.Window_iFrameView');
             case 'xmlView': return getLangString('controller.window.Window_xmlView');
             case 'sourceView': return getLangString('controller.window.Window_sourceView');
-            case 'audioView': return getLangString('controller.window.Window_audioView');
 	        case 'verovioView': return getLangString('controller.window.Window_verovioView');
             case 'headerView': return getLangString('controller.window.Window_headerView');
             case 'facsimileView': return 'Facsimile';
@@ -143,7 +151,6 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             case 'iFrameView': return 'EdiromOnline.view.window.iFrameView';
             case 'xmlView': return 'EdiromOnline.view.window.XmlView';
             case 'sourceView': return 'EdiromOnline.view.window.source.SourceView';
-            case 'audioView': return 'EdiromOnline.view.window.audio.AudioView';
 	    case 'verovioView': return 'EdiromOnline.view.window.source.VerovioView';
             case 'headerView': return 'EdiromOnline.view.window.HeaderView';
             case 'textView': return 'EdiromOnline.view.window.text.TextView';
