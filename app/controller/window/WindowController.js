@@ -45,8 +45,6 @@ Ext.define('EdiromOnline.controller.window.WindowController', {
         });
 
         var win = new EdiromOnline.view.window.Window(config);
-        this.application.getController('desktop.Desktop').addWindowToActiveDesktop(win);
-
         this.application.getController('window.SingleWindowController').loadWindowContent(win);
         
         return win;

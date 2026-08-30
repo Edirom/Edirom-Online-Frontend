@@ -41,14 +41,12 @@ Ext.define('EdiromOnline.Application', {
         'window.WindowController',
         'window.XmlView',
         'window.concordanceNavigator.ConcordanceNavigator',
-        'window.audio.AudioView',
         'window.source.SourceView',
         'window.source.PageBasedView',
         'window.source.MeasureBasedView',
         'window.source.VerovioView',
         'window.text.FacsimileView',
-        'window.text.TextFacsimileSplitView',
-        'window.text.TextView'
+        'window.text.TextFacsimileSplitView'
     ],
     
     models: [

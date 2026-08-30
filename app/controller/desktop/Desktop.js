@@ -601,6 +601,115 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         });
     },
 
+    // Text window — renders the existing backend-generated text HTML directly
+    // inside the WinBox web-component host. No separate text web component is
+    // needed. Chapter navigation and internal/footnote links are wired with
+    // native DOM events because the content lives inside the shadow root.
+    openTextView: function(uri, label, textConfig) {
+        var me = this;
+        var desktop = me.desktop;
+        textConfig = textConfig || {};
+
+        var existing = null;
+        desktop.getActiveWindowsSet().each(function(w) {
+            if (w && w.isTextProxy && w.uri === uri) { existing = w; return false; }
+        });
+        if (existing) {
+            existing.show();
+            if (textConfig.internalId && existing.scrollToTextId) {
+                existing.scrollToTextId(textConfig.internalId);
+            }
+            return;
+        }
+
+        var winId = 'text-window-' + Date.now();
+        var idPrefix = winId + '_';
+
+        window.doAJAXRequest('data/xql/getText.xql',
+            'GET',
+            {
+                uri: uri,
+                idPrefix: idPrefix,
+                term: textConfig.term || '',
+                path: textConfig.path || ''
+            },
+            function(response) {
+                var chapterLabel = getLangString('view.window.text.TextView_gotoMenu');
+                var html = ''
+                    + '<div class="textWindow" style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+                    +     '<div class="textWindowToolbar" style="display:none;padding:4px 6px;border-bottom:1px solid #ccc;">'
+                    +         '<label>' + chapterLabel + ': '
+                    +             '<select class="textChapterSelect"></select>'
+                    +         '</label>'
+                    +     '</div>'
+                    +     '<div class="textWindowScroller" style="flex:1;overflow:auto;">'
+                    +         '<div class="textViewContent" style="padding:10px;">' + response.responseText + '</div>'
+                    +     '</div>'
+                    + '</div>';
+
+                me.createWinBoxWindow({
+                    id: winId,
+                    title: label || getLangString('controller.window.Window_textView'),
+                    maxWidth: 900,
+                    html: html,
+                    findExisting: function(w) { return !!(w && w.isTextProxy && w.uri === uri); },
+                    proxyExtras: { isTextProxy: true, uri: uri },
+                    onOpen: function(winbox, winboxEl, host, proxy) {
+                        var scrollToId = function(id) {
+                            if (!id) return;
+                            var target = host.shadowRoot.getElementById(idPrefix + id)
+                                || host.shadowRoot.getElementById(id);
+                            if (target) target.scrollIntoView({ block: 'start' });
+                        };
+
+                        proxy.scrollToTextId = scrollToId;
+                        me.wireInPageAnchors(winboxEl, host);
+
+                        if (winboxEl) {
+                            winboxEl.addEventListener('click', function(e) {
+                                var link = e.target && e.target.closest
+                                    ? e.target.closest('.scrollto[data-footnote]')
+                                    : null;
+                                if (!link) return;
+                                e.preventDefault();
+                                scrollToId(link.getAttribute('data-footnote'));
+                            });
+                        }
+
+                        window.doAJAXRequest('data/xql/getChapters.xql',
+                            'GET',
+                            { uri: uri },
+                            function(chapterResponse) {
+                                var chapters;
+                                try {
+                                    chapters = Ext.JSON.decode(chapterResponse.responseText);
+                                } catch (e) {
+                                    chapters = [];
+                                }
+                                if (!chapters || !chapters.length || !winboxEl) return;
+
+                                var toolbar = winboxEl.querySelector('.textWindowToolbar');
+                                var select = winboxEl.querySelector('.textChapterSelect');
+                                Ext.Array.each(chapters, function(chapter) {
+                                    var option = document.createElement('option');
+                                    option.value = chapter.id;
+                                    option.textContent = chapter.name;
+                                    select.appendChild(option);
+                                });
+                                select.addEventListener('change', function() {
+                                    scrollToId(select.value);
+                                });
+                                toolbar.style.display = '';
+                            }
+                        );
+
+                        if (textConfig.internalId) scrollToId(textConfig.internalId);
+                    }
+                });
+            }
+        );
+    },
+
     // Audio window — rendered with the WinBox web component (mirrors openHelp /
     // openAbout / openSearch). Called by SingleWindowController.onMetaDataLoaded
     // instead of adding an ExtJS audioView tab whenever a clicked resource's
