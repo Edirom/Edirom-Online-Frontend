@@ -42,11 +42,56 @@ Ext.define('EdiromOnline.controller.LinkController', {
     },
 
     /**
-     * Reads an URI and opens a window with the referenced content
+     * Reads an URI and opens a window with the referenced content.
+     *
+     * For a single, simple xmldb:exist:// URI (no cfg, no multi-uri batch), this
+     * first asks the backend what views the resource has. If the only views are
+     * audioView (+ optionally its sibling xmlView), the resource opens directly in
+     * the audio WinBox and the generic ExtJS window is never created at all — not
+     * even briefly. Anything else (multi-uri batches, cfg-carrying calls, or a
+     * resource with other real views too) goes through the normal
+     * loadLinkInternal/ExtJS window path, unaffected.
      *
      * @param {String} uri The URI to process.
      */
     loadLink: function(uri, cfg) {
+        var me = this;
+
+        // Navigator links call loadLink(uri, {}) — an empty (but truthy) cfg object,
+        // not omitted — so "no real cfg" must be checked by key count, not truthiness.
+        var hasRealCfg = cfg && Object.keys(cfg).length > 0;
+
+        if (typeof uri === 'string' && !hasRealCfg && uri.match(/^xmldb:exist:\/\//) && !/[\s;]/.test(uri)) {
+            window.doAJAXRequest('data/xql/getLinkTarget.xql',
+                'POST',
+                { uri: uri, lang: window.getLanguage() },
+                function(response) {
+                    var config = Ext.JSON.decode(response.responseText);
+                    var audioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'audioView'; })[0];
+                    var xmlViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'xmlView'; })[0];
+                    var otherViews = Ext.Array.filter(config.views, function(view) { return view.type != 'audioView' && view.type != 'xmlView'; });
+
+                    if (audioViewEntry && otherViews.length === 0) {
+                        // config.title (not the per-view label) matches the resource's
+                        // own navigator label, e.g. "Akkord Beispiele".
+                        me.application.getController('desktop.Desktop').openAudioView(audioViewEntry.uri, config.title, xmlViewEntry ? xmlViewEntry.uri : null);
+                    } else {
+                        me.loadLinkInternal(uri, cfg);
+                    }
+                }
+            );
+            return;
+        }
+
+        me.loadLinkInternal(uri, cfg);
+    },
+
+    /**
+     * Reads an URI and opens a window with the referenced content
+     *
+     * @param {String} uri The URI to process.
+     */
+    loadLinkInternal: function(uri, cfg) {
         
         //TODO: check if links should be opened in new windows
 

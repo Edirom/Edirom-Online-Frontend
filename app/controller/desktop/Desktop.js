@@ -300,14 +300,20 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
             if (opts.proxyExtras) Ext.apply(proxy, opts.proxyExtras);
 
+            // Cascade each new WinBox window a bit further down/right than the last,
+            // otherwise every one opens at the exact same spot (x:10,y:5) and stacks
+            // perfectly on top of the others, making it look like only one exists.
+            var openWinboxCount = host.shadowRoot.querySelectorAll('.winbox').length;
+            var cascadeStep = (openWinboxCount % 10) * 24;
+
             var winbox = new WinBox({
                 id: winId,
                 title: winTitle,
                 html: opts.html,
                 width: winWidth,
                 height: winHeight,
-                x: 10,
-                y: 5,
+                x: 10 + cascadeStep,
+                y: 5 + cascadeStep,
                 background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
                 root: host.shadowRoot.getElementById('winbox-container'),
                 index: 100000,
@@ -332,6 +338,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     proxy.active = false;
                     if (proxy.taskButton) proxy.taskButton.toggle(false);
                     return false; // prevent WinBox default minimize (strip at bottom)
+                },
+                onresize: function(width, height) {
+                    if (opts.onResize) opts.onResize(width, height, winbox);
                 },
                 onclose: function() {
                     proxy.close();
@@ -715,7 +724,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     // instead of adding an ExtJS audioView tab whenever a clicked resource's
     // views include an audioView entry. Behaves as a per-uri singleton: a
     // repeat click on the same source reuses the existing player window.
-    openAudioView: function(uri, label) {
+    // xmlUri: uri of the resource's sibling xmlView entry (if any), folded into
+    // this same window as an "XML-Ansicht" mode instead of its own ExtJS tab.
+    openAudioView: function(uri, label, xmlUri) {
         var me = this;
         var desktop = me.desktop;
 
@@ -740,13 +751,51 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             { uri: uri },
             function(response) {
                 var resp = Ext.decode(response.responseText);
+                var tracks = resp.audios;
                 // HTML-attribute-escape the JSON (") so it can be embedded
                 // directly in the double-quoted "tracks" attribute.
-                var tracksAttr = Ext.JSON.encode(resp.audios).replace(/"/g, '&quot;');
+                var tracksAttr = Ext.JSON.encode(tracks).replace(/"/g, '&quot;');
                 var winTitle = (label && label != '') ? label : getLangString('controller.window.Window_audioView');
+                var winId = 'audio-window-' + Date.now();
+                var editorId = winId + '_xmlEditor';
+
+                // Header mirrors the ExtJS window's TopBar: a single "Ansicht" (view)
+                // dropdown switching between the Audio Player and a read-only XML view
+                // of the same resource, with the XML view's own tools (A-/A+/Line#,
+                // like the legacy XmlView) appearing in that same row only while active.
+                // No footer, matching XmlView's lack of a BottomBar. Only rendered when
+                // this resource actually has a sibling xmlView entry (xmlUri set).
+                var toolbarHtml = xmlUri ? (''
+                    +     '<div class="eoWinToolbar">'
+                    +         '<select class="ansichtSelect">'
+                    +             '<option value="audio">' + Ext.String.htmlEncode(getLangString('controller.window.Window_audioView')) + '</option>'
+                    +             '<option value="xml">' + Ext.String.htmlEncode(getLangString('controller.window.Window_xmlView')) + '</option>'
+                    +         '</select>'
+                    +         '<button type="button" class="menuButton decreaseFont" style="display:none;">A-</button>'
+                    +         '<button type="button" class="menuButton increaseFont" style="display:none;">A+</button>'
+                    +         '<button type="button" class="menuButton lineNumbers" style="display:none;">Line #</button>'
+                    +     '</div>'
+                ) : '';
+                var xmlBodyHtml = xmlUri ? (''
+                    +     '<div class="xmlViewBody" style="flex:1;overflow:hidden;display:none;">'
+                    +         '<pre id="' + editorId + '" style="position:relative;height:100%;width:100%;margin:0;"></pre>'
+                    +     '</div>'
+                ) : '';
+                var html = ''
+                    + '<div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+                    +     toolbarHtml
+                    +     '<div class="audioViewBody" style="flex:1;overflow:auto;">'
+                    +         '<edirom-audio-player tracks="' + tracksAttr + '" height="auto" width="100%" state="pause" track="0" start="0.0" end="" playbackrate="1.0" playlist="true" progressbar="true"></edirom-audio-player>'
+                    +     '</div>'
+                    +     xmlBodyHtml
+                    + '</div>';
+
+                // Shared across onOpen/onResize below.
+                var xmlEditor = null;
+                var xmlLoaded = false;
 
                 me.createWinBoxWindow({
-                    id: 'audio-window-' + Date.now(),
+                    id: winId,
                     title: winTitle,
                     maxWidth: 600,
                     maxHeight: 400,
@@ -755,9 +804,97 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     // wrapper stretches to whatever height it's given, so a
                     // fixed WinBox height would push the track list way down
                     // below the (much shorter) controls bar.
-                    html: '<div style="height:100%;box-sizing:border-box;overflow:auto;"><edirom-audio-player tracks="' + tracksAttr + '" height="auto" width="100%" state="pause" track="0" start="0.0" end="" playbackrate="1.0" playlist="true" progressbar="true"></edirom-audio-player></div>',
+                    html: html,
                     findExisting: function(w) { return !!(w && w.isAudioProxy && w.uri === uri); },
-                    proxyExtras: { isAudioProxy: true, uri: uri }
+                    proxyExtras: { isAudioProxy: true, uri: uri },
+                    onOpen: function(winbox, winboxEl, host) {
+                        if (!winboxEl) return;
+
+                        var ansichtSelect = winboxEl.querySelector('.ansichtSelect');
+                        var decreaseFontBtn = winboxEl.querySelector('.decreaseFont');
+                        var increaseFontBtn = winboxEl.querySelector('.increaseFont');
+                        var lineNumbersBtn = winboxEl.querySelector('.lineNumbers');
+                        var audioBody = winboxEl.querySelector('.audioViewBody');
+                        var xmlBody = winboxEl.querySelector('.xmlViewBody');
+                        var editorEl = host.shadowRoot.getElementById(editorId);
+
+                        var showViewSpecificTools = function(show) {
+                            var display = show ? 'inline-block' : 'none';
+                            if (decreaseFontBtn) decreaseFontBtn.style.display = display;
+                            if (increaseFontBtn) increaseFontBtn.style.display = display;
+                            if (lineNumbersBtn) lineNumbersBtn.style.display = display;
+                        };
+
+                        var initXmlEditor = function() {
+                            if (xmlEditor || !editorEl) return;
+                            var XmlMode = ace.require('ace/mode/xml').Mode;
+                            xmlEditor = ace.edit(editorEl);
+                            xmlEditor.getSession().setMode(new XmlMode());
+                            xmlEditor.getSession().setUseWrapMode(false);
+                            xmlEditor.setShowPrintMargin(false);
+                            xmlEditor.renderer.setHScrollBarAlwaysVisible(false);
+                            xmlEditor.setReadOnly(true);
+
+                            // ace.edit() injects its editor/mode CSS as <style> tags into
+                            // document.head; that CSS can't reach elements inside our shadow
+                            // root (style encapsulation), so without mirroring it the gutter
+                            // renders (plain text) but the positioned text/cursor layers don't.
+                            document.querySelectorAll('head > style').forEach(function(styleEl) {
+                                if (!styleEl.id || !host.shadowRoot.getElementById(styleEl.id)) {
+                                    host.shadowRoot.appendChild(styleEl.cloneNode(true));
+                                }
+                            });
+                        };
+
+                        var loadXmlContent = function() {
+                            if (xmlLoaded) return;
+                            xmlLoaded = true;
+                            // internalId is sent (empty) for parity with the legacy
+                            // controller.window.XmlView call — some backend queries
+                            // expect the parameter to be present even if unused.
+                            window.doAJAXRequest('data/xql/getXml.xql', 'GET', { uri: xmlUri, internalId: '' }, function(xmlResponse) {
+                                var xml = xmlResponse && xmlResponse.responseText;
+                                if (xmlEditor) xmlEditor.getSession().setValue(xml || '<!-- getXml.xql returned no content for ' + xmlUri + ' -->');
+                            }, 0);
+                        };
+
+                        if (ansichtSelect) {
+                            ansichtSelect.addEventListener('change', function() {
+                                var showXml = ansichtSelect.value === 'xml';
+                                if (audioBody) audioBody.style.display = showXml ? 'none' : '';
+                                if (xmlBody) xmlBody.style.display = showXml ? '' : 'none';
+                                showViewSpecificTools(showXml);
+                                if (showXml) {
+                                    initXmlEditor();
+                                    loadXmlContent();
+                                    if (xmlEditor) xmlEditor.renderer.onResize(true);
+                                }
+                            });
+                        }
+                        if (decreaseFontBtn) {
+                            decreaseFontBtn.addEventListener('click', function() {
+                                if (!editorEl) return;
+                                var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
+                                editorEl.style.fontSize = (size - 1) + 'px';
+                            });
+                        }
+                        if (increaseFontBtn) {
+                            increaseFontBtn.addEventListener('click', function() {
+                                if (!editorEl) return;
+                                var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
+                                editorEl.style.fontSize = (size + 1) + 'px';
+                            });
+                        }
+                        if (lineNumbersBtn) {
+                            lineNumbersBtn.addEventListener('click', function() {
+                                if (!xmlEditor) return;
+                                xmlEditor.renderer.setShowGutter(!xmlEditor.renderer.getShowGutter());
+                            });
+                        }
+                    },
+                    onResize: function() {
+                        if (xmlEditor) xmlEditor.renderer.onResize(true);
+                    }
                 });
             }
         );

@@ -75,7 +75,11 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         Ext.Array.each(config.views, function(view) {
             if(view.type == 'audioView') {
                 handledByWebComponent = true;
-                desktopController.openAudioView(view.uri, view.label || config.title);
+                var xmlViewEntries = Ext.Array.filter(config.views, function(v) { return v.type == 'xmlView'; });
+                var xmlUri = xmlViewEntries.length ? xmlViewEntries[0].uri : null;
+                // config.title (not the per-view label) matches the resource's own
+                // navigator label, e.g. "Akkord Beispiele".
+                desktopController.openAudioView(view.uri, config.title || view.label, xmlUri);
             } else if(view.type == 'textView') {
                 handledByWebComponent = true;
                 desktopController.openTextView(view.uri, config.title || view.label, {
@@ -118,6 +122,7 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         win.setWindowConfig(config);
         win.show();
     },
+
 
     createView: function(type, config) {
 

@@ -205,6 +205,41 @@ class EdiromWindows extends HTMLElement {
                 .winbox .textViewContent h2 { font-weight: bold; font-size: 1.1em; margin-top: 1em; }
                 .winbox .textViewContent p { margin: 0.5em 0; line-height: 1.5; }
                 .winbox .textViewContent a { color: #336699; }
+
+                /* Shared window chrome, mirrors the ExtJS window's TopBar/menuButton
+                   look (see packages/eoTheme/sass/etc/toolbar.scss) so WinBox-based
+                   windows with a view switcher + view-specific tools look consistent
+                   with the legacy multi-view windows. */
+                .winbox .eoWinToolbar {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    min-height: 23px;
+                    padding: 0 6px;
+                    box-sizing: border-box;
+                    background: #cccccc;
+                    border-bottom: 1px solid #b3b3b3;
+                    font-family: "PT Sans", Arial, sans-serif;
+                    font-size: 12px;
+                }
+                .winbox .eoWinToolbar select {
+                    border: none;
+                    background: transparent;
+                    font: inherit;
+                    color: #000;
+                    cursor: pointer;
+                }
+                .winbox .eoWinToolbar button.menuButton {
+                    border: none;
+                    background: transparent;
+                    font: inherit;
+                    color: #000;
+                    cursor: pointer;
+                    padding: 2px 4px;
+                }
+                .winbox .eoWinToolbar button.menuButton:hover {
+                    text-decoration: underline;
+                }
             `;
             this.shadowRoot.appendChild(style);
         }
