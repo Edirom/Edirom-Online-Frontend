@@ -73,17 +73,17 @@
 
     <target name="inject-properties">
         <!-- copy app.js to build dir -->
-        <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true">
+        <copy file="${build.dir}/app.js" tofile="${build.dir}/app-temp.js" preservelastmodified="true"/>
+        <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js" overwrite="true" preservelastmodified="true"/>
+        <delete file="${build.dir}/app-temp.js"/>
+        <!-- Copy CITATION.cff to resources -->
+        <copy file="${basedir}/CITATION.cff" tofile="${build.dir}/resources/CITATION.cff" overwrite="true"/>
+        <copy file="${basedir}/config.json" tofile="${build.dir}/config.json" overwrite="true">
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
                 <filter token="backend.path" value="${backend.path}"/>
             </filterset>
         </copy>
-        <copy file="${build.dir}/app-temp.js" tofile="${build.dir}/app.js" overwrite="true" preservelastmodified="true"/>
-        <delete file="${build.dir}/app-temp.js"/>
-        <!-- Copy CITATION.cff to resources -->
-        <copy file="${basedir}/CITATION.cff" tofile="${build.dir}/resources/CITATION.cff" overwrite="true"/>
-        <copy file="${basedir}/config.json" tofile="${build.dir}/config.json" overwrite="true"/>
     </target>
 
     <target name="copy-xar-resources">
