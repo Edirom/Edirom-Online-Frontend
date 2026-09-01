@@ -65,7 +65,6 @@ Ext.define('EdiromOnline.Application', {
     
     activeEdition: '',
     activeWork: '', 
-    backendURL: '@backend.url@',
     
     init: function () {
         
@@ -82,7 +81,7 @@ Ext.define('EdiromOnline.Application', {
         var me = this;
 
         me.getController('ConfigController').loadConfig(function (config) {
-            me.backendURL = config.backendURL || me.backendURL;
+            me.backendURL = config.backendURL;
             EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Annotation.updateProxyUrl(me.backendURL);

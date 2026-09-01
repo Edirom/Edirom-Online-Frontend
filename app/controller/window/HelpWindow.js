@@ -24,9 +24,6 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
         'window.HelpWindow'
     ],
 
-    backendPath: '@backend.path@',
-    backendURL: '@backend.url@',
-
     init: function() {
         this.control({
             'helpWindow': {
@@ -41,6 +38,11 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
 
         if(win.initialized) return;
         win.initialized = true;
+
+        // get backend info from config
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+		var backendURL = configController.getConfig('backendURL');
+		var backendPath = configController.getConfig('backendPath');
 
         window.doAJAXRequest('data/xql/getHelp.xql',
             'GET', 

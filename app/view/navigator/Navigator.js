@@ -47,7 +47,7 @@ Ext.define('EdiromOnline.view.navigator.Navigator', {
 
         let ediromCoreJsElement = document.createElement("script");
         ediromCoreJsElement.setAttribute("defer", "defer");
-        ediromCoreJsElement.setAttribute("src", "resources/js/edirom-core-web-components/edirom-icon.js");
+        ediromCoreJsElement.setAttribute("src", "resources/js/edirom-core-web-components/src/edirom-icon.js");
         ediromCoreJsElement.setAttribute("type", "module");
         document.querySelector("head").appendChild(ediromCoreJsElement);
 
