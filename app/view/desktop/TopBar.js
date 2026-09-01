@@ -69,6 +69,12 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
             me.connectedWorkspace = Ext.create('EdiromOnline.view.webComponents.EdiromConnectedWorkspace', {});
         }
 
+        me.switchToMobileButton = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_switchToMobile" role="button" name="devices" title="' + getLangString('view.desktop.TaskBar_switchToMobile') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            action: 'switchToMobile'
+        });
+
         me.items = [
             new Ext.toolbar.Toolbar({
                 flex: 1,
@@ -89,7 +95,8 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
                     me.searchTextField,
                     me.searchButton,
                     me.connectedWorkspace,
-                    me.aboutButton
+                    me.aboutButton,
+                    me.switchToMobileButton
                 ].filter(function (item) { return !!item; })
             })
         ];
