@@ -64,8 +64,8 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
                         <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
                         <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
-                        <edirom-icon id="icon_toggleMeasuresGlobally" role="button" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
-                        <edirom-icon id="icon_toggleAnnotationsGlobally" role="button" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
+                        <edirom-icon role="button" id="icon_toggleMeasuresGlobally" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
+                        <edirom-icon role="button" id="icon_toggleAnnotationsGlobally" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
                         <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
                     </div>
                 `,
