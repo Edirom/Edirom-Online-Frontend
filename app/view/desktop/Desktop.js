@@ -223,7 +223,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         thisWindow.doSearch(term);
     },
 
-    openAboutWindow: function() {
+
+    openAbout: function() {
+
 
         var me = this;
         var thisWindow = null;
@@ -242,7 +244,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             thisWindow.show();
 
         else
-            thisWindow.destroy();
+            thisWindow.close();
     
     },
 
