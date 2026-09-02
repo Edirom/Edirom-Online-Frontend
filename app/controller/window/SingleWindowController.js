@@ -26,10 +26,12 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         'EdiromOnline.view.window.SummaryView',
         'EdiromOnline.view.window.iFrameView',
         'EdiromOnline.view.window.XmlView',
+        'EdiromOnline.view.window.audio.AudioView',
 	'EdiromOnline.view.window.source.VerovioView',
         'EdiromOnline.view.window.source.SourceView',
         'EdiromOnline.view.window.text.FacsimileView',
-        'EdiromOnline.view.window.text.TextFacsimileSplitView'
+        'EdiromOnline.view.window.text.TextFacsimileSplitView',
+        'EdiromOnline.view.window.text.TextView'
     ],
 
     views: [
@@ -39,9 +41,9 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
     init: function() {
     },
 
-    // Called by WindowController before the ExtJS window is registered with the
-    // desktop. Metadata decides whether the resource uses WinBox or ExtJS, so
-    // audio and text resources never create an ExtJS view or taskbar entry.
+    // WindowController calls this before the ExtJS window is added to the
+    // desktop. Pure audio resources are normally intercepted earlier by
+    // LinkController; all other resources retain the normal ExtJS lifecycle.
     loadWindowContent: function(win) {
         var me = this;
         var lang = getPreference('application_language');
@@ -66,59 +68,79 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
     onMetaDataLoaded: function(config, win) {
 
         var me = this;
-        var desktopController = this.application.getController('desktop.Desktop');
-        var handledByWebComponent = false;
+        var views = [];
 
-        // Decide whether the resource belongs in a web-component window before
-        // creating any ExtJS views. This prevents hidden MEI/text views from
-        // being initialized for resources handled by WinBox.
-        Ext.Array.each(config.views, function(view) {
-            if(view.type == 'audioView') {
-                handledByWebComponent = true;
-                var xmlViewEntries = Ext.Array.filter(config.views, function(v) { return v.type == 'xmlView'; });
-                var xmlUri = xmlViewEntries.length ? xmlViewEntries[0].uri : null;
-                // config.title (not the per-view label) matches the resource's own
-                // navigator label, e.g. "Akkord Beispiele".
-                desktopController.openAudioView(view.uri, config.title || view.label, xmlUri);
-            } else if(view.type == 'textView') {
-                handledByWebComponent = true;
-                desktopController.openTextView(view.uri, config.title || view.label, {
-                    term: config.term,
-                    path: config.path,
-                    internalId: config.internalId
-                });
-            }
-        });
+        // If this resource has an audioView, its sibling xmlView entry (if any) is
+        // shown inline in the audio WinBox as its "XML-Ansicht" mode instead of also
+        // opening as a separate, persisting ExtJS tab/window.
+        var hasAudioView = Ext.Array.some(config.views, function(view) { return view.type == "audioView"; });
+        var xmlViewEntries = Ext.Array.filter(config.views, function(view) { return view.type == "xmlView"; });
+        var xmlViewEntry = xmlViewEntries.length ? xmlViewEntries[0] : null;
 
-        if(handledByWebComponent) {
+        // A verovioView folds its ENTIRE resource (score + sibling textView/xmlView
+        // entries) into one WinBox popup with its own "Ansicht" switcher, mirroring
+        // the ExtJS window's TopBar ("Ansicht" + "Gehe zu" in the same header row) —
+        // so the ExtJS shell is skipped entirely rather than only the verovioView tab.
+        // ONLY for a plain top-level open though (internalIdType 'unknown', e.g. a
+        // navigator click): a real internal-link target (internalIdType 'annot',
+        // 'note', 'zone', 'measure', ...) — e.g. clicking an annotation icon in the
+        // score — must fall through to the normal ExtJS window below, whose existing
+        // view-weight logic (Window.loadInternalId) picks the matching tab (like
+        // annotationView) instead of always landing back on the score.
+        var hasVerovioView = Ext.Array.some(config.views, function(view) { return view.type == "verovioView"; });
+        var isPlainOpen = !config.internalIdType || config.internalIdType == "unknown";
+        if (hasVerovioView && isPlainOpen) {
+            this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
             win.destroy();
             return;
         }
 
-        var views = [];
         Ext.Array.each(config.views, function(view) {
-            var uri = view.uri;
+	        var uri = view.uri;
 
-            if(view.type == 'iFrameView' && config.term != '' && config.path != '') {
-                uri = uri + '?term=' + config.term + '&path=' + config.path + '#searchTarget';
-            }
+	        if(view.type == "iFrameView" && config["term"] != "" && config["path"] != "") {
+		        uri = uri + "?term=" + config["term"] + "&path=" + config["path"] + "#searchTarget";
+	        }
 
-            if(view.type == 'iFrameView' && config.internalId != '') {
-                uri = uri + '#' + config.internalId;
-            }
+	        if(view.type == "iFrameView" && config["internalId"] != "") {
+		        uri = uri + "#" + config["internalId"];
+	        }
+
+	        // Audio content opens in its own WinBox popup instead of an ExtJS tab.
+	        if(view.type == "audioView") {
+		        var xmlUri = xmlViewEntry ? xmlViewEntry.uri : null;
+		        // config.title (not the per-view label) matches the resource's own
+		        // navigator label, e.g. "Akkord Beispiele".
+		        this.application.getController('desktop.Desktop').openAudioView(uri, config.title, xmlUri);
+		        return;
+	        }
+
+	        // Already folded into the audio WinBox above — skip the separate ExtJS tab.
+	        if(view.type == "xmlView" && hasAudioView) {
+		        return;
+	        }
 
             views.push(this.createView(view.type, {
-                window: win,
-                type: config.type,
+                window:win,
+                type:config.type,
                 viewType: view.type,
                 viewLabel: view.label,
                 defaultView: view.defaultView,
-                uri: uri
+                uri:uri
             }));
+
         }, me);
 
+        // Every view was folded into the audio WinBox (audioView + xmlView only, no
+        // other tabs) — close the ExtJS shell window instead of leaving it persisting
+        // behind the WinBox popup.
+        if (views.length === 0 && hasAudioView) {
+            win.destroy();
+            return;
+        }
+
         config.views = views;
-        desktopController.addWindowToActiveDesktop(win);
+        this.application.getController('desktop.Desktop').addWindowToActiveDesktop(win);
         win.setWindowConfig(config);
         win.show();
     },
@@ -145,9 +167,11 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             case 'iFrameView': return getLangString('controller.window.Window_iFrameView');
             case 'xmlView': return getLangString('controller.window.Window_xmlView');
             case 'sourceView': return getLangString('controller.window.Window_sourceView');
+            case 'audioView': return getLangString('controller.window.Window_audioView');
 	        case 'verovioView': return getLangString('controller.window.Window_verovioView');
             case 'headerView': return getLangString('controller.window.Window_headerView');
             case 'facsimileView': return 'Facsimile';
+            case 'textView': return getLangString('controller.window.Window_textView');
             case 'annotationView': return getLangString('controller.window.Window_annotationView');
             case 'textFacsimileSplitView': return getLangString('controller.window.Window_textFacsimileSplitView');
             //TODO:case 'searchView': return 'Suche';
@@ -160,9 +184,11 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             case 'iFrameView': return 'EdiromOnline.view.window.iFrameView';
             case 'xmlView': return 'EdiromOnline.view.window.XmlView';
             case 'sourceView': return 'EdiromOnline.view.window.source.SourceView';
+            case 'audioView': return 'EdiromOnline.view.window.audio.AudioView';
 	    case 'verovioView': return 'EdiromOnline.view.window.source.VerovioView';
             case 'headerView': return 'EdiromOnline.view.window.HeaderView';
             case 'facsimileView': return 'EdiromOnline.view.window.text.FacsimileView';
+            case 'textView': return 'EdiromOnline.view.window.text.TextView';
             case 'annotationView': return 'EdiromOnline.view.window.AnnotationView';
             case 'textFacsimileSplitView': return 'EdiromOnline.view.window.text.TextFacsimileSplitView';
             //TODO:case 'searchView': return 'EdiromOnline.view.window.SearchView';

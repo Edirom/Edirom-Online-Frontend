@@ -610,136 +610,14 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         });
     },
 
-    // Text window — renders the existing backend-generated text HTML directly
-    // inside the WinBox web-component host. No separate text web component is
-    // needed. Chapter navigation and internal/footnote links are wired with
-    // native DOM events because the content lives inside the shadow root.
-    openTextView: function(uri, label, textConfig) {
-        var me = this;
-        var desktop = me.desktop;
-        textConfig = textConfig || {};
-
-        var existing = null;
-        desktop.getActiveWindowsSet().each(function(w) {
-            if (w && w.isTextProxy && w.uri === uri) { existing = w; return false; }
-        });
-        if (existing) {
-            existing.show();
-            if (textConfig.internalId && existing.scrollToTextId) {
-                existing.scrollToTextId(textConfig.internalId);
-            }
-            return;
-        }
-
-        var winId = 'text-window-' + Date.now();
-        var idPrefix = winId + '_';
-
-        window.doAJAXRequest('data/xql/getText.xql',
-            'GET',
-            {
-                uri: uri,
-                idPrefix: idPrefix,
-                term: textConfig.term || '',
-                path: textConfig.path || ''
-            },
-            function(response) {
-                var chapterLabel = getLangString('view.window.text.TextView_gotoMenu');
-                var html = ''
-                    + '<div class="textWindow" style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
-                    +     '<div class="textWindowToolbar" style="display:none;padding:4px 6px;border-bottom:1px solid #ccc;">'
-                    +         '<label>' + chapterLabel + ': '
-                    +             '<select class="textChapterSelect"></select>'
-                    +         '</label>'
-                    +     '</div>'
-                    +     '<div class="textWindowScroller" style="flex:1;overflow:auto;">'
-                    +         '<div class="textViewContent" style="padding:10px;">' + response.responseText + '</div>'
-                    +     '</div>'
-                    + '</div>';
-
-                me.createWinBoxWindow({
-                    id: winId,
-                    title: label || getLangString('controller.window.Window_textView'),
-                    maxWidth: 900,
-                    html: html,
-                    findExisting: function(w) { return !!(w && w.isTextProxy && w.uri === uri); },
-                    proxyExtras: { isTextProxy: true, uri: uri },
-                    onOpen: function(winbox, winboxEl, host, proxy) {
-                        var scrollToId = function(id) {
-                            if (!id) return;
-                            var target = host.shadowRoot.getElementById(idPrefix + id)
-                                || host.shadowRoot.getElementById(id);
-                            if (target) target.scrollIntoView({ block: 'start' });
-                        };
-
-                        proxy.scrollToTextId = scrollToId;
-                        me.wireInPageAnchors(winboxEl, host);
-
-                        if (winboxEl) {
-                            winboxEl.addEventListener('click', function(e) {
-                                var link = e.target && e.target.closest
-                                    ? e.target.closest('.scrollto[data-footnote]')
-                                    : null;
-                                if (!link) return;
-                                e.preventDefault();
-                                scrollToId(link.getAttribute('data-footnote'));
-                            });
-                        }
-
-                        window.doAJAXRequest('data/xql/getChapters.xql',
-                            'GET',
-                            { uri: uri },
-                            function(chapterResponse) {
-                                var chapters;
-                                try {
-                                    chapters = Ext.JSON.decode(chapterResponse.responseText);
-                                } catch (e) {
-                                    chapters = [];
-                                }
-                                if (!chapters || !chapters.length || !winboxEl) return;
-
-                                var toolbar = winboxEl.querySelector('.textWindowToolbar');
-                                var select = winboxEl.querySelector('.textChapterSelect');
-                                Ext.Array.each(chapters, function(chapter) {
-                                    var option = document.createElement('option');
-                                    option.value = chapter.id;
-                                    option.textContent = chapter.name;
-                                    select.appendChild(option);
-                                });
-                                select.addEventListener('change', function() {
-                                    scrollToId(select.value);
-                                });
-                                toolbar.style.display = '';
-                            }
-                        );
-
-                        if (textConfig.internalId) scrollToId(textConfig.internalId);
-                    }
-                });
-            }
-        );
-    },
-
     // Audio window — rendered with the WinBox web component (mirrors openHelp /
     // openAbout / openSearch). Called by SingleWindowController.onMetaDataLoaded
     // instead of adding an ExtJS audioView tab whenever a clicked resource's
-    // views include an audioView entry. Behaves as a per-uri singleton: a
-    // repeat click on the same source reuses the existing player window.
+    // views include an audioView entry. Each click opens a separate player.
     // xmlUri: uri of the resource's sibling xmlView entry (if any), folded into
     // this same window as an "XML-Ansicht" mode instead of its own ExtJS tab.
     openAudioView: function(uri, label, xmlUri) {
         var me = this;
-        var desktop = me.desktop;
-
-        // Reuse an already-open audio window for the same source instead of
-        // stacking duplicates / re-fetching on repeat clicks.
-        var existing = null;
-        desktop.getActiveWindowsSet().each(function(w) {
-            if (w && w.isAudioProxy && w.uri === uri) { existing = w; return false; }
-        });
-        if (existing) {
-            existing.show();
-            return;
-        }
 
         // The tracks must be fetched BEFORE the <edirom-audio-player> element is
         // created: the component's render() assumes at least one track exists
@@ -756,7 +634,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 // directly in the double-quoted "tracks" attribute.
                 var tracksAttr = Ext.JSON.encode(tracks).replace(/"/g, '&quot;');
                 var winTitle = (label && label != '') ? label : getLangString('controller.window.Window_audioView');
-                var winId = 'audio-window-' + Date.now();
+                // Requests for distinct audio resources can complete within the
+                // same millisecond. A sequence suffix avoids duplicate DOM and
+                // WinBox ids, which otherwise makes one window replace another.
+                me.audioWindowSequence = (me.audioWindowSequence || 0) + 1;
+                var winId = 'audio-window-' + Date.now() + '-' + me.audioWindowSequence;
                 var editorId = winId + '_xmlEditor';
 
                 // Header mirrors the ExtJS window's TopBar: a single "Ansicht" (view)
@@ -805,7 +687,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     // fixed WinBox height would push the track list way down
                     // below the (much shorter) controls bar.
                     html: html,
-                    findExisting: function(w) { return !!(w && w.isAudioProxy && w.uri === uri); },
                     proxyExtras: { isAudioProxy: true, uri: uri },
                     onOpen: function(winbox, winboxEl, host) {
                         if (!winboxEl) return;
@@ -898,6 +779,410 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 });
             }
         );
+    },
+
+    // Verovio window — rendered with the WinBox web component, mirroring
+    // openAudioView. Called by SingleWindowController.onMetaDataLoaded instead
+    // of adding ExtJS tabs. Unlike audio (which only ever folds in a single
+    // sibling xmlView), a Verovio-bearing resource typically also has a
+    // textView + one or more xmlViews — the old ExtJS window showed ALL of
+    // them as tabs switched via its TopBar's "Ansicht" button, with the
+    // Verovio tab's own "Gehe zu" goto menu sitting right next to it in the
+    // same header row. This reproduces both: `views` is the FULL raw views
+    // array from getLinkTarget.xql (not just the verovioView entry).
+    openVerovioView: function(views, label) {
+        var me = this;
+
+        var panes = [];
+        var xmlCount = 0, textCount = 0;
+        Ext.Array.each(views || [], function(view) {
+            var paneKey, defaultLabel;
+            if (view.type == 'verovioView') { paneKey = 'verovio'; defaultLabel = getLangString('controller.window.Window_verovioView'); }
+            else if (view.type == 'textView') { paneKey = 'text-' + (textCount++); defaultLabel = getLangString('controller.window.Window_textView'); }
+            else if (view.type == 'xmlView') { paneKey = 'xml-' + (xmlCount++); defaultLabel = getLangString('controller.window.Window_xmlView'); }
+            else return; // other view types stay out of this popup (e.g. would need their own WinBox)
+
+            panes.push({
+                key: paneKey,
+                type: view.type,
+                uri: view.uri,
+                label: (view.label && view.label != '') ? view.label : defaultLabel,
+                defaultView: !!view.defaultView
+            });
+        });
+
+        var verovioPane = Ext.Array.findBy(panes, function(p) { return p.type == 'verovioView'; });
+        if (!verovioPane) return; // nothing to render without the score itself
+
+        var defaultPane = Ext.Array.findBy(panes, function(p) { return p.defaultView; }) || verovioPane;
+        var uri = verovioPane.uri;
+
+        // Shared with onResize below (a sibling of onOpen, not nested inside it) so
+        // an ace-editor xml pane can be resized while it's the active one.
+        var panesByKey = {};
+        Ext.Array.each(panes, function(p) {
+            panesByKey[p.key] = { type: p.type, uri: p.uri, loaded: false, xmlEditor: null };
+        });
+        var activePaneKey = defaultPane.key;
+
+        me.verovioWindowSequence = (me.verovioWindowSequence || 0) + 1;
+        var winId = 'verovio-window-' + Date.now() + '-' + me.verovioWindowSequence;
+        var winTitle = (label && label != '') ? label : getLangString('controller.window.Window_verovioView');
+
+        var ansichtItemsHtml = '';
+        Ext.Array.each(panes, function(p) {
+            ansichtItemsHtml += '<div class="ansichtMenuItem" data-pane-key="' + p.key + '" style="padding:6px 10px;cursor:pointer;">' + Ext.String.htmlEncode(p.label) + '</div>';
+        });
+
+        var paneBodyHtml = '';
+        Ext.Array.each(panes, function(p) {
+            var displayStyle = (p.key === defaultPane.key) ? '' : 'display:none;';
+            if (p.type == 'verovioView') {
+                paneBodyHtml += '<div class="viewPane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;' + displayStyle + '">'
+                    +     '<iframe class="verovioIframe" style="width:100%;height:100%;border:0;display:block;"></iframe>'
+                    + '</div>';
+            } else if (p.type == 'textView') {
+                paneBodyHtml += '<div class="viewPane textPane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;overflow:auto;padding:12px;box-sizing:border-box;' + displayStyle + '"></div>';
+            } else if (p.type == 'xmlView') {
+                paneBodyHtml += '<div class="viewPane xmlPane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;' + displayStyle + '">'
+                    +     '<pre id="' + winId + '_' + p.key + '" style="position:relative;height:100%;width:100%;margin:0;"></pre>'
+                    + '</div>';
+            }
+        });
+
+        // "Ansicht" (view switcher) is only rendered with >1 pane, matching
+        // TopBar.addView's own "only show the switcher when there's more than
+        // one view" rule. Each dropdown lives in its own position:relative
+        // wrapper so it opens right underneath its own button, not both at a
+        // shared toolbar-relative offset.
+        var ansichtHtml = panes.length > 1 ? (''
+            + '<div class="ansichtWrap" style="position:relative;">'
+            +     '<button type="button" class="menuButton ansichtBtn">' + Ext.String.htmlEncode(getLangString('view.window.TopBar_View')) + ' \u25BE</button>'
+            +     '<div class="ansichtMenu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #999;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:10;min-width:170px;">'
+            +         ansichtItemsHtml
+            +     '</div>'
+            + '</div>'
+        ) : '';
+
+        var html = ''
+            + '<div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+            +     '<div class="eoWinToolbar verovioToolbar" style="flex:0 0 auto;padding:4px;border-bottom:1px solid #bbb;display:flex;gap:4px;">'
+            +         ansichtHtml
+            +         '<div class="gotoWrap" style="position:relative;">'
+            +             '<button type="button" class="menuButton gotoBtn" style="' + (defaultPane.key === 'verovio' ? '' : 'display:none;') + '">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_gotoMenu')) + ' \u25BE</button>'
+            +             '<div class="gotoMenu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #999;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:10;min-width:170px;">'
+            +                 '<div class="gotoMenuItem gotoMeasureItem" style="padding:6px 10px;cursor:pointer;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_gotoMeasure')) + '</div>'
+            +                 '<div class="gotoMenuItem gotoMovementItem" style="padding:6px 10px;cursor:pointer;position:relative;">'
+            +                     Ext.String.htmlEncode(getLangString('view.window.source.SourceView_gotoMovement'))
+            +                     '<div class="movementSubmenu" style="display:none;position:absolute;top:0;left:100%;background:#fff;border:1px solid #999;box-shadow:0 2px 6px rgba(0,0,0,.25);min-width:170px;"></div>'
+            +                 '</div>'
+            +             '</div>'
+            +         '</div>'
+            +         '<button type="button" class="menuButton decreaseFont" style="display:none;">A-</button>'
+            +         '<button type="button" class="menuButton increaseFont" style="display:none;">A+</button>'
+            +         '<button type="button" class="menuButton lineNumbers" style="display:none;">Line #</button>'
+            +     '</div>'
+            +     '<div class="verovioViewBody" style="flex:1;position:relative;overflow:hidden;">'
+            +         paneBodyHtml
+            +         '<div class="gotoDialogOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.35);align-items:center;justify-content:center;">'
+            +             '<div class="gotoDialog" style="background:#fff;border:1px solid #999;border-radius:4px;padding:16px;min-width:260px;box-shadow:0 2px 10px rgba(0,0,0,.3);">'
+            +                 '<div style="font-weight:bold;margin-bottom:10px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_Title')) + '</div>'
+            +                 '<label style="display:block;margin-bottom:8px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_MovmentNumber')) + '<select class="gotoMovementSelect" style="width:100%;margin-top:4px;box-sizing:border-box;"></select></label>'
+            +                 '<label style="display:block;margin-bottom:12px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_Measure')) + '<input type="number" class="gotoMeasureInput" style="width:100%;margin-top:4px;box-sizing:border-box;"/></label>'
+            +                 '<div style="display:flex;justify-content:flex-end;gap:8px;">'
+            +                     '<button type="button" class="gotoCancelBtn">' + Ext.String.htmlEncode(getLangString('global_cancel')) + '</button>'
+            +                     '<button type="button" class="gotoOkBtn">' + Ext.String.htmlEncode(getLangString('global_execute')) + '</button>'
+            +                 '</div>'
+            +             '</div>'
+            +         '</div>'
+            +     '</div>'
+            + '</div>';
+
+        me.createWinBoxWindow({
+            id: winId,
+            title: winTitle,
+            maxWidth: 950,
+            maxHeight: 750,
+            minHeight: 400,
+            html: html,
+            proxyExtras: { isVerovioProxy: true, uri: uri },
+            onOpen: function(winbox, winboxEl, host) {
+                if (!winboxEl) return;
+
+                var iframe = winboxEl.querySelector('.verovioIframe');
+                var ansichtBtn = winboxEl.querySelector('.ansichtBtn');
+                var ansichtMenu = winboxEl.querySelector('.ansichtMenu');
+                var gotoBtn = winboxEl.querySelector('.gotoBtn');
+                var gotoMenu = winboxEl.querySelector('.gotoMenu');
+                var gotoMeasureItem = winboxEl.querySelector('.gotoMeasureItem');
+                var gotoMovementItem = winboxEl.querySelector('.gotoMovementItem');
+                var movementSubmenu = winboxEl.querySelector('.movementSubmenu');
+                var gotoDialogOverlay = winboxEl.querySelector('.gotoDialogOverlay');
+                var gotoMovementSelect = winboxEl.querySelector('.gotoMovementSelect');
+                var gotoMeasureInput = winboxEl.querySelector('.gotoMeasureInput');
+                var gotoCancelBtn = winboxEl.querySelector('.gotoCancelBtn');
+                var gotoOkBtn = winboxEl.querySelector('.gotoOkBtn');
+                var decreaseFontBtn = winboxEl.querySelector('.decreaseFont');
+                var increaseFontBtn = winboxEl.querySelector('.increaseFont');
+                var lineNumbersBtn = winboxEl.querySelector('.lineNumbers');
+
+                var configController = EdiromOnline.getApplication().getController('ConfigController');
+                var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+                var edition = me.application.activeEdition;
+
+                // Same iframe document as the old VerovioImage.setIFrameContent.
+                var verovioHtml = '<html>'
+                    +     '<head>'
+                    +         '<title>Verovio</title>'
+                    +         '<script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>'
+                    +         '<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>'
+                    +         '<script src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>'
+                    +         '<script src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js" type="text/javascript"></script>'
+                    +         '<link rel="stylesheet" type="text/css" href="resources/css/verovio-view.css"/>'
+                    +     '</head>'
+                    +     '<body>'
+                    +         '<script>'
+                    +             'var uri = "' + uri + '";'
+                    +             'var edition = "' + edition + '";'
+                    +             'var movementId = "";'
+                    +             'var appBasePath = "' + backendURL + '";'
+                    +             'var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;'
+                    +         '</script>'
+                    +         '<div id="output"><div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div></div>'
+                    +         '<div id="toolbar" class="noselect">'
+                    +             '<span class="button" onclick="prevPage()"><span style="font-size: 1.3em;">&lt;</span></span>'
+                    +             '<span id="page">1</span> / <span id="pageCount">1</span>'
+                    +             '<span class="button" onclick="nextPage()"><span style="font-size: 1.3em;">&gt;</span></span>'
+                    +         '</div>'
+                    +         '<script src="resources/js/verovio-view.js"></script>'
+                    +     '</body>'
+                    + '</html>';
+
+                iframe.contentWindow.document.open();
+                iframe.contentWindow.document.write(verovioHtml);
+                iframe.contentWindow.document.close();
+
+                var loadTextPane = function(pane, key) {
+                    var el = winboxEl.querySelector('.textPane[data-pane-key="' + key + '"]');
+                    window.doAJAXRequest('data/xql/getText.xql', 'GET', { uri: pane.uri, idPrefix: winId + '_' + key + '_', term: '', path: '' }, function(response) {
+                        if (el) el.innerHTML = response.responseText || '';
+                    });
+                };
+
+                var loadXmlPane = function(pane, key) {
+                    window.doAJAXRequest('data/xql/getXml.xql', 'GET', { uri: pane.uri, internalId: '' }, function(response) {
+                        var editorEl = host.shadowRoot.getElementById(winId + '_' + key);
+                        if (!editorEl) return;
+                        var XmlMode = ace.require('ace/mode/xml').Mode;
+                        var xmlEditor = ace.edit(editorEl);
+                        xmlEditor.getSession().setMode(new XmlMode());
+                        xmlEditor.getSession().setUseWrapMode(false);
+                        xmlEditor.setShowPrintMargin(false);
+                        xmlEditor.renderer.setHScrollBarAlwaysVisible(false);
+                        xmlEditor.setReadOnly(true);
+                        xmlEditor.getSession().setValue(response.responseText || '');
+                        // See the annotation-style CSS-into-shadow-root note in
+                        // openAudioView: ace injects its CSS as <head><style>, which
+                        // can't reach shadow content unless mirrored in (idempotent
+                        // per style id, safe to call once per pane).
+                        document.querySelectorAll('head > style').forEach(function(styleEl) {
+                            if (!styleEl.id || !host.shadowRoot.getElementById(styleEl.id)) {
+                                host.shadowRoot.appendChild(styleEl.cloneNode(true));
+                            }
+                        });
+                        panesByKey[key].xmlEditor = xmlEditor;
+                        panesByKey[key].editorEl = editorEl;
+                        if (key === activePaneKey) showXmlTools(true);
+                    });
+                };
+
+                var ensurePaneLoaded = function(key) {
+                    var pane = panesByKey[key];
+                    if (!pane || pane.loaded || pane.type === 'verovioView') return;
+                    pane.loaded = true;
+                    if (pane.type === 'textView') loadTextPane(pane, key);
+                    else if (pane.type === 'xmlView') loadXmlPane(pane, key);
+                };
+
+                var closeGotoMenu = function() {
+                    gotoMenu.style.display = 'none';
+                    movementSubmenu.style.display = 'none';
+                };
+                var closeAnsichtMenu = function() {
+                    if (ansichtMenu) ansichtMenu.style.display = 'none';
+                };
+                // A-/A+/Line# only apply to the active pane's own ace editor, matching
+                // openAudioView's single-xmlView toggle (view.window.TopBar_View items
+                // hide/show their view-specific tools per addViewSpecificItem).
+                var showXmlTools = function(show) {
+                    var display = show ? 'inline-block' : 'none';
+                    if (decreaseFontBtn) decreaseFontBtn.style.display = display;
+                    if (increaseFontBtn) increaseFontBtn.style.display = display;
+                    if (lineNumbersBtn) lineNumbersBtn.style.display = display;
+                };
+
+                var activatePane = function(key) {
+                    if (key === activePaneKey || !panesByKey[key]) return;
+                    var prevEl = winboxEl.querySelector('.viewPane[data-pane-key="' + activePaneKey + '"]');
+                    var nextEl = winboxEl.querySelector('.viewPane[data-pane-key="' + key + '"]');
+                    if (prevEl) prevEl.style.display = 'none';
+                    if (nextEl) nextEl.style.display = '';
+                    activePaneKey = key;
+                    var showGoto = panesByKey[key].type === 'verovioView';
+                    gotoBtn.style.display = showGoto ? '' : 'none';
+                    if (!showGoto) closeGotoMenu();
+                    // Only show once the pane's ace editor actually exists (loadXmlPane
+                    // also calls this once the async getXml.xql fetch resolves).
+                    showXmlTools(panesByKey[key].type === 'xmlView' && !!panesByKey[key].xmlEditor);
+                    ensurePaneLoaded(key);
+                };
+
+                var gotoMeasureByAttributes = function(measureNumber, movementId) {
+                    var iframeWin = iframe.contentWindow;
+                    if (!iframeWin || !iframeWin.showMovement) return;
+                    iframeWin.showMovement(movementId);
+                    // Mirrors the old VerovioImage.gotoMeasureByAttributes: give the
+                    // movement's renderer time to (re)initialize before pointing it
+                    // at the requested measure number.
+                    setTimeout(function() {
+                        var renderer = iframeWin.document.getElementById('verovio-renderer');
+                        if (renderer) renderer.setAttribute('measurenumber', measureNumber);
+                    }, 500);
+                };
+
+                if (ansichtBtn) {
+                    ansichtBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var opening = ansichtMenu.style.display === 'none';
+                        closeAnsichtMenu();
+                        closeGotoMenu();
+                        if (opening) ansichtMenu.style.display = 'block';
+                    });
+                    Ext.Array.each(winboxEl.querySelectorAll('.ansichtMenuItem'), function(item) {
+                        item.addEventListener('click', function() {
+                            closeAnsichtMenu();
+                            activatePane(item.getAttribute('data-pane-key'));
+                        });
+                    });
+                }
+
+                gotoBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var opening = gotoMenu.style.display === 'none';
+                    closeGotoMenu();
+                    closeAnsichtMenu();
+                    if (opening) gotoMenu.style.display = 'block';
+                });
+                gotoMovementItem.addEventListener('mouseenter', function() {
+                    if (!gotoMovementItem.classList.contains('disabled')) movementSubmenu.style.display = 'block';
+                });
+                gotoMovementItem.addEventListener('mouseleave', function() {
+                    movementSubmenu.style.display = 'none';
+                });
+                // Close the menus on any click outside them. Self-unregisters once
+                // the window has been closed/removed (winboxEl.isConnected false).
+                document.addEventListener('click', function outsideClick(e) {
+                    if (!winboxEl.isConnected) { document.removeEventListener('click', outsideClick); return; }
+                    var path = e.composedPath ? e.composedPath() : [];
+                    if (ansichtBtn && path.indexOf(ansichtBtn) === -1 && path.indexOf(ansichtMenu) === -1) closeAnsichtMenu();
+                    if (path.indexOf(gotoBtn) === -1 && path.indexOf(gotoMenu) === -1) closeGotoMenu();
+                });
+
+                gotoMeasureItem.addEventListener('click', function() {
+                    closeGotoMenu();
+                    gotoMeasureInput.value = '';
+                    gotoDialogOverlay.style.display = 'flex';
+                    gotoMeasureInput.focus();
+                });
+                gotoCancelBtn.addEventListener('click', function() {
+                    gotoDialogOverlay.style.display = 'none';
+                });
+                gotoOkBtn.addEventListener('click', function() {
+                    var movementId = gotoMovementSelect.value;
+                    var measureNumber = gotoMeasureInput.value;
+                    gotoDialogOverlay.style.display = 'none';
+                    if (!measureNumber) return;
+                    gotoMeasureByAttributes(measureNumber, movementId);
+                });
+                gotoDialogOverlay.addEventListener('click', function(e) {
+                    if (e.target === gotoDialogOverlay) gotoDialogOverlay.style.display = 'none';
+                });
+                gotoMeasureInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') gotoOkBtn.click();
+                    if (e.key === 'Escape') gotoCancelBtn.click();
+                });
+
+                if (decreaseFontBtn) {
+                    decreaseFontBtn.addEventListener('click', function() {
+                        var editorEl = panesByKey[activePaneKey] && panesByKey[activePaneKey].editorEl;
+                        if (!editorEl) return;
+                        var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
+                        editorEl.style.fontSize = (size - 1) + 'px';
+                    });
+                }
+                if (increaseFontBtn) {
+                    increaseFontBtn.addEventListener('click', function() {
+                        var editorEl = panesByKey[activePaneKey] && panesByKey[activePaneKey].editorEl;
+                        if (!editorEl) return;
+                        var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
+                        editorEl.style.fontSize = (size + 1) + 'px';
+                    });
+                }
+                if (lineNumbersBtn) {
+                    lineNumbersBtn.addEventListener('click', function() {
+                        var xmlEditor = panesByKey[activePaneKey] && panesByKey[activePaneKey].xmlEditor;
+                        if (!xmlEditor) return;
+                        xmlEditor.renderer.setShowGutter(!xmlEditor.renderer.getShowGutter());
+                    });
+                }
+
+                // Load whichever pane starts active (Verovio's iframe above always
+                // loads regardless, so this is a no-op unless the default is text/xml).
+                ensurePaneLoaded(defaultPane.key);
+
+                // "Gehe zu Satz" (goto movement) is disabled with <= 1 movement,
+                // matching the old GotoMsg dialog's isDisabled check.
+                window.doAJAXRequest('data/xql/getMovements.xql',
+                    'GET',
+                    { uri: uri },
+                    function(response) {
+                        var movements = Ext.JSON.decode(response.responseText) || [];
+
+                        movementSubmenu.innerHTML = '';
+                        gotoMovementSelect.innerHTML = '';
+                        Ext.Array.each(movements, function(movement) {
+                            var item = document.createElement('div');
+                            item.className = 'movementSubmenuItem';
+                            item.style.padding = '6px 10px';
+                            item.style.cursor = 'pointer';
+                            item.textContent = movement.name;
+                            item.addEventListener('click', function() {
+                                closeGotoMenu();
+                                if (iframe.contentWindow && iframe.contentWindow.showMovement) {
+                                    iframe.contentWindow.showMovement(movement.id);
+                                }
+                            });
+                            movementSubmenu.appendChild(item);
+
+                            var option = document.createElement('option');
+                            option.value = movement.id;
+                            option.textContent = movement.name;
+                            gotoMovementSelect.appendChild(option);
+                        });
+
+                        var onlyOneMovement = movements.length <= 1;
+                        gotoMovementItem.classList.toggle('disabled', onlyOneMovement);
+                        gotoMovementItem.style.opacity = onlyOneMovement ? '0.5' : '';
+                        gotoMovementItem.style.cursor = onlyOneMovement ? 'default' : 'pointer';
+                        gotoMovementSelect.disabled = onlyOneMovement;
+                    }
+                );
+            },
+            onResize: function() {
+                var activePane = panesByKey[activePaneKey];
+                if (activePane && activePane.xmlEditor) activePane.xmlEditor.renderer.onResize(true);
+            }
+        });
     },
 
     onSpecialKey: function(field, e) {

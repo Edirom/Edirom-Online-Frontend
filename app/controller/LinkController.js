@@ -61,20 +61,32 @@ Ext.define('EdiromOnline.controller.LinkController', {
         // not omitted — so "no real cfg" must be checked by key count, not truthiness.
         var hasRealCfg = cfg && Object.keys(cfg).length > 0;
 
-        if (typeof uri === 'string' && !hasRealCfg && uri.match(/^xmldb:exist:\/\//) && !/[\s;]/.test(uri)) {
+        // A #fragment (e.g. an annotation icon's `parent.loadLink(uri+'#'+annotId)`)
+        // is an internal-link target that needs getInternalIdType.xql-based tab
+        // routing (see loadLinkInternal + Window.loadInternalId) to land on the
+        // right view (annotationView/textView/sourceView) — never the direct-open
+        // fast path below, which would just reopen the resource's default view.
+        var hasFragment = typeof uri === 'string' && uri.indexOf('#') !== -1;
+
+        if (typeof uri === 'string' && !hasRealCfg && !hasFragment && uri.match(/^xmldb:exist:\/\//) && !/[\s;]/.test(uri)) {
             window.doAJAXRequest('data/xql/getLinkTarget.xql',
                 'POST',
                 { uri: uri, lang: window.getLanguage() },
                 function(response) {
                     var config = Ext.JSON.decode(response.responseText);
                     var audioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'audioView'; })[0];
+                    var verovioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'verovioView'; })[0];
                     var xmlViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'xmlView'; })[0];
-                    var otherViews = Ext.Array.filter(config.views, function(view) { return view.type != 'audioView' && view.type != 'xmlView'; });
+                    var otherViews = Ext.Array.filter(config.views, function(view) { return view.type != 'audioView' && view.type != 'xmlView' && view.type != 'verovioView'; });
 
                     if (audioViewEntry && otherViews.length === 0) {
                         // config.title (not the per-view label) matches the resource's
                         // own navigator label, e.g. "Akkord Beispiele".
                         me.application.getController('desktop.Desktop').openAudioView(audioViewEntry.uri, config.title, xmlViewEntry ? xmlViewEntry.uri : null);
+                    } else if (verovioViewEntry) {
+                        // Folds the ENTIRE resource (score + sibling textView/xmlView
+                        // entries) into one WinBox — see openVerovioView.
+                        me.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
                     } else {
                         me.loadLinkInternal(uri, cfg);
                     }
