@@ -65,7 +65,10 @@ Ext.define('EdiromOnline.controller.LinkController', {
         }
 
 
-        Ext.Array.each(uris, function(singleUri){
+        Ext.Array.each(uris, function (singleUri) {
+
+            // THIS IS A TEMPORARY HACK TO LIMIT THE NUMBER OF INTERNAL IDS IN AN URL TO 1 BECAUSE EDIROM DESKTOP CAN NOT HANDLE MULTIPLE INTERNAL IDS YET (SEE EDIROM MOBILE). E.G. document.xml#id1#id2#id3 SHOULD BE document.xml#id1.
+            singleUri = singleUri.replace(/(#[^#]*)#.*$/, '$1');
 
             if(singleUri.match(/^edirom:\/\/#id=/)) {
                 //TODO: set attribute by id
