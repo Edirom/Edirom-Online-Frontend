@@ -292,6 +292,23 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         eval(args.fn);
     },
 
+    /**
+     * The key identifying a shape's overlay element.
+     *
+     * A measure shape is a zone, not a measure: a measure broken across systems is linked to
+     * several zones and so yields several shapes sharing one measure id. The zone id is unique
+     * and therefore keys the element; other shape groups carry no zoneId and keep using their
+     * own id. Accepts both model records and plain objects.
+     */
+    shapeKey: function(shape) {
+
+        try {
+            return shape.get('zoneId') || shape.get('id');
+        }catch(e) {
+            return shape.zoneId || shape.id;
+        }
+    },
+
     addMeasures: function(shapes) {
    
         var me = this;
@@ -306,19 +323,23 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
         me.shapes.get('measures').each(function(shape) {
 
-            var id = shape.get('id');
             var name = shape.get('name');
             var x = shape.get('ulx');
             var y = shape.get('uly');
             var width = shape.get('lrx') - shape.get('ulx');
             var height = shape.get('lry') - shape.get('uly');
 
-            var measure = tpl.append(shapeDiv, [me.id + '_' + id, name, (name === ''?'measureInnerEmpty':'measureInner')], true);
+            // A shape is a zone, not a measure: a measure broken across systems is linked to
+            // several zones and so yields several shapes sharing one measure id. The zone id
+            // keys the element, so each fragment gets its own.
+            var elementId = me.id + '_' + me.shapeKey(shape);
+
+            var measure = tpl.append(shapeDiv, [elementId, name, (name === ''?'measureInnerEmpty':'measureInner')], true);
 
             measure.setStyle({
                 position: 'absolute'
             });
-            var text = measure.getById(me.id + '_' + id + '_inner');
+            var text = measure.getById(elementId + '_inner');
             text.on('mouseenter', me.highlightShape, me, measure, true);
             text.on('mouseleave', me.deHighlightShape, me, measure, true);
             text.setStyle({
@@ -361,16 +382,14 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
             var fn = function(shape) {
 
-                var id, x, y, width, height;
+                var id = me.shapeKey(shape), x, y, width, height;
 
                 try {
-                    id = shape.get('id');
                     x = shape.get('ulx');
                     y = shape.get('uly');
                     width = shape.get('lrx') - shape.get('ulx');
                     height = shape.get('lry') - shape.get('uly');
                 }catch (e) {
-                    id = shape.id;
                     x = shape.ulx;
                     y = shape.uly;
                     width = shape.lrx - shape.ulx;
@@ -472,13 +491,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
         var fn = function(shape) {
 
-            var id;
-
-            try {
-                id = shape.get('id');
-            }catch(e) {
-                id = shape.id;
-            }
+            var id = me.shapeKey(shape);
 			//console.log(shapeDiv.getById(me.id + '_' + id));
             Ext.removeNode(shapeDiv.getById(me.id + '_' + id).dom);
         };
