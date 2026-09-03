@@ -35,6 +35,7 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     closable: true,
     resizeHandles: 'e w',
     shadow: false,
+    liveDrag: true,
 
     layout: 'fit',
     border: 0,
