@@ -242,6 +242,45 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     }
                     return [0, 0];
                 },
+                isVisible: function() {
+                    return !this.hidden;
+                },
+                // sortHorizontally/sortVertically/sortGrid pass page-absolute x/y
+                // (the same coordinate space real ExtJS windows use), but WinBox's
+                // own move() expects coordinates relative to the WinBox host
+                // element (#ediromWindowsHost, positioned at desktop.body's page
+                // XY) -> translate by subtracting the host's current page position.
+                setPosition: function(x, y) {
+                    if (this._winbox) {
+                        var bodyXY = desktop.body.getXY();
+                        this._winbox.move(x - bodyXY[0], y - bodyXY[1]);
+                    }
+                },
+                setSize: function(width, height) {
+                    if (this._winbox) this._winbox.resize(width, height);
+                },
+                // WinBox windows have no facsimile/viewport state worth
+                // preserving across a re-arrange (unlike source/facsimile
+                // windows) - see the arrange functions in the Desktop
+                // controller for how these are used.
+                getContentConfig: function() { return null; },
+                setContentConfig: function() {},
+                // Used by the arrange (sortHorizontally/sortVertically/sortGrid)
+                // window-manager actions in place of Ext.Component#animate -
+                // WinBox has no built-in tween, so this just moves/resizes
+                // immediately and then invokes the afteranimate listener.
+                animate: function(config) {
+                    var to = (config && config.to) || {};
+                    if (typeof to.width === 'number' && typeof to.height === 'number') {
+                        this.setSize(to.width, to.height);
+                    }
+                    if (typeof to.x === 'number' && typeof to.y === 'number') {
+                        this.setPosition(to.x, to.y);
+                    }
+                    if (config && config.listeners && typeof config.listeners.afteranimate === 'function') {
+                        config.listeners.afteranimate();
+                    }
+                },
                 hide: function() {
                     var el = getShadowEl(winId);
                     if (el) el.style.display = 'none';
@@ -1254,9 +1293,31 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         return set;
     },
 
+    // The WinBox host element's on-screen bounds are only set once, when a
+    // WinBox window is first opened (see createWinBoxWindow). Refresh them
+    // here so proxy.setPosition's page-XY -> host-local conversion stays
+    // correct even if the desktop was resized since then.
+    syncWinBoxHostBounds: function() {
+        var desktop = this.desktop;
+        var host = document.getElementById('ediromWindowsHost');
+        if (!host) return;
+
+        var usable = desktop.getUsableSize();
+        var bodyXY = desktop.body.getXY();
+
+        host.style.position = 'fixed';
+        host.style.top = bodyXY[1] + 'px';
+        host.style.left = bodyXY[0] + 'px';
+        host.style.width = usable.width + 'px';
+        host.style.height = usable.height + 'px';
+        host.style.right = 'auto';
+        host.style.bottom = 'auto';
+    },
+
     sortHorizontally: function() {
         var desktop = this.desktop;
-        var wins = desktop.getActiveWindowsSet(true);
+        this.syncWinBoxHostBounds();
+        var wins = desktop.getArrangeableWindowsSet();
         wins = this.cloneWinsCollectionWithoutMinimized(wins);
 
         if(wins == null || wins.length == 0)
@@ -1293,7 +1354,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
     sortVertically: function() {
         var desktop = this.desktop;
-        var wins = desktop.getActiveWindowsSet(true);
+        this.syncWinBoxHostBounds();
+        var wins = desktop.getArrangeableWindowsSet();
         wins = this.cloneWinsCollectionWithoutMinimized(wins);
 
         if(wins == null || wins.length == 0)
@@ -1330,7 +1392,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
     sortGrid: function() {
         var desktop = this.desktop;
-        var wins = desktop.getActiveWindowsSet(true);
+        this.syncWinBoxHostBounds();
+        var wins = desktop.getArrangeableWindowsSet();
         wins = this.cloneWinsCollectionWithoutMinimized(wins);
 
         if(wins == null || wins.length == 0)

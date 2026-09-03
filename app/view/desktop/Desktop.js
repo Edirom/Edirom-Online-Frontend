@@ -223,6 +223,26 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         return set;
     },
 
+    // Same as getActiveWindowsSet(true), but INCLUDES WinBox web-component
+    // window proxies (Help/About/Search/Audio/Verovio/text popups). Used by
+    // the window-arranging actions (sortHorizontally/sortVertically/
+    // sortGrid), which know how to move/resize those proxies too.
+    getArrangeableWindowsSet: function() {
+        var set = new Ext.util.MixedCollection();
+
+        var ignoredWindows = [
+            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
+        ];
+
+        this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+            if(activeWindow.isExtWindowProxy || ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
+                set.add(activeWindow);
+            }
+        });
+
+        return set;
+    },
+
     getTaskbarConfig: function () {
         return {
             app: this.app,
