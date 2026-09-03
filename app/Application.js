@@ -46,7 +46,8 @@ Ext.define('EdiromOnline.Application', {
         'window.source.MeasureBasedView',
         'window.source.VerovioView',
         'window.text.FacsimileView',
-        'window.text.TextFacsimileSplitView'
+        'window.text.TextFacsimileSplitView',
+        'window.text.TextView'
     ],
     
     models: [

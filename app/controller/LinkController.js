@@ -78,6 +78,8 @@ Ext.define('EdiromOnline.controller.LinkController', {
                     var verovioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'verovioView'; })[0];
                     var xmlViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'xmlView'; })[0];
                     var otherViews = Ext.Array.filter(config.views, function(view) { return view.type != 'audioView' && view.type != 'xmlView' && view.type != 'verovioView'; });
+                    var hasTextView = Ext.Array.some(config.views, function(view) { return view.type == 'textView' || view.type == 'iFrameView'; });
+                    var onlyTextOrXml = config.views.length > 0 && Ext.Array.every(config.views, function(view) { return view.type == 'textView' || view.type == 'xmlView' || view.type == 'iFrameView'; });
 
                     if (audioViewEntry && otherViews.length === 0) {
                         // config.title (not the per-view label) matches the resource's
@@ -86,6 +88,11 @@ Ext.define('EdiromOnline.controller.LinkController', {
                     } else if (verovioViewEntry) {
                         // Folds the ENTIRE resource (score + sibling textView/xmlView
                         // entries) into one WinBox — see openVerovioView.
+                        me.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+                    } else if (hasTextView && onlyTextOrXml) {
+                        // Pure text/xml/iFrame resources (e.g. front-matter documents
+                        // like "Vorwort"/"Lies mich!") fold into the same WinBox, just
+                        // without a score pane — see openVerovioView.
                         me.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
                     } else {
                         me.loadLinkInternal(uri, cfg);

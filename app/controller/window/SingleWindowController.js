@@ -95,6 +95,21 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             return;
         }
 
+        // Pure text/xml/iFrame resources (front-matter documents like "Vorwort"/
+        // "Lies mich!"/"TEI Testdatei" — no facsimile, annotation, source or other
+        // view) fold into the SAME multi-pane WinBox as verovioView resources above
+        // (openVerovioView also works with no score pane), instead of opening the
+        // full ExtJS shell window. Same isPlainOpen guard: a deep link into a
+        // specific note/annotation inside the text still needs the normal ExtJS
+        // window's internalId routing.
+        var hasFoldableContent = Ext.Array.some(config.views, function(view) { return view.type == "textView" || view.type == "iFrameView"; });
+        var onlyFoldableTypes = config.views.length > 0 && Ext.Array.every(config.views, function(view) { return view.type == "textView" || view.type == "xmlView" || view.type == "iFrameView"; });
+        if (hasFoldableContent && onlyFoldableTypes && isPlainOpen) {
+            this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+            win.destroy();
+            return;
+        }
+
         Ext.Array.each(config.views, function(view) {
 	        var uri = view.uri;
 

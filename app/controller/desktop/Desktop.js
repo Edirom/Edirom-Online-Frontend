@@ -790,16 +790,22 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     // Verovio tab's own "Gehe zu" goto menu sitting right next to it in the
     // same header row. This reproduces both: `views` is the FULL raw views
     // array from getLinkTarget.xql (not just the verovioView entry).
+    //
+    // ALSO used for resources with NO verovioView at all — pure textView/
+    // xmlView-only resources (e.g. front-matter documents like "Vorwort" or
+    // "Lies mich!") fold into the same multi-pane WinBox, just without a
+    // score pane or a "Gehe zu" menu (see the verovioPane guards below).
     openVerovioView: function(views, label) {
         var me = this;
 
         var panes = [];
-        var xmlCount = 0, textCount = 0;
+        var xmlCount = 0, textCount = 0, iframeCount = 0;
         Ext.Array.each(views || [], function(view) {
             var paneKey, defaultLabel;
             if (view.type == 'verovioView') { paneKey = 'verovio'; defaultLabel = getLangString('controller.window.Window_verovioView'); }
             else if (view.type == 'textView') { paneKey = 'text-' + (textCount++); defaultLabel = getLangString('controller.window.Window_textView'); }
             else if (view.type == 'xmlView') { paneKey = 'xml-' + (xmlCount++); defaultLabel = getLangString('controller.window.Window_xmlView'); }
+            else if (view.type == 'iFrameView') { paneKey = 'iframe-' + (iframeCount++); defaultLabel = getLangString('controller.window.Window_iFrameView'); }
             else return; // other view types stay out of this popup (e.g. would need their own WinBox)
 
             panes.push({
@@ -812,10 +818,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         });
 
         var verovioPane = Ext.Array.findBy(panes, function(p) { return p.type == 'verovioView'; });
-        if (!verovioPane) return; // nothing to render without the score itself
+        if (panes.length === 0) return; // nothing to render
 
-        var defaultPane = Ext.Array.findBy(panes, function(p) { return p.defaultView; }) || verovioPane;
-        var uri = verovioPane.uri;
+        var defaultPane = Ext.Array.findBy(panes, function(p) { return p.defaultView; }) || verovioPane || panes[0];
+        var uri = verovioPane ? verovioPane.uri : defaultPane.uri;
 
         // Shared with onResize below (a sibling of onOpen, not nested inside it) so
         // an ace-editor xml pane can be resized while it's the active one.
@@ -842,10 +848,14 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     +     '<iframe class="verovioIframe" style="width:100%;height:100%;border:0;display:block;"></iframe>'
                     + '</div>';
             } else if (p.type == 'textView') {
-                paneBodyHtml += '<div class="viewPane textPane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;overflow:auto;padding:12px;box-sizing:border-box;' + displayStyle + '"></div>';
+                paneBodyHtml += '<div class="viewPane textPane textViewContent" data-pane-key="' + p.key + '" style="position:absolute;inset:0;overflow:auto;padding:12px;box-sizing:border-box;' + displayStyle + '"></div>';
             } else if (p.type == 'xmlView') {
                 paneBodyHtml += '<div class="viewPane xmlPane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;' + displayStyle + '">'
                     +     '<pre id="' + winId + '_' + p.key + '" style="position:relative;height:100%;width:100%;margin:0;"></pre>'
+                    + '</div>';
+            } else if (p.type == 'iFrameView') {
+                paneBodyHtml += '<div class="viewPane iframePane" data-pane-key="' + p.key + '" style="position:absolute;inset:0;' + displayStyle + '">'
+                    +     '<iframe class="genericIframe" style="width:100%;height:100%;border:0;display:block;background:#fff;"></iframe>'
                     + '</div>';
             }
         });
@@ -864,8 +874,16 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             + '</div>'
         ) : '';
 
+        // The toolbar row (Ansicht switcher / Verovio's Gehe-zu / xml font tools) is
+        // only rendered when at least one of those is actually relevant — a single
+        // pane, non-Verovio, non-xml resource (e.g. a plain iFrameView like "Vorwort")
+        // would otherwise show an empty strip with nothing in it.
+        var hasXmlPane = Ext.Array.some(panes, function(p) { return p.type == 'xmlView'; });
+        var showToolbar = panes.length > 1 || !!verovioPane || hasXmlPane;
+
         var html = ''
             + '<div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+            +     (showToolbar ? (''
             +     '<div class="eoWinToolbar verovioToolbar" style="flex:0 0 auto;padding:4px;border-bottom:1px solid #bbb;display:flex;gap:4px;">'
             +         ansichtHtml
             +         '<div class="gotoWrap" style="position:relative;">'
@@ -882,6 +900,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             +         '<button type="button" class="menuButton increaseFont" style="display:none;">A+</button>'
             +         '<button type="button" class="menuButton lineNumbers" style="display:none;">Line #</button>'
             +     '</div>'
+            ) : '')
             +     '<div class="verovioViewBody" style="flex:1;position:relative;overflow:hidden;">'
             +         paneBodyHtml
             +         '<div class="gotoDialogOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.35);align-items:center;justify-content:center;">'
@@ -958,9 +977,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     +     '</body>'
                     + '</html>';
 
-                iframe.contentWindow.document.open();
-                iframe.contentWindow.document.write(verovioHtml);
-                iframe.contentWindow.document.close();
+                if (verovioPane && iframe) {
+                    iframe.contentWindow.document.open();
+                    iframe.contentWindow.document.write(verovioHtml);
+                    iframe.contentWindow.document.close();
+                }
 
                 var loadTextPane = function(pane, key) {
                     var el = winboxEl.querySelector('.textPane[data-pane-key="' + key + '"]');
@@ -996,17 +1017,25 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
                 };
 
+                var loadIFramePane = function(pane, key) {
+                    var iframeEl = winboxEl.querySelector('.iframePane[data-pane-key="' + key + '"] iframe');
+                    window.doAJAXRequest('data/xql/getiFrameURL.xql', 'GET', { uri: pane.uri }, function(response) {
+                        if (iframeEl) iframeEl.src = response.responseText;
+                    });
+                };
+
                 var ensurePaneLoaded = function(key) {
                     var pane = panesByKey[key];
                     if (!pane || pane.loaded || pane.type === 'verovioView') return;
                     pane.loaded = true;
                     if (pane.type === 'textView') loadTextPane(pane, key);
+                    else if (pane.type === 'iFrameView') loadIFramePane(pane, key);
                     else if (pane.type === 'xmlView') loadXmlPane(pane, key);
                 };
 
                 var closeGotoMenu = function() {
-                    gotoMenu.style.display = 'none';
-                    movementSubmenu.style.display = 'none';
+                    if (gotoMenu) gotoMenu.style.display = 'none';
+                    if (movementSubmenu) movementSubmenu.style.display = 'none';
                 };
                 var closeAnsichtMenu = function() {
                     if (ansichtMenu) ansichtMenu.style.display = 'none';
@@ -1029,7 +1058,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     if (nextEl) nextEl.style.display = '';
                     activePaneKey = key;
                     var showGoto = panesByKey[key].type === 'verovioView';
-                    gotoBtn.style.display = showGoto ? '' : 'none';
+                    if (gotoBtn) gotoBtn.style.display = showGoto ? '' : 'none';
                     if (!showGoto) closeGotoMenu();
                     // Only show once the pane's ace editor actually exists (loadXmlPane
                     // also calls this once the async getXml.xql fetch resolves).
@@ -1066,34 +1095,36 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
                 }
 
-                gotoBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var opening = gotoMenu.style.display === 'none';
-                    closeGotoMenu();
-                    closeAnsichtMenu();
-                    if (opening) gotoMenu.style.display = 'block';
-                });
-                gotoMovementItem.addEventListener('mouseenter', function() {
-                    if (!gotoMovementItem.classList.contains('disabled')) movementSubmenu.style.display = 'block';
-                });
-                gotoMovementItem.addEventListener('mouseleave', function() {
-                    movementSubmenu.style.display = 'none';
-                });
+                if (gotoBtn) {
+                    gotoBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var opening = gotoMenu.style.display === 'none';
+                        closeGotoMenu();
+                        closeAnsichtMenu();
+                        if (opening) gotoMenu.style.display = 'block';
+                    });
+                    gotoMovementItem.addEventListener('mouseenter', function() {
+                        if (!gotoMovementItem.classList.contains('disabled')) movementSubmenu.style.display = 'block';
+                    });
+                    gotoMovementItem.addEventListener('mouseleave', function() {
+                        movementSubmenu.style.display = 'none';
+                    });
+                    gotoMeasureItem.addEventListener('click', function() {
+                        closeGotoMenu();
+                        gotoMeasureInput.value = '';
+                        gotoDialogOverlay.style.display = 'flex';
+                        gotoMeasureInput.focus();
+                    });
+                }
                 // Close the menus on any click outside them. Self-unregisters once
                 // the window has been closed/removed (winboxEl.isConnected false).
                 document.addEventListener('click', function outsideClick(e) {
                     if (!winboxEl.isConnected) { document.removeEventListener('click', outsideClick); return; }
                     var path = e.composedPath ? e.composedPath() : [];
                     if (ansichtBtn && path.indexOf(ansichtBtn) === -1 && path.indexOf(ansichtMenu) === -1) closeAnsichtMenu();
-                    if (path.indexOf(gotoBtn) === -1 && path.indexOf(gotoMenu) === -1) closeGotoMenu();
+                    if (gotoBtn && path.indexOf(gotoBtn) === -1 && path.indexOf(gotoMenu) === -1) closeGotoMenu();
                 });
 
-                gotoMeasureItem.addEventListener('click', function() {
-                    closeGotoMenu();
-                    gotoMeasureInput.value = '';
-                    gotoDialogOverlay.style.display = 'flex';
-                    gotoMeasureInput.focus();
-                });
                 gotoCancelBtn.addEventListener('click', function() {
                     gotoDialogOverlay.style.display = 'none';
                 });
@@ -1141,42 +1172,46 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 ensurePaneLoaded(defaultPane.key);
 
                 // "Gehe zu Satz" (goto movement) is disabled with <= 1 movement,
-                // matching the old GotoMsg dialog's isDisabled check.
-                window.doAJAXRequest('data/xql/getMovements.xql',
-                    'GET',
-                    { uri: uri },
-                    function(response) {
-                        var movements = Ext.JSON.decode(response.responseText) || [];
+                // matching the old GotoMsg dialog's isDisabled check. Only relevant
+                // when there's an actual score pane — text/xml-only resources have
+                // no movements and keep the "Gehe zu" button hidden entirely.
+                if (verovioPane) {
+                    window.doAJAXRequest('data/xql/getMovements.xql',
+                        'GET',
+                        { uri: uri },
+                        function(response) {
+                            var movements = Ext.JSON.decode(response.responseText) || [];
 
-                        movementSubmenu.innerHTML = '';
-                        gotoMovementSelect.innerHTML = '';
-                        Ext.Array.each(movements, function(movement) {
-                            var item = document.createElement('div');
-                            item.className = 'movementSubmenuItem';
-                            item.style.padding = '6px 10px';
-                            item.style.cursor = 'pointer';
-                            item.textContent = movement.name;
-                            item.addEventListener('click', function() {
-                                closeGotoMenu();
-                                if (iframe.contentWindow && iframe.contentWindow.showMovement) {
-                                    iframe.contentWindow.showMovement(movement.id);
-                                }
+                            movementSubmenu.innerHTML = '';
+                            gotoMovementSelect.innerHTML = '';
+                            Ext.Array.each(movements, function(movement) {
+                                var item = document.createElement('div');
+                                item.className = 'movementSubmenuItem';
+                                item.style.padding = '6px 10px';
+                                item.style.cursor = 'pointer';
+                                item.textContent = movement.name;
+                                item.addEventListener('click', function() {
+                                    closeGotoMenu();
+                                    if (iframe.contentWindow && iframe.contentWindow.showMovement) {
+                                        iframe.contentWindow.showMovement(movement.id);
+                                    }
+                                });
+                                movementSubmenu.appendChild(item);
+
+                                var option = document.createElement('option');
+                                option.value = movement.id;
+                                option.textContent = movement.name;
+                                gotoMovementSelect.appendChild(option);
                             });
-                            movementSubmenu.appendChild(item);
 
-                            var option = document.createElement('option');
-                            option.value = movement.id;
-                            option.textContent = movement.name;
-                            gotoMovementSelect.appendChild(option);
-                        });
-
-                        var onlyOneMovement = movements.length <= 1;
-                        gotoMovementItem.classList.toggle('disabled', onlyOneMovement);
-                        gotoMovementItem.style.opacity = onlyOneMovement ? '0.5' : '';
-                        gotoMovementItem.style.cursor = onlyOneMovement ? 'default' : 'pointer';
-                        gotoMovementSelect.disabled = onlyOneMovement;
-                    }
-                );
+                            var onlyOneMovement = movements.length <= 1;
+                            gotoMovementItem.classList.toggle('disabled', onlyOneMovement);
+                            gotoMovementItem.style.opacity = onlyOneMovement ? '0.5' : '';
+                            gotoMovementItem.style.cursor = onlyOneMovement ? 'default' : 'pointer';
+                            gotoMovementSelect.disabled = onlyOneMovement;
+                        }
+                    );
+                }
             },
             onResize: function() {
                 var activePane = panesByKey[activePaneKey];
