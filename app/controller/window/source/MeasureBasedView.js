@@ -177,14 +177,15 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
                 'GET', 
                 {
                     uri: uri,
-                    pageId: pageId
+                    pageId: pageId,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var me = this;
                     var data = response.responseText;
 
                     var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
+                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
                         data: Ext.JSON.decode(data)
                     });
 
