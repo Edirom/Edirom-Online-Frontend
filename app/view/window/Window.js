@@ -41,6 +41,11 @@ Ext.define('EdiromOnline.view.window.Window', {
     activeItem: 0,
     cls: 'ediromWindow',
 
+    // PROTOTYPE (see Desktop.wrapEdiromWindowInWinBox): true once this window
+    // has been configured to render directly into a WinBox body instead of as
+    // a normal floating ExtJS window.
+    useWinBoxChrome: false,
+
     border: 0,
     bodyBorder: false,
 
@@ -62,6 +67,40 @@ Ext.define('EdiromOnline.view.window.Window', {
         ];
 
         this.callParent();
+    },
+
+    // PROTOTYPE: strips this window's native ExtJS drag/resize/shadow/genie-
+    // animation so it can be reparented into a WinBox shell instead (see
+    // Desktop.wrapEdiromWindowInWinBox). Must be called BEFORE the window's
+    // first render (i.e. before show()) - these are only read by ExtJS at
+    // render time, so mutating them here still takes effect even though
+    // initComponent already ran.
+    //
+    // NOTE: header is intentionally NOT set to false here. Ext.window.Window's
+    // own onRender unconditionally does me.header.on(...) whenever
+    // maximizable is true, regardless of whether a header was actually
+    // created, which crashes with header:false. Sencha Cmd's production
+    // minifier also silently drops a plain `me.maximizable = false;`
+    // assignment in this method (confirmed live - every other assignment here
+    // survives minification, that one alone does not), so disabling
+    // maximizable isn't reliable either. Instead the header is left to render
+    // normally (avoiding that crash entirely) and is hidden afterwards, once
+    // the window has actually rendered - see wrapEdiromWindowInWinBox.
+    //
+    // animateTarget is also cleared: Desktop.addWindow() sets it to the
+    // taskbar button, which makes show()/hide() play an async "genie"
+    // animation and only fire the show/hide events once it completes - the
+    // WinBox-sync code needs those events to fire SYNCHRONOUSLY, and the
+    // animation's box math (based on the window's on-screen position) breaks
+    // once the DOM is reparented into the WinBox anyway.
+    applyWinBoxChrome: function() {
+        var me = this;
+        me.useWinBoxChrome = true;
+        me.draggable = false;
+        me.resizable = false;
+        me.shadow = false;
+        me.animateTarget = null;
+        me.addCls('ediromWindow-winboxChrome');
     },
 
     setWindowConfig: function(config) {

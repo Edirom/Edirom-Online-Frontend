@@ -200,6 +200,7 @@ class EdiromWindows extends HTMLElement {
                 .winbox { box-shadow: 0 3px 10px #000; font-family: "PT Sans", Arial, sans-serif; }
                 .winbox .wb-title { color: #333; font-size: 13px; font-weight: bold; text-shadow: none; }
                 .winbox .wb-body { background: #fff; overflow: auto; }
+                .winbox .wb-full { display: none; }
                 .winbox .textViewContent { color: #333; }
                 .winbox .textViewContent h1 { font-weight: bold; font-size: 1.3em; }
                 .winbox .textViewContent h2 { font-weight: bold; font-size: 1.1em; margin-top: 1em; }

@@ -469,10 +469,14 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         me.getActiveWindowsSet().each(function(win) {
             var dd = win.dd, resizer = win.resizer;
-            dd.xTickSize = xt;
-            dd.yTickSize = yt;
-            resizer.widthIncrement = xt;
-            resizer.heightIncrement = yt;
+            if (dd) {
+                dd.xTickSize = xt;
+                dd.yTickSize = yt;
+            }
+            if (resizer) {
+                resizer.widthIncrement = xt;
+                resizer.heightIncrement = yt;
+            }
         });
     },
 
@@ -519,8 +523,13 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         win.on({
             boxready: function () {
-                win.dd.xTickSize = me.xTickSize;
-                win.dd.yTickSize = me.yTickSize;
+                // A WinBox-wrapped window (useWinBoxChrome) has no dd/resizer -
+                // it is draggable:false/resizable:false since WinBox itself owns
+                // move/resize for it.
+                if (win.dd) {
+                    win.dd.xTickSize = me.xTickSize;
+                    win.dd.yTickSize = me.yTickSize;
+                }
 
                 if (win.resizer) {
                     win.resizer.widthIncrement = me.xTickSize;
@@ -568,8 +577,18 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     getDesktopZIndexManager: function () {
         var windows = this.getActiveWindowsSet();
-        // TODO - there has to be a better way to get this...
-        return (windows.getCount() && windows.getAt(0).zIndexManager) || null;
+        var zmgr = null;
+        // A useWinBoxChrome window (rendered non-floating, straight into a WinBox
+        // body - see Desktop controller's wrapEdiromWindowInWinBox) has no
+        // zIndexManager at all, so don't just assume the FIRST tracked window
+        // has one - find the first one that actually does.
+        windows.each(function(w) {
+            if (w.zIndexManager) {
+                zmgr = w.zIndexManager;
+                return false;
+            }
+        });
+        return zmgr;
     },
 
     getWindow: function(id) {

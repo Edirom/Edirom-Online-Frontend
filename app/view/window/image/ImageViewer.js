@@ -208,7 +208,10 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 var innerId = outerId + annotation.get('id');
 
                 // reuse existing outer div if already present (multiple annotations on same zone)
-                var outerDiv = Ext.get(outerId);
+                // Ext.get(idString) resolves via document.getElementById, which can't
+                // find it once this view has been reparented into a WinBox's shadow
+                // root - resolve scoped to shapeDiv instead.
+                var outerDiv = Ext.get(shapeDiv.dom.querySelector('#' + outerId));
                 if (!outerDiv) {
                     outerDiv = Ext.DomHelper.append(shapeDiv, {
                         tag: 'div',

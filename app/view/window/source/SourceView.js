@@ -44,6 +44,13 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     cls: 'sourceView',
 
+    // document.getElementById(id) can't find elements once this view has been
+    // reparented into a WinBox's shadow root (see Desktop.wrapEdiromWindowInWinBox)
+    // - resolve scoped to this view's own element instead, which works regardless.
+    getIconEl: function(id) {
+        return this.el.dom.querySelector('#' + id);
+    },
+
     initComponent: function () {
 
         var me = this;
@@ -139,11 +146,11 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         // update icon state
         if(globalVisible){
-            document.getElementById('icon_display-'+type+'-window_'+me.id).setAttribute('pressed', '');
+            me.getIconEl('icon_display-'+type+'-window_'+me.id).setAttribute('pressed', '');
             sessionStorage.setItem('edirom-'+type+'-visible-' + me.id, 'true');
 
         } else {
-            document.getElementById('icon_display-'+type+'-window_'+me.id).removeAttribute('pressed');
+            me.getIconEl('icon_display-'+type+'-window_'+me.id).removeAttribute('pressed');
             sessionStorage.removeItem('edirom-'+type+'-visible-' + me.id);
         }
 
@@ -522,8 +529,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         if(viewId == 'pageBasedView') {
             // set pressed state of toggle button
-            document.getElementById('icon_pageBasedView_'+me.id).setAttribute('pressed', '');
-            document.getElementById('icon_measureBasedView_'+me.id).removeAttribute('pressed');
+            me.getIconEl('icon_pageBasedView_'+me.id).setAttribute('pressed', '');
+            me.getIconEl('icon_measureBasedView_'+me.id).removeAttribute('pressed');
 
             // adapt toolbar entries and switch view
             me.measureBasedView.hideToolbarEntries();
@@ -534,8 +541,8 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
         }else if(viewId == 'measureBasedView') {
             // set pressed state of toggle button
-            document.getElementById('icon_measureBasedView_'+me.id).setAttribute('pressed', '');
-            document.getElementById('icon_pageBasedView_'+me.id).removeAttribute('pressed');
+            me.getIconEl('icon_measureBasedView_'+me.id).setAttribute('pressed', '');
+            me.getIconEl('icon_pageBasedView_'+me.id).removeAttribute('pressed');
 
             // adapt toolbar entries and switch view
             me.pageBasedView.hideToolbarEntries();
@@ -563,7 +570,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
 
         // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_display-measures-window_'+me.id);
+        var iconElem = me.getIconEl('icon_display-measures-window_'+me.id);
         var currentState = iconElem.hasAttribute('pressed');
 
         // if current button is pressed -> switch to hiding measures
@@ -640,7 +647,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
 
         // toggle attribute in DOM and save state in session storage
-        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
+        var iconElem = me.getIconEl('icon_display-annotations-window_'+me.id);
         var currentState = iconElem.hasAttribute('pressed');
 
         // if current button is pressed -> switch to hiding measures

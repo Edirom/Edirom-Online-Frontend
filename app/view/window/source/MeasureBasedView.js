@@ -658,7 +658,10 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
 
             // define function to apply to relevant element IDs
             var fn = Ext.bind(function(annotationId) {
-                var annotDiv = Ext.get(annotationId);
+                // Ext.get(idString) resolves via document.getElementById, which can't
+                // find elements once this view has been reparented into a WinBox's
+                // shadow root - resolve scoped to this view's own element instead.
+                var annotDiv = Ext.get(me.el.dom.querySelector('#' + annotationId));
                 var classList = annotDiv.dom.classList;
                 var prioritiesCategories = Ext.Array.toArray(classList);
                 Ext.Array.remove(prioritiesCategories, 'measure');

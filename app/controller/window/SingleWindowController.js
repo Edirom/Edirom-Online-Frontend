@@ -89,6 +89,13 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         // annotationView) instead of always landing back on the score.
         var hasVerovioView = Ext.Array.some(config.views, function(view) { return view.type == "verovioView"; });
         var isPlainOpen = !config.internalIdType || config.internalIdType == "unknown";
+
+        // PROTOTYPE (see Desktop.wrapEdiromWindowInWinBox): a sourceView window's
+        // real ExtJS content is rendered directly into a WinBox instead of the
+        // normal floating ExtJS window - the rest of its view/tab logic below is
+        // unchanged.
+        var hasSourceView = Ext.Array.some(config.views, function(view) { return view.type == "sourceView"; });
+
         if (hasVerovioView && isPlainOpen) {
             this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
             win.destroy();
@@ -157,7 +164,19 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         config.views = views;
         this.application.getController('desktop.Desktop').addWindowToActiveDesktop(win);
         win.setWindowConfig(config);
+
+        // Must run AFTER addWindowToActiveDesktop (so its animateTarget override
+        // sticks) and BEFORE the window's first render (show()) - header/
+        // draggable/resizable/shadow are only read by ExtJS at render time.
+        if (hasSourceView) {
+            win.applyWinBoxChrome();
+        }
+
         win.show();
+
+        if (hasSourceView) {
+            this.application.getController('desktop.Desktop').wrapEdiromWindowInWinBox(win);
+        }
     },
 
 

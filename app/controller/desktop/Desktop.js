@@ -24,7 +24,39 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         'desktop.Desktop'
     ],
 
+    // ExtJS's own component-rendering internals (Ext.util.Renderable#finishRender,
+    // used whenever a NEW child component is created/rendered lazily - e.g. a
+    // measure-based view's per-voice viewer, created on first use, well after its
+    // ediromWindow has already been reparented into a WinBox's shadow root - see
+    // wrapEdiromWindowInWinBox) resolve the just-inserted node via Ext.getDom(id),
+    // which calls this function. It only falls back to ExtJS's OWN internal
+    // detached-body staging element when document.getElementById(id) fails, never
+    // to a shadow root, so any component first rendered AFTER its window has been
+    // moved into a WinBox crashes with "Cannot read properties of null (reading
+    // 'dom')" deep inside finishRender. Patch this ONE global utility (not each
+    // call site - the crash happens inside minified framework internals we can't
+    // easily reach) to also search the WinBox host's shadow root.
+    patchGetElementByIdForShadowRoots: function() {
+        if (Ext.getElementById.__ediromShadowPatched) return;
+
+        var original = Ext.getElementById;
+        var patched = function(id) {
+            var el = original(id);
+            if (!el) {
+                var host = document.getElementById('ediromWindowsHost');
+                if (host && host.shadowRoot) {
+                    el = host.shadowRoot.getElementById(id);
+                }
+            }
+            return el;
+        };
+        patched.__ediromShadowPatched = true;
+        Ext.getElementById = patched;
+    },
+
     init: function() {
+        this.patchGetElementByIdForShadowRoots();
+
         this.desktop = null;
 
         this.control({
@@ -124,6 +156,24 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             });
             return maxZ;
         };
+        // A real ediromWindow wrapped into a WinBox (see wrapEdiromWindowInWinBox)
+        // can open its own ExtJS menus (Ansicht/Anmerkungen/...), which get a
+        // z-index just above the window's - far below host z-index+100. Cap the
+        // host below any currently open menu so it never overshoots one and
+        // silently swallows clicks on the menu's items.
+        var capBelowOpenMenu = function(z) {
+            if (Ext.menu.Manager && Ext.menu.Manager.active) {
+                var menuZ = 0;
+                Ext.menu.Manager.active.each(function(m) {
+                    if (m && m.el && m.el.dom) {
+                        var mz = parseInt(m.el.getStyle('z-index'), 10);
+                        if (!isNaN(mz) && mz > menuZ) menuZ = mz;
+                    }
+                });
+                if (menuZ && z >= menuZ) return menuZ - 1;
+            }
+            return z;
+        };
         if (!host._zIndexCoordInstalled) {
             host._zIndexCoordInstalled = true;
             document.addEventListener('mousedown', function(e) {
@@ -149,10 +199,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         }
                     });
                 }
-                setTimeout(function() {
+                var doRecompute = function() {
                     var maxZ = maxExtZ();
                     if (inWinbox) {
-                        h.style.zIndex = (maxZ + 100);
+                        h.style.zIndex = capBelowOpenMenu(maxZ + 100);
                     } else {
                         // Only an actual ExtJS window click (a document viewer
                         // etc.) lowers the host below the ExtJS stack. Clicks on
@@ -167,7 +217,16 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                         }
                         if (inExtWindow) h.style.zIndex = Math.max(0, maxZ - 1);
                     }
-                }, 0);
+                };
+                // A click that opens a real ExtJS menu (Ansicht/Anmerkungen/...
+                // inside a wrapped ediromWindow) can register the menu as
+                // active slightly AFTER this tick (Ext's button menu-show can
+                // defer past the current tick) - retry a few times over ~300ms
+                // so capBelowOpenMenu picks it up once it truly exists.
+                setTimeout(doRecompute, 0);
+                setTimeout(doRecompute, 50);
+                setTimeout(doRecompute, 150);
+                setTimeout(doRecompute, 300);
             }, true);
         }
 
@@ -204,14 +263,14 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             host.style.bottom = 'auto';
 
             var raiseHostAboveExt = function() {
-                host.style.zIndex = (maxExtZ() + 100);
+                host.style.zIndex = capBelowOpenMenu(maxExtZ() + 100);
                 // Re-assert on the next tick so this raise wins against the
                 // document mousedown coordinator. The topbar/taskbar buttons
                 // that open or re-focus a WinBox window are OUTSIDE any
                 // .winbox, so that same click queues a host-lowering
                 // (setTimeout 0) which would otherwise drop the window behind
                 // the ExtJS windows right after this synchronous raise.
-                setTimeout(function() { host.style.zIndex = (maxExtZ() + 100); }, 0);
+                setTimeout(function() { host.style.zIndex = capBelowOpenMenu(maxExtZ() + 100); }, 0);
             };
 
             var winWidth = Math.max(320, Math.min(opts.maxWidth || 700, usable.width - 20));
@@ -411,6 +470,380 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 if (typeof WinBox !== 'undefined') {
                     clearInterval(poll);
                     doOpen();
+                }
+            }, 100);
+        }
+    },
+
+    // PROTOTYPE: wraps an already-rendered REAL ediromWindow (win.applyWinBoxChrome()
+    // must already have been called, before win.show()) in a WinBox shell, instead
+    // of rewriting its content as plain HTML like createWinBoxWindow's callers do.
+    // The Ext window instance stays alive and registered with the desktop/taskbar as
+    // normal - only its rendered DOM is moved into the WinBox body. This lets a
+    // window with real ExtJS components inside (sourceView's image viewer/toolbar/
+    // annotation menus, etc.) keep working unmodified while WinBox supplies the
+    // visible frame (title bar, move, resize, minimize, close) instead of ExtJS's own.
+    //
+    // NOTE: content CANNOT be rendered directly into the WinBox body from the
+    // start instead of reparenting afterward - confirmed live that ExtJS4's
+    // render-finishing internals (finishRender/finishRenderItems) look up
+    // freshly-inserted child elements via document.getElementById(id), which
+    // cannot see into the WinBox host's shadow root and throws
+    // "Cannot read properties of null (reading 'dom')every time. Rendering
+    // normally into document.body first (where getElementById works) and only
+    // THEN moving the finished DOM into the shadow root sidesteps this entirely.
+    wrapEdiromWindowInWinBox: function(win) {
+        var me = this;
+        var desktop = me.desktop;
+
+        var host = document.getElementById('ediromWindowsHost');
+        if (!host) {
+            host = document.createElement('edirom-windows');
+            host.id = 'ediromWindowsHost';
+            document.body.appendChild(host);
+        }
+
+        var maxExtZ = function() {
+            var maxZ = 0;
+            desktop.getActiveWindowsSet().each(function(w) {
+                if (w && w.el && w.el.dom) {
+                    var z = parseInt(w.el.getStyle('z-index'), 10);
+                    if (!isNaN(z) && z > maxZ) maxZ = z;
+                }
+            });
+            return maxZ;
+        };
+        // This window can open its own ExtJS menus (Ansicht/Anmerkungen/...),
+        // which get a z-index just above the window's - far below host
+        // z-index+100. Cap the host below any currently open menu so it never
+        // overshoots one and silently swallows clicks on the menu's items.
+        var capBelowOpenMenu = function(z) {
+            if (Ext.menu.Manager && Ext.menu.Manager.active) {
+                var menuZ = 0;
+                Ext.menu.Manager.active.each(function(m) {
+                    if (m && m.el && m.el.dom) {
+                        var mz = parseInt(m.el.getStyle('z-index'), 10);
+                        if (!isNaN(mz) && mz > menuZ) menuZ = mz;
+                    }
+                });
+                if (menuZ && z >= menuZ) return menuZ - 1;
+            }
+            return z;
+        };
+        if (!host._zIndexCoordInstalled) {
+            host._zIndexCoordInstalled = true;
+            document.addEventListener('mousedown', function(e) {
+                var h = document.getElementById('ediromWindowsHost');
+                if (!h) return;
+                var path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
+                var winboxEl = null;
+                for (var i = 0; i < path.length; i++) {
+                    var n = path[i];
+                    if (n && n.classList && n.classList.contains('winbox')) { winboxEl = n; break; }
+                }
+                var inWinbox = !!winboxEl;
+                if (winboxEl) {
+                    desktop.getActiveWindowsSet().each(function(w) {
+                        if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
+                            w._winbox.focus();
+                            return false;
+                        }
+                    });
+                }
+                var doRecompute = function() {
+                    var maxZ = maxExtZ();
+                    if (inWinbox) {
+                        h.style.zIndex = capBelowOpenMenu(maxZ + 100);
+                    } else {
+                        var inExtWindow = false;
+                        for (var k = 0; k < path.length; k++) {
+                            var en = path[k];
+                            if (en && en.classList && en.classList.contains('x-window')) { inExtWindow = true; break; }
+                        }
+                        if (inExtWindow) h.style.zIndex = Math.max(0, maxZ - 1);
+                    }
+                };
+                // A click that opens this window's own ExtJS menu (Ansicht/
+                // Anmerkungen/...) can register the menu as active slightly
+                // AFTER this tick (Ext's button menu-show can defer past the
+                // current tick) - retry a few times over ~300ms so
+                // capBelowOpenMenu picks it up once it truly exists.
+                setTimeout(doRecompute, 0);
+                setTimeout(doRecompute, 50);
+                setTimeout(doRecompute, 150);
+                setTimeout(doRecompute, 300);
+            }, true);
+        }
+
+        function getShadowEl(id) {
+            return host.shadowRoot && host.shadowRoot.getElementById(id);
+        }
+
+        // wb.body's own size (.wb-body) is CONTENT-driven in this WinBox build,
+        // not parent-driven - reading wb.body.clientWidth/clientHeight to decide
+        // the Ext window's new size is circular (reflects whatever size we last
+        // forced onto it). Use the WinBox instance's own width/height/header
+        // instead - the exact values WinBox itself just applied.
+        // IMPORTANT: pass the explicit (w, h) WinBox's onresize callback receives
+        // as arguments, NOT wb.width/wb.height - maximize()/restore()/the
+        // minimize taskbar splitscreen layout all call resize(w, h, /*skipUpdate*/true)
+        // internally, which still fires onresize(w, h) with the correct new size
+        // but deliberately leaves wb.width/wb.height at their OLD (pre-maximize)
+        // values. Reading wb.width/wb.height instead of the callback args is why
+        // maximize/restore visually resized the WinBox chrome but left the
+        // reparented ExtJS content at its old (now too-small) size.
+        function computeBodySize(wb, w, h) {
+            // WinBox's title-bar height is exposed as the numeric `h` property,
+            // NOT `header` (that name doesn't exist on this WinBox build) - using
+            // the wrong name silently evaluated to 0, sizing the Ext window to the
+            // WinBox's FULL outer height and overflowing the visible body by the
+            // title-bar's height (docked bottom bars/footers got pushed out of view).
+            var headerH = wb.h || 0;
+            var width = (typeof w === 'number') ? w : wb.width;
+            var height = (typeof h === 'number') ? h : wb.height;
+            return { w: width, h: Math.max(0, height - headerH) };
+        }
+
+        var doWrap = function() {
+            var usable = desktop.getUsableSize();
+            var bodyXY = desktop.body.getXY();
+            host.style.position = 'fixed';
+            host.style.top = bodyXY[1] + 'px';
+            host.style.left = bodyXY[0] + 'px';
+            host.style.width = usable.width + 'px';
+            host.style.height = usable.height + 'px';
+            host.style.right = 'auto';
+            host.style.bottom = 'auto';
+
+            // WinBox's own maximize()/fullscreen() size against the FULL page
+            // viewport (document.documentElement.clientWidth/Height), not our
+            // host's own (smaller, topbar/taskbar/navigator-excluding) usable
+            // area - without any margin config, maximizing covers the topbar
+            // and taskbar instead of stopping at their edges.
+            // WinBox's maximize() does BOTH `resize(root_w-left-right,
+            // root_h-top-bottom, true)` AND `move(this.left, this.top, true)`
+            // using the SAME this.top/this.left values - i.e. it assumes the
+            // margin (page-viewport-relative) and the position (HOST-relative,
+            // since .winbox is positioned via nested position:absolute
+            // ancestors rooted at our own fixed/offset host) are the SAME
+            // coordinate space. They are NOT here: our host already starts
+            // BELOW the topbar, so .winbox's own host-relative top must stay 0
+            // - passing the topbar's height as `top` here would make
+            // maximize() double-count it (host offset + winbox's own
+            // move-to-top offset), pushing the maximized window's top edge
+            // down by the topbar's height (a visible gap under the topbar)
+            // and its bottom edge down by the same amount (covering the
+            // taskbar). Fold the vertical/horizontal top/left margins into
+            // bottom/right instead, so maximize()'s SIZE calculation still
+            // subtracts the full page-relative margin, while its POSITION
+            // (top/left) stays 0 - matching the host-relative origin.
+            var pageW = document.documentElement.clientWidth;
+            var pageH = document.documentElement.clientHeight;
+            var marginTop = bodyXY[1];
+            var marginLeft = bodyXY[0];
+            var marginRight = Math.max(0, pageW - (bodyXY[0] + usable.width)) + marginLeft;
+            var marginBottom = Math.max(0, pageH - (bodyXY[1] + usable.height)) + marginTop;
+
+            var raiseHostAboveExt = function() {
+                var recompute = function() {
+                    host.style.zIndex = capBelowOpenMenu(maxExtZ() + 100);
+                };
+                recompute();
+                // A menu opening (Ansicht/Anmerkungen/...) is itself a delayed
+                // side-effect of the mousedown/click that raised the host (Ext's
+                // button menu-show can defer past the current tick), so a single
+                // setTimeout(0) recompute can still run BEFORE the menu is
+                // registered as active and miss capping below it. Retry a few
+                // times over ~300ms - cheap, and self-corrects whichever timing
+                // Ext actually used without depending on internal event ordering.
+                setTimeout(recompute, 0);
+                setTimeout(recompute, 50);
+                setTimeout(recompute, 150);
+                setTimeout(recompute, 300);
+            };
+
+            var openWinboxCount = host.shadowRoot.querySelectorAll('.winbox').length;
+            var cascadeStep = (openWinboxCount % 10) * 24;
+            var winId = 'winbox_' + win.id;
+
+            // Ext.window.Window#setSize (still technically a floating component
+            // internally, even with drag/resize/animateTarget stripped) can
+            // reassert its OWN remembered pre-reparent page position (x/y from
+            // before wrapEdiromWindowInWinBox ran) as a side effect of resizing -
+            // observed concretely as `win.el.dom.style.top` jumping back to the
+            // window's original page Y (e.g. the topbar height) after a
+            // maximize, visually detaching the content from the WinBox body
+            // (the body then shows empty/white below the title bar, while the
+            // real content floats near the top of the page instead). Re-pin
+            // position to (0,0) after every setSize call to counter this. Must
+            // be defined BEFORE `new WinBox(...)` - WinBox invokes onresize
+            // synchronously during its own construction.
+            var setWinSize = function(w, h) {
+                win.setSize(w, h);
+                win.el.dom.style.left = '0';
+                win.el.dom.style.top = '0';
+                Ext.defer(function() {
+                    if (!win.destroyed && win.el) {
+                        win.el.dom.style.left = '0';
+                        win.el.dom.style.top = '0';
+                    }
+                }, 0);
+            };
+
+            var winbox = new WinBox({
+                id: winId,
+                // top/left stay 0 (see the comment above marginTop/marginLeft) -
+                // maximize()'s move() uses these as the host-relative
+                // destination position, which should be the host's own
+                // origin, not the topbar/navigator's page-relative height/width.
+                top: 0,
+                left: 0,
+                right: marginRight,
+                bottom: marginBottom,
+                title: win.title,
+                width: Math.max(320, Math.min(900, usable.width - 20)),
+                height: Math.max(240, Math.min(700, usable.height - 20)),
+                // x/y (and existing move() calls elsewhere, e.g.
+                // arrangeWinBoxWindow) are relative to the HOST's own CSS box
+                // (the host is already `position:fixed` at bodyXY on the page,
+                // and .winbox is positioned relative to that, via
+                // #winbox-container's own position:absolute) - do NOT add the
+                // top/left margins here, that would double-count the topbar
+                // offset the host's own placement already provides.
+                x: 10 + cascadeStep,
+                y: 5 + cascadeStep,
+                background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
+                root: host.shadowRoot.getElementById('winbox-container'),
+                index: 100000,
+                onfocus: function() {
+                    raiseHostAboveExt();
+                },
+                onminimize: function() {
+                    // win.minimize() -> Desktop.minimizeWindow -> win.hide(), which
+                    // the 'hide' listener below mirrors onto the WinBox shell.
+                    win.minimize();
+                    return false; // cancel WinBox's own strip-to-bottom minimize UI
+                },
+                onresize: function(w, h) {
+                    // WinBox calls onresize synchronously from its OWN constructor
+                    // (before `winbox = new WinBox(...)` below has been assigned),
+                    // so read sizing off `this` (WinBox binds callbacks to the
+                    // instance), not the outer `winbox` variable. Use the (w, h)
+                    // arguments (see computeBodySize's comment) so maximize/restore/
+                    // minimize-splitscreen resizes reach the ExtJS content too.
+                    var size = computeBodySize(this, w, h);
+                    setWinSize(size.w, size.h);
+                    var currentWinbox = this;
+                    Ext.defer(function() {
+                        if (currentWinbox.body) {
+                            setWinSize(currentWinbox.body.offsetWidth, currentWinbox.body.offsetHeight);
+                        }
+                    }, 0);
+                },
+                onclose: function() {
+                    win._wbWrapperClosing = true;
+                    win.close();
+                }
+            });
+
+            win._winbox = winbox;
+
+            // Move the already-rendered Ext window DOM into the WinBox body. Its
+            // native drag/resize/shadow/genie-animation is already stripped by
+            // win.applyWinBoxChrome(), so WinBox's own title bar/move/resize
+            // handles become the only visible frame. The native ExtJS header
+            // (title bar) was intentionally left ENABLED at render time (see
+            // applyWinBoxChrome's comment) - hide it now that it has safely
+            // rendered, so it doesn't show a redundant second title bar.
+            // edirom-windows.js mirrors every compiled stylesheet from the main
+            // document into its shadow root already, so the reparented ExtJS
+            // content keeps its theme CSS.
+            if (win.header && win.header.hide) win.header.hide();
+
+            var bodyEl = winbox.body || getShadowEl(winId).querySelector('.wb-body');
+            bodyEl.appendChild(win.el.dom);
+            win.el.dom.style.position = 'relative';
+            win.el.dom.style.left = '0';
+            win.el.dom.style.top = '0';
+
+            var initialSize = computeBodySize(winbox);
+            setWinSize(initialSize.w, initialSize.h);
+
+            var positionObserver = new MutationObserver(function() {
+                if (win.el.dom.style.left !== '0px') win.el.dom.style.left = '0';
+                if (win.el.dom.style.top !== '0px') win.el.dom.style.top = '0';
+            });
+            positionObserver.observe(win.el.dom, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+
+            var bodySizeObserver = null;
+            if (typeof ResizeObserver !== 'undefined') {
+                bodySizeObserver = new ResizeObserver(function(entries) {
+                    var rect = entries[0].contentRect;
+                    var width = Math.round(rect.width);
+                    var height = Math.round(rect.height);
+                    if (win.getWidth() !== width || win.getHeight() !== height) {
+                        setWinSize(width, height);
+                    } else {
+                        win.el.dom.style.left = '0';
+                        win.el.dom.style.top = '0';
+                    }
+                });
+                bodySizeObserver.observe(bodyEl);
+            }
+
+            // Keep the WinBox shell in sync with the real window's own lifecycle,
+            // however it gets hidden/shown/destroyed (minimize/restore via the
+            // taskbar button, "Alle Fenster schließen" from the window menu, ...).
+            // win.animateTarget was cleared by applyWinBoxChrome() so show()/hide()
+            // fire these SYNCHRONOUSLY (no async genie animation to wait for).
+            win.on({
+                show: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = '';
+                    // Clear WinBox's OWN minimized state - if the user minimized
+                    // via WinBox's native .wb-min control (the only visible
+                    // titlebar control, since the real Ext header is hidden),
+                    // WinBox shrinks itself to a small strip and sets its
+                    // internal this.min=true independently of our own
+                    // hide()/show() (which only toggles display:none). Without
+                    // this, restoring via the taskbar made the window reappear
+                    // but still stuck at strip size - winbox.restore() clears
+                    // the "min" class and resizes back, which (with the
+                    // onresize fix above using its (w,h) args) also resizes the
+                    // reparented Ext content back to normal.
+                    if (winbox.min) winbox.restore();
+                    raiseHostAboveExt();
+                },
+                hide: function() {
+                    var el = getShadowEl(winId);
+                    if (el) el.style.display = 'none';
+                },
+                destroy: function() {
+                    positionObserver.disconnect();
+                    if (bodySizeObserver) bodySizeObserver.disconnect();
+                    if (win._winbox && !win._wbWrapperClosing) win._winbox.close();
+                }
+            });
+
+            if (winbox.focused && winbox.blur) winbox.blur();
+            if (winbox.focus) winbox.focus();
+            raiseHostAboveExt();
+        };
+
+        // The WinBox script loads async (see edirom-windows.js _ensureWinboxAssets);
+        // it is very likely already loaded by the time a sourceView opens (any
+        // earlier Help/About/Audio/Verovio window would have triggered it), but
+        // guard the very-first-window-ever case the same way createWinBoxWindow does.
+        if (typeof WinBox !== 'undefined') {
+            doWrap();
+        } else {
+            var poll = setInterval(function() {
+                if (typeof WinBox !== 'undefined') {
+                    clearInterval(poll);
+                    doWrap();
                 }
             }, 100);
         }
@@ -1314,7 +1747,23 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         host.style.bottom = 'auto';
     },
 
+    // sortHorizontally/sortVertically/sortGrid compute `to` as a desktop-relative
+    // {x,y,width,height} box and normally apply it via win.animate(...) - but a
+    // useWinBoxChrome window is rendered non-floating, straight into a WinBox
+    // body (see wrapEdiromWindowInWinBox), so it has no page position of its own
+    // to animate. Move/resize the WinBox shell instead (no animation - WinBox has
+    // none), then let the WinBox's own onresize handler resize the Ext content.
+    arrangeWinBoxWindow: function(win, to) {
+        var desktop = this.desktop;
+        var bodyXY = desktop.body.getXY();
+        var contentConfig = win.getContentConfig();
+        win._winbox.move(to.x - bodyXY[0], to.y - bodyXY[1]);
+        win._winbox.resize(to.width, to.height);
+        win.setContentConfig(contentConfig);
+    },
+
     sortHorizontally: function() {
+        var me = this;
         var desktop = this.desktop;
         this.syncWinBoxHostBounds();
         var wins = desktop.getArrangeableWindowsSet();
@@ -1330,15 +1779,21 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 		var w = size.width/n;
 
 		wins.each(function(win) {
-            
-            var contentConfig = win.getContentConfig();
-            
+
             var to = {
                 y: desktop.getTopBarHeight() + 2,
                 x: left + 3,
                 width: w - 6,
                 height: size.height - 4
             };
+
+            if (win.useWinBoxChrome && win._winbox) {
+                me.arrangeWinBoxWindow(win, to);
+                left = left + w;
+                return;
+            }
+
+            var contentConfig = win.getContentConfig();
 
             win.animate(Ext.apply({
                 duration: 1000,
@@ -1353,6 +1808,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     },
 
     sortVertically: function() {
+        var me = this;
         var desktop = this.desktop;
         this.syncWinBoxHostBounds();
         var wins = desktop.getArrangeableWindowsSet();
@@ -1368,15 +1824,21 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 		var h = size.height/n;
 
 		wins.each(function(win) {
-		  
-		  var contentConfig = win.getContentConfig();
-		
+
             var to = {
                 y: top + 2,
                 x: 3,
                 width: size.width - 6,
                 height: h - 4
             };
+
+            if (win.useWinBoxChrome && win._winbox) {
+                me.arrangeWinBoxWindow(win, to);
+                top = top + h;
+                return;
+            }
+
+		  var contentConfig = win.getContentConfig();
 
             win.animate(Ext.apply({
                 duration: 1000,
@@ -1391,6 +1853,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     },
 
     sortGrid: function() {
+        var me = this;
         var desktop = this.desktop;
         this.syncWinBoxHostBounds();
         var wins = desktop.getArrangeableWindowsSet();
@@ -1410,8 +1873,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             if (!win.isVisible() || win.maximized)
                 return;
 
-            var contentConfig = win.getContentConfig();
-
             if((left + (size.width / optArray[0])) > size.width) {
 			    top = top + (size.height / optArray[1]);
 				left = 0;
@@ -1423,6 +1884,14 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 width: size.width / optArray[0] - 6,
                 height: size.height / optArray[1] - 4
             };
+
+            if (win.useWinBoxChrome && win._winbox) {
+                me.arrangeWinBoxWindow(win, to);
+                left = left + (size.width / optArray[0]);
+                return;
+            }
+
+            var contentConfig = win.getContentConfig();
 
             win.animate(Ext.apply({
                 duration: 1000,
