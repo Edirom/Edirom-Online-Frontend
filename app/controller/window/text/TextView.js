@@ -55,7 +55,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             {
                 resource: uri,
                 idPrefix: view.id + '_',
-                mediaType: 'text/html'
+                mediaType: 'text/html',
+                htmlProfile: 'edirom-text'
             },
             Ext.bind(function(response){
                 this.contentLoaded(view, response.responseText);
