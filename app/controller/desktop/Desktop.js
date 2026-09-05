@@ -1358,7 +1358,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         var html = ''
             + '<div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
             +     (showToolbar ? (''
-            +     '<div class="eoWinToolbar verovioToolbar" style="flex:0 0 auto;padding:4px;border-bottom:1px solid #bbb;display:flex;gap:4px;">'
+            +     '<edirom-control-bar class="eoWinToolbar verovioToolbar" gap="4px" style="flex:0 0 auto;height:34px;border-bottom:1px solid #bbb;--secondary-color:transparent;--control-bar-padding:4px;">'
             +         ansichtHtml
             +         '<div class="gotoWrap" style="position:relative;">'
             +             '<button type="button" class="menuButton gotoBtn" style="' + (defaultPane.key === 'verovio' ? '' : 'display:none;') + '">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_gotoMenu')) + ' \u25BE</button>'
@@ -1370,10 +1370,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             +                 '</div>'
             +             '</div>'
             +         '</div>'
-            +         '<button type="button" class="menuButton decreaseFont" style="display:none;">A-</button>'
-            +         '<button type="button" class="menuButton increaseFont" style="display:none;">A+</button>'
-            +         '<button type="button" class="menuButton lineNumbers" style="display:none;">Line #</button>'
-            +     '</div>'
+            +         '<edirom-button-widget class="decreaseFont" title="Decrease XML font size" aria-label="Decrease XML font size" style="display:none;" states-data=\'[{"name":"decrease","iconName":"text_decrease"}]\' current-state="decrease"></edirom-button-widget>'
+            +         '<edirom-button-widget class="increaseFont" title="Increase XML font size" aria-label="Increase XML font size" style="display:none;" states-data=\'[{"name":"increase","iconName":"text_increase"}]\' current-state="increase"></edirom-button-widget>'
+            +         '<edirom-button-widget class="lineNumbers" title="Toggle XML line numbers" aria-label="Toggle XML line numbers" style="display:none;" states-data=\'[{"name":"visible","iconName":"format_list_numbered"},{"name":"hidden","iconName":"format_list_numbered_rtl"}]\' current-state="visible"></edirom-button-widget>'
+            +     '</edirom-control-bar>'
             ) : '')
             +     '<div class="verovioViewBody" style="flex:1;position:relative;overflow:hidden;">'
             +         paneBodyHtml
@@ -1381,7 +1381,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             +             '<div class="gotoDialog" style="background:#fff;border:1px solid #999;border-radius:4px;padding:16px;min-width:260px;box-shadow:0 2px 10px rgba(0,0,0,.3);">'
             +                 '<div style="font-weight:bold;margin-bottom:10px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_Title')) + '</div>'
             +                 '<label style="display:block;margin-bottom:8px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_MovmentNumber')) + '<select class="gotoMovementSelect" style="width:100%;margin-top:4px;box-sizing:border-box;"></select></label>'
-            +                 '<label style="display:block;margin-bottom:12px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_Measure')) + '<input type="number" class="gotoMeasureInput" style="width:100%;margin-top:4px;box-sizing:border-box;"/></label>'
+            +                 '<div style="margin-bottom:12px;">' + Ext.String.htmlEncode(getLangString('view.window.source.SourceView_GotoMsg_Measure')) + '<edirom-spin-box-widget class="gotoMeasureSpinBox" style="height:32px;margin-top:4px;--spin-box-input-width:8ch;" steps-data="[]"></edirom-spin-box-widget></div>'
             +                 '<div style="display:flex;justify-content:flex-end;gap:8px;">'
             +                     '<button type="button" class="gotoCancelBtn">' + Ext.String.htmlEncode(getLangString('global_cancel')) + '</button>'
             +                     '<button type="button" class="gotoOkBtn">' + Ext.String.htmlEncode(getLangString('global_execute')) + '</button>'
@@ -1412,7 +1412,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 var movementSubmenu = winboxEl.querySelector('.movementSubmenu');
                 var gotoDialogOverlay = winboxEl.querySelector('.gotoDialogOverlay');
                 var gotoMovementSelect = winboxEl.querySelector('.gotoMovementSelect');
-                var gotoMeasureInput = winboxEl.querySelector('.gotoMeasureInput');
+                var gotoMeasureSpinBox = winboxEl.querySelector('.gotoMeasureSpinBox');
                 var gotoCancelBtn = winboxEl.querySelector('.gotoCancelBtn');
                 var gotoOkBtn = winboxEl.querySelector('.gotoOkBtn');
                 var decreaseFontBtn = winboxEl.querySelector('.decreaseFont');
@@ -1518,7 +1518,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 // openAudioView's single-xmlView toggle (view.window.TopBar_View items
                 // hide/show their view-specific tools per addViewSpecificItem).
                 var showXmlTools = function(show) {
-                    var display = show ? 'inline-block' : 'none';
+                    var display = show ? 'block' : 'none';
                     if (decreaseFontBtn) decreaseFontBtn.style.display = display;
                     if (increaseFontBtn) increaseFontBtn.style.display = display;
                     if (lineNumbersBtn) lineNumbersBtn.style.display = display;
@@ -1553,6 +1553,20 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     }, 500);
                 };
 
+                var getMeasureNumbers = function() {
+                    var renderer = iframe && iframe.contentDocument && iframe.contentDocument.getElementById('verovio-renderer');
+                    var meiData = renderer && renderer.meiData;
+                    if (!meiData) return [];
+
+                    var xmlDoc = new DOMParser().parseFromString(meiData, 'application/xml');
+                    var measureNumbers = [];
+                    Ext.Array.each(xmlDoc.querySelectorAll('measure'), function(measure) {
+                        var number = measure.getAttribute('n');
+                        if (number && !Ext.Array.contains(measureNumbers, number)) measureNumbers.push(number);
+                    });
+                    return measureNumbers;
+                };
+
                 if (ansichtBtn) {
                     ansichtBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -1585,9 +1599,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
                     gotoMeasureItem.addEventListener('click', function() {
                         closeGotoMenu();
-                        gotoMeasureInput.value = '';
+                        var measureNumbers = getMeasureNumbers();
+                        if (!measureNumbers.length || !gotoMeasureSpinBox) return;
+                        gotoMeasureSpinBox.setAttribute('steps-data', Ext.JSON.encode(measureNumbers));
+                        gotoMeasureSpinBox.setAttribute('current-step', measureNumbers[0]);
                         gotoDialogOverlay.style.display = 'flex';
-                        gotoMeasureInput.focus();
                     });
                 }
                 // Close the menus on any click outside them. Self-unregisters once
@@ -1604,7 +1620,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 });
                 gotoOkBtn.addEventListener('click', function() {
                     var movementId = gotoMovementSelect.value;
-                    var measureNumber = gotoMeasureInput.value;
+                    var measureNumber = gotoMeasureSpinBox && gotoMeasureSpinBox.getAttribute('current-step');
                     gotoDialogOverlay.style.display = 'none';
                     if (!measureNumber) return;
                     gotoMeasureByAttributes(measureNumber, movementId);
@@ -1612,13 +1628,17 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 gotoDialogOverlay.addEventListener('click', function(e) {
                     if (e.target === gotoDialogOverlay) gotoDialogOverlay.style.display = 'none';
                 });
-                gotoMeasureInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') gotoOkBtn.click();
-                    if (e.key === 'Escape') gotoCancelBtn.click();
-                });
+                if (gotoMeasureSpinBox) {
+                    gotoMeasureSpinBox.addEventListener('spin-box-step-requested', function(event) {
+                        gotoMeasureSpinBox.setAttribute('current-step', event.detail.requestedStep);
+                    });
+                    gotoMeasureSpinBox.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') gotoCancelBtn.click();
+                    });
+                }
 
                 if (decreaseFontBtn) {
-                    decreaseFontBtn.addEventListener('click', function() {
+                    decreaseFontBtn.addEventListener('button-state-requested', function() {
                         var editorEl = panesByKey[activePaneKey] && panesByKey[activePaneKey].editorEl;
                         if (!editorEl) return;
                         var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
@@ -1626,7 +1646,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
                 }
                 if (increaseFontBtn) {
-                    increaseFontBtn.addEventListener('click', function() {
+                    increaseFontBtn.addEventListener('button-state-requested', function() {
                         var editorEl = panesByKey[activePaneKey] && panesByKey[activePaneKey].editorEl;
                         if (!editorEl) return;
                         var size = parseInt(getComputedStyle(editorEl).fontSize, 10) || 12;
@@ -1634,10 +1654,12 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     });
                 }
                 if (lineNumbersBtn) {
-                    lineNumbersBtn.addEventListener('click', function() {
+                    lineNumbersBtn.addEventListener('button-state-requested', function(event) {
                         var xmlEditor = panesByKey[activePaneKey] && panesByKey[activePaneKey].xmlEditor;
                         if (!xmlEditor) return;
-                        xmlEditor.renderer.setShowGutter(!xmlEditor.renderer.getShowGutter());
+                        var showGutter = event.detail.requestedState === 'visible';
+                        xmlEditor.renderer.setShowGutter(showGutter);
+                        lineNumbersBtn.setAttribute('current-state', event.detail.requestedState);
                     });
                 }
 
