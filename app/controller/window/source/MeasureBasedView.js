@@ -125,13 +125,27 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         var me = this;
 
-        // remove all measures first
-        viewer.removeShapes('measures');
-        
-        // fetch measures if global or local visibility is on (both can't be because of the logic above)
-        if(sourceView.measuresVisible) {
-            me.fetchMeasures(uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [viewer, pageId], true));
+        // OSD web component: push model, mirrors PageBasedView.showMeasures/
+        // hideMeasures - toggling visibility does not need a re-fetch once the
+        // zone data for this page has already been pushed by measuresOnPageLoaded.
+        if(typeof viewer.setTypeVisible === 'function') {
+            if(sourceView.measuresVisible)
+                me.fetchMeasures(uri, pageId, function(measures) {
+                    me.measuresOnPageLoaded(measures, viewer, pageId);
+                });
+            else
+                viewer.setTypeVisible('measure', false);
+            return;
         }
+
+        // Legacy digilib ImageViewer only: renders measures directly from the store.
+        if(typeof viewer.addMeasures !== 'function') return;
+
+        viewer.removeShapes('measures');
+        if(sourceView.measuresVisible)
+            me.fetchMeasures(uri, pageId, function(measures) {
+                me.measuresOnPageLoaded(measures, viewer, pageId);
+            });
 
     },
     
@@ -160,7 +174,32 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        viewer.addMeasures(measures);
+        // OSD web component: push the page's measures as zone entries
+        // (type:'measure'), then show that type. Mirrors
+        // PageBasedView.setMeasuresData / showMeasures.
+        if(typeof viewer.setMeasuresData === 'function') {
+            var list = [];
+            if(measures && typeof measures.each === 'function') {
+                measures.each(function(m) {
+                    list.push({
+                        key: m.get('id'),
+                        pageId: pageId,
+                        ulx: m.get('ulx'),
+                        uly: m.get('uly'),
+                        lrx: m.get('lrx'),
+                        lry: m.get('lry'),
+                        name: m.get('name')
+                    });
+                });
+            }
+            viewer.setMeasuresData(list);
+            viewer.setTypeVisible('measure', true);
+            return;
+        }
+
+        // Legacy digilib ImageViewer only.
+        if(typeof viewer.addMeasures === 'function')
+            viewer.addMeasures(measures);
     },
     
 
@@ -199,7 +238,12 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
         if(pageId != viewer.imgId) return;
 
-        viewer.addAnnotations(annotations);
+        viewer.setAnnotationsData(annotations);
+        // The OSD web component only renders zone types listed in visible-types;
+        // enable the annotation type so the pushed annotations are shown. (The
+        // legacy digilib ImageViewer has no setTypeVisible and renders directly.)
+        if(typeof viewer.setTypeVisible === 'function')
+            viewer.setTypeVisible('annotation', true);
         sourceView.annotationFilterChanged();
     },
     

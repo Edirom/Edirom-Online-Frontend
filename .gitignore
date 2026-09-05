@@ -4,6 +4,9 @@ build-euryanthe
 .DS_Store
 .idea
 .vscode
+.continue
 local.properties
 .env
 sencha-error-*
+edirom-up.sh
+.existdb.json
