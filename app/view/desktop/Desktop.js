@@ -148,11 +148,23 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             }
             
             Ext.apply(thisWindow, {y: y, x: x});           
+
+            var usableSize = me.getUsableSize();
+            var winBoxWidth = Math.min(thisWindow.width, usableSize.width - 20);
+            var winBoxHeight = Math.min(thisWindow.expandedHeight + 35, usableSize.height - 20);
+            thisWindow.winBoxInitialBounds = {
+                width: winBoxWidth,
+                height: winBoxHeight,
+                x: Math.max(0, usableSize.width - winBoxWidth - 10),
+                y: Math.max(0, usableSize.height - winBoxHeight - 10)
+            };
             
             me.addWindow(thisWindow);
+            thisWindow.applyWinBoxChrome();
             thisWindow.show();
+            EdiromOnline.getApplication().getController('desktop.Desktop').wrapEdiromWindowInWinBox(thisWindow);
 
-        }else if(thisWindow != me.getActiveWindow()){
+        }else if(thisWindow.hidden){
 
             // show concordance navigator window
             thisWindow.show();

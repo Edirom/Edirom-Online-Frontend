@@ -665,6 +665,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             var openWinboxCount = host.shadowRoot.querySelectorAll('.winbox').length;
             var cascadeStep = (openWinboxCount % 10) * 24;
             var winId = 'winbox_' + win.id;
+            var initialBounds = win.winBoxInitialBounds || {};
 
             // Ext.window.Window#setSize (still technically a floating component
             // internally, even with drag/resize/animateTarget stripped) can
@@ -701,8 +702,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 right: marginRight,
                 bottom: marginBottom,
                 title: win.title,
-                width: Math.max(320, Math.min(900, usable.width - 20)),
-                height: Math.max(240, Math.min(700, usable.height - 20)),
+                width: initialBounds.width || Math.max(320, Math.min(900, usable.width - 20)),
+                height: initialBounds.height || Math.max(240, Math.min(700, usable.height - 20)),
                 // x/y (and existing move() calls elsewhere, e.g.
                 // arrangeWinBoxWindow) are relative to the HOST's own CSS box
                 // (the host is already `position:fixed` at bodyXY on the page,
@@ -710,9 +711,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 // #winbox-container's own position:absolute) - do NOT add the
                 // top/left margins here, that would double-count the topbar
                 // offset the host's own placement already provides.
-                x: 10 + cascadeStep,
-                y: 5 + cascadeStep,
+                x: typeof initialBounds.x === 'number' ? initialBounds.x : 10 + cascadeStep,
+                y: typeof initialBounds.y === 'number' ? initialBounds.y : 5 + cascadeStep,
                 background: 'linear-gradient(to bottom, #e6e6e6, #ccc)',
+                noFull: !!win.winBoxNoFull,
                 root: host.shadowRoot.getElementById('winbox-container'),
                 index: 100000,
                 onfocus: function() {

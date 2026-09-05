@@ -90,11 +90,17 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         var hasVerovioView = Ext.Array.some(config.views, function(view) { return view.type == "verovioView"; });
         var isPlainOpen = !config.internalIdType || config.internalIdType == "unknown";
 
-        // PROTOTYPE (see Desktop.wrapEdiromWindowInWinBox): a sourceView window's
-        // real ExtJS content is rendered directly into a WinBox instead of the
-        // normal floating ExtJS window - the rest of its view/tab logic below is
-        // unchanged.
-        var hasSourceView = Ext.Array.some(config.views, function(view) { return view.type == "sourceView"; });
+        // Render windows that contain complex or document-oriented views in a
+        // WinBox shell while retaining their existing ExtJS view/tab lifecycle.
+        var hasWinBoxView = Ext.Array.some(config.views, function(view) {
+            return view.type == "sourceView" ||
+                view.type == "annotationView" ||
+                view.type == "summaryView" ||
+                view.type == "headerView" ||
+                view.type == "iFrameView" ||
+                view.type == "textFacsimileSplitView" ||
+                view.type == "facsimileView";
+        });
 
         if (hasVerovioView && isPlainOpen) {
             this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
@@ -168,13 +174,13 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
         // Must run AFTER addWindowToActiveDesktop (so its animateTarget override
         // sticks) and BEFORE the window's first render (show()) - header/
         // draggable/resizable/shadow are only read by ExtJS at render time.
-        if (hasSourceView) {
+        if (hasWinBoxView) {
             win.applyWinBoxChrome();
         }
 
         win.show();
 
-        if (hasSourceView) {
+        if (hasWinBoxView) {
             this.application.getController('desktop.Desktop').wrapEdiromWindowInWinBox(win);
         }
     },

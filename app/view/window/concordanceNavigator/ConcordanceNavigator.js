@@ -55,6 +55,10 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
 
     cls: 'ediromConcordanceNavigatorWindow ediromWindow',
 
+    useWinBoxChrome: false,
+    winBoxNoFull: true,
+    hideTaskButton: true,
+
     defaults: {
         border:false
     },
@@ -88,6 +92,16 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
         // set attribute pressed of button for opening concordance navigator in task bar
         document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
 
+    },
+
+    applyWinBoxChrome: function() {
+        var me = this;
+        me.useWinBoxChrome = true;
+        me.draggable = false;
+        me.resizable = false;
+        me.shadow = false;
+        me.animateTarget = null;
+        me.addCls('ediromWindow-winboxChrome');
     },
 
     createConcordanceSelector: function() {
@@ -146,7 +160,16 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
 
     setGroupSelectorVisibility: function(visible) {
         var me = this;
-        me.setHeight(visible?me.expandedHeight:me.collapsedHeight);
+        var contentHeight = visible ? me.expandedHeight : me.collapsedHeight;
+
+        if (me._winbox) {
+            var outerHeight = contentHeight + (me._winbox.h || 0);
+            var deltaHeight = outerHeight - me._winbox.height;
+            me._winbox.move(me._winbox.x, Math.max(0, me._winbox.y - deltaHeight));
+            me._winbox.resize(me._winbox.width, outerHeight);
+        } else {
+            me.setHeight(contentHeight);
+        }
         me.groupContainer.setVisible(visible);
     },
 
@@ -340,12 +363,10 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     }, 
     
     close: function() {
-
-        // hide window instead of closing it (keeps position and state)
-        this.hide();
-        
         // unset attribute pressed of button for opening concordance navigator in task bar
         document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+
+        this.callParent(arguments);
 
     }
 });

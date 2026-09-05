@@ -193,8 +193,12 @@ Ext.define('EdiromOnline.controller.LinkController', {
                 for(var j = 0; j < config['sortIncludes'].length; j++) {
                     var win = config['sortIncludes'][j];
                     var posConfig = (positions == null?{}:positions['win_' + j]);
-                    win.setSize(posConfig['width'], posConfig['height']);
-                    win.setPosition(posConfig['x'], posConfig['y']);
+                    if (win.useWinBoxChrome && win._winbox) {
+                        this.application.getController('desktop.Desktop').arrangeWinBoxWindow(win, posConfig);
+                    } else {
+                        win.setSize(posConfig['width'], posConfig['height']);
+                        win.setPosition(posConfig['x'], posConfig['y']);
+                    }
                 }
             }
         }
