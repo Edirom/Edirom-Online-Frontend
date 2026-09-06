@@ -46,7 +46,7 @@ function initializeComponent() {
     renderer.setAttribute('zoom', '33');
     renderer.setAttribute('pagewidth', initWidth);
     renderer.setAttribute('pageheight', initHeight);
-    renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
+    renderer.setAttribute('verovio-url', './resources/js/verovio/verovio-toolkit-wasm.js');
     renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
     renderer.style.display = 'none'; // Hidden until ready
     
@@ -133,7 +133,7 @@ function showMovement(movementId) {
         renderer.setAttribute('id', 'verovio-renderer');
         renderer.setAttribute('pagenumber', '1');
         renderer.setAttribute('zoom', '33');
-        renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
+        renderer.setAttribute('verovio-url', './resources/js/verovio/verovio-toolkit-wasm.js');
         renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
         
         // Add it to the output div
