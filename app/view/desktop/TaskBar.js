@@ -36,8 +36,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
     initComponent: function () {
         var me = this;
 
-        me.addEvents('switchDesktop',
-                    'sortGrid',
+        me.addEvents('sortGrid',
                     'sortHorizontally',
                     'sortVertically',
                     'toggleMeasuresGlobally',
@@ -47,12 +46,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                     'openAboutWindow',
                     'switchLanguage');
 
-        me.desktopSwitch = new Ext.toolbar.Toolbar(me.getDesktopSwitchConfig());
-
-        me.windowBar1 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
-        me.windowBar2 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
-        me.windowBar3 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
-        me.windowBar4 = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
+        me.windowBar = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
 
         me.tray = new Ext.toolbar.Toolbar(me.getTrayConfig());
 
@@ -154,19 +148,13 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                 }                
             },
 
-
-            //me.desktopSwitch,
-
             // separator icon
             {
                 xtype: 'component', 
                 html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
             },
 
-            me.windowBar1,
-            me.windowBar2,
-            me.windowBar3,
-            me.windowBar4,
+            me.windowBar,
 
             // adding space
             '-',
@@ -204,38 +192,13 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             me.tray
         ];
 
-        me.setActiveWindowBar(1);
-
         me.callParent();
     },
 
     afterLayout: function () {
         var me = this;
         me.callParent();
-        me.windowBar1.el.on('contextmenu', me.onButtonContextMenu, me);
-        me.windowBar2.el.on('contextmenu', me.onButtonContextMenu, me);
-        me.windowBar3.el.on('contextmenu', me.onButtonContextMenu, me);
-        me.windowBar4.el.on('contextmenu', me.onButtonContextMenu, me);
-    },
-
-
-    getDesktopSwitchConfig: function () {
-        var me = this, ret = {
-            width: 30,
-            items: []
-        };
-
-        for(var i = 1; i <= 1; i++)
-            ret.items.push(
-                {
-                    cls: 'taskSquareButton desktop',
-                    tooltip: { text: getLangString('view.desktop.TaskBar_Desktop', i), align: 'bl-tl' },
-                    action: i,
-                    handler: Ext.bind(this.fireEvent, me, ['switchDesktop', i], false)
-                }
-            );
-
-        return ret;
+        me.windowBar.el.on('contextmenu', me.onButtonContextMenu, me);
     },
 
     getWindowBarConfig: function () {
@@ -261,7 +224,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
     },
 
     getWindowBtnFromEl: function (el) {
-        var c = this['windowBar' + this.activeWindowBar].getChildByElement(el);
+        var c = this.windowBar.getChildByElement(el);
         return c || null;
     },
 
@@ -320,21 +283,21 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             Ext.apply(config, {hidden: true});
         }
 
-        var cmp = this['windowBar' + this.activeWindowBar].add(config);
+        var cmp = this.windowBar.add(config);
         cmp.toggle(true);
         return cmp;
     },
 
     removeTaskButton: function (btn) {
         var found, me = this;
-        me['windowBar' + this.activeWindowBar].items.each(function (item) {
+        me.windowBar.items.each(function (item) {
             if (item === btn) {
                 found = item;
             }
             return !found;
         });
         if (found) {
-            me['windowBar' + this.activeWindowBar].remove(found);
+            me.windowBar.remove(found);
         }
         return found;
     },
@@ -343,22 +306,12 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         if (btn) {
             btn.toggle(true);
         } else {
-            this['windowBar' + this.activeWindowBar].items.each(function (item) {
+            this.windowBar.items.each(function (item) {
                 if (item.isButton) {
                     item.toggle(false);
                 }
             });
         }
-    },
-
-    setActiveWindowBar: function(num) {
-
-        this.activeWindowBar = num;
-
-        this.windowBar1.setVisible(num == 1);
-        this.windowBar2.setVisible(num == 2);
-        this.windowBar3.setVisible(num == 3);
-        this.windowBar4.setVisible(num == 4);
     }
     
 });
