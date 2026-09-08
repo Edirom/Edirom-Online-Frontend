@@ -7,11 +7,14 @@ xquery version "3.1";
  : the deployed config.json to be overridden at installation/container-start
  : time without having to rebuild or repackage the .xar file.
  :
- : The values are resolved in the following order (first match wins):
+ : Only the values that are actually provided at run time are changed; all
+ : other keys of the deployed config.json are left untouched. The override
+ : values are resolved in the following order (first match wins):
  :   1. the environment variables BACKEND_URL / BACKEND_PATH
- :   2. a JSON file (see BACKEND_CONFIG_FILE / $default-config-file below)
+ :   2. a JSON file (see BACKEND_CONFIG_FILE / $local:default-config-file below)
  :      with the shape { "backendURL": "...", "backendPath": "..." }
- :   3. the values that were baked into config.json at build time
+ : If neither is set for a given key, the value already present in the
+ : deployed config.json (baked in at build time) is kept.
  :)
 
 import module namespace xmldb = "http://exist-db.org/xquery/xmldb";
@@ -21,10 +24,6 @@ import module namespace file = "http://exist-db.org/xquery/file";
 declare variable $home external;
 declare variable $dir external;
 declare variable $target external;
-
-(: values injected at build time from build.xml, used as a fallback :)
-declare variable $local:build-backend-url := "@backend.url@";
-declare variable $local:build-backend-path := "@backend.path@";
 
 (: default location of an optional JSON file providing override values,
    e.g. mounted as a Docker volume; can be changed via BACKEND_CONFIG_FILE :)
@@ -54,12 +53,29 @@ declare function local:file-config() as map(*) {
             map {}
 };
 
+declare function local:deployed-config() as map(*) {
+    try {
+        parse-json(util:binary-to-string(util:binary-doc($target || "/config.json")))
+    } catch * {
+        map {}
+    }
+};
+
 let $file-config := local:file-config()
-let $backend-url := (local:env("BACKEND_URL"), $file-config?backendURL, $local:build-backend-url)[1]
-let $backend-path := (local:env("BACKEND_PATH"), $file-config?backendPath, $local:build-backend-path)[1]
-let $config := serialize(
-    map { "backendURL": $backend-url, "backendPath": $backend-path },
-    map { "method": "json" }
-)
+let $backend-url := (local:env("BACKEND_URL"), $file-config?backendURL)[1]
+let $backend-path := (local:env("BACKEND_PATH"), $file-config?backendPath)[1]
+let $overrides := map:merge((
+    if (exists($backend-url)) then map { "backendURL": $backend-url } else map {},
+    if (exists($backend-path)) then map { "backendPath": $backend-path } else map {}
+))
 return
-    xmldb:store($target, "config.json", $config, "application/json")
+    (: only touch config.json if there actually is something to override :)
+    if (map:size($overrides) eq 0) then
+        ()
+    else
+        let $config := serialize(
+            map:merge((local:deployed-config(), $overrides), map { "duplicates": "use-last" }),
+            map { "method": "json" }
+        )
+        return
+            xmldb:store($target, "config.json", $config, "application/json")
