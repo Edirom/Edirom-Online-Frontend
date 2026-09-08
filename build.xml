@@ -96,6 +96,8 @@
                 <filter token="project.app" value="${project.app}"/>
                 <filter token="project.title" value="${project.title}"/>
                 <filter token="repo.target" value="${repo.target}"/>
+                <filter token="backend.url" value="${backend.url}"/>
+                <filter token="backend.path" value="${backend.path}"/>
             </filterset>
         </copy>
         <copy todir="${build.dir}" preservelastmodified="true">
