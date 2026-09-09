@@ -19,7 +19,7 @@
 Ext.define('EdiromOnline.view.window.AnnotationView', {
     extend: 'EdiromOnline.view.window.View',
     
-    cls: 'annotView',
+    cls: 'annotationView',
     
     requires: [
         'Ext.grid.Panel',
@@ -37,9 +37,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
     alias : 'widget.annotationView',
 
     layout: 'card',
-    
-    cls: 'annotationView',
-    
+        
     image_server: null,
     
     initComponent: function () {

@@ -47,11 +47,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         this.desktop.taskbar.addListener('openConcordanceNavigator', this.openConcordanceNavigator, this);
         
         var concNavOnStart = window.getPreference('concordance_navigator_open_on_start', true);
-        if(concNavOnStart != null && concNavOnStart) {
-            this.desktop.taskbar.setConcordanceNavigatorButtonToggleState(true, true);
+        var hasConnectionParam = this.application.activeConnection != null;
+        if ((concNavOnStart != null && concNavOnStart) || hasConnectionParam) {
             Ext.defer(this.openConcordanceNavigator, 1000, this);
         }
-        
+
         this.desktop.taskbar.addListener('openHelp', this.openHelp, this);
         this.desktop.taskbar.addListener('openAbout', this.openAbout, this);
         //TODO: Suchfenster einbauen
