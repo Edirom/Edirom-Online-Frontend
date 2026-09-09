@@ -42,7 +42,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
     onDesktopRendered: function(desktop) {
         this.desktop = desktop;
-        this.desktop.taskbar.addListener('switchDesktop', this.switchDesktop, this);
 
         this.desktop.taskbar.addListener('openConcordanceNavigator', this.openConcordanceNavigator, this);
         
@@ -100,8 +99,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         me.desktop.openSearchWindow(term);
     },
 
-    switchDesktop: function(desk) {
-        this.desktop.switchDesktop(desk);
+    onOpenAboutWindow: function(button, event, args) {
+        var me = this;
+        me.desktop.openAboutWindow();
     },
 
     cloneWinsCollectionWithoutMinimized: function(wins) {
