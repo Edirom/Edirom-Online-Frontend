@@ -103,19 +103,6 @@ When the frontend is deployed as a regular web server like nginx or httpd Docker
 
 If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
 
-When the frontend is deployed as an nginx Docker container, this `config.json` file can simply be replaced by mounting a different file over it. When the frontend is deployed to an **eXist database** via the frontend `.xar`, `config.json` is part of the package and cannot be replaced that way. For this case, the `.xar` includes a post-install script (`exist-packaging/post-install.xq`) that, right after the package is installed, updates only the `backendURL`/`backendPath` values in the deployed `config.json` for which an override is found, resolved in the following order:
-
-1. the environment variables `BACKEND_URL` / `BACKEND_PATH` of the eXist process
-2. a JSON file (default path `/exist-config/config.json`, configurable via the environment variable `BACKEND_CONFIG_FILE`) with the shape:
-    ```json
-    {
-      "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
-      "backendPath": "/exist/apps/Edirom-Online-Backend/"
-    }
-    ```
-
-If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
-
 
 ### Starting an Edirom instance locally
 
