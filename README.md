@@ -103,6 +103,41 @@ When the frontend is deployed as a regular web server like nginx or httpd Docker
 
 If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
 
+When the frontend is deployed as an nginx Docker container, this `config.json` file can simply be replaced by mounting a different file over it. When the frontend is deployed to an **eXist database** via the frontend `.xar`, `config.json` is part of the package and cannot be replaced that way. For this case, the `.xar` includes a post-install script (`exist-packaging/post-install.xq`) that, right after the package is installed, updates only the `backendURL`/`backendPath` values in the deployed `config.json` for which an override is found, resolved in the following order:
+
+1. the environment variables `BACKEND_URL` / `BACKEND_PATH` of the eXist process
+2. a JSON file (default path `/exist-config/config.json`, configurable via the environment variable `BACKEND_CONFIG_FILE`) with the shape:
+    ```json
+    {
+      "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
+      "backendPath": "/exist/apps/Edirom-Online-Backend/"
+    }
+    ```
+
+If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
+
+**Testing the eXist deploy-time override:**
+
+1. *Environment variables* — set them on the eXist container/process **before** the frontend `.xar` is installed/deployed (the post-install script only runs once, right after installation), e.g.:
+    ```bash
+    docker run -d --name exist \
+      -p 8080:8080 -p 8443:8443 \
+      -e BACKEND_URL="https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/" \
+      -e BACKEND_PATH="/exist/apps/Edirom-Online-Backend/" \
+      stadlerpeter/existdb:6
+    ```
+    Then upload/install the frontend `.xar` as usual (see "Starting an Edirom instance locally" below). If you re-deploy the same `.xar` to change the values, the post-install script runs again and picks up the current environment variables.
+2. *Config file* — mount a JSON file with the shape shown above into the container at `/exist-config/config.json` (or any path you configure via `BACKEND_CONFIG_FILE`), e.g.:
+    ```bash
+    docker run -d --name exist \
+      -p 8080:8080 -p 8443:8443 \
+      -v /ABSOLUTE/PATH/TO/YOUR/config.json:/exist-config/config.json:ro \
+      stadlerpeter/existdb:6
+    ```
+    Then install the frontend `.xar` as usual. Environment variables always take priority over the file if both are set.
+
+After installation, verify the result by fetching `http://localhost:8080/exist/apps/Edirom-Online-Frontend/config.json` in the browser or with `curl`.
+
 
 ### Starting an Edirom instance locally
 
