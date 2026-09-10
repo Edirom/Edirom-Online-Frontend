@@ -237,6 +237,55 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }
     },
 
+    /**
+     * Resolves a measure reference to the spinner store record that represents it.
+     *
+     * The store is keyed by whatever getMeasures.xql emitted for the group: the real
+     * measure @xml:id where a measure number occurs only once, and a virtual id of the
+     * form 'measure_<mdivId>_<measureNumber>' where it occurs once per part. Incoming
+     * references do not always arrive in that form, so three lookups are tried in turn:
+     *
+     *   1. the reference is the record's own id - the spinner itself, and links into a
+     *      source where the measure number occurs only once;
+     *   2. the reference is one part's real measure @xml:id held inside a grouped record.
+     *      This is what "go to measure" produces (it reports the first part's measure) and
+     *      what a concordance or annotation link into a source with parts points at;
+     *   3. the reference is a virtual id whose trailing token is the measure number,
+     *      matched against the store's 'name' field.
+     *
+     * @param store the measure store of the current mdiv
+     * @param id the measure reference to resolve
+     * @return the matching record, or null if the reference belongs to another source or mdiv
+     */
+    resolveMeasureRecord: function(store, id) {
+
+        var record = store.getById(id);
+        if(record !== null)
+            return record;
+
+        if(typeof id !== 'string')
+            return null;
+
+        var index = store.findBy(function(candidate) {
+            var members = candidate.get('measures') || [];
+            for(var i = 0; i < members.length; i++) {
+                if(members[i]['id'] === id)
+                    return true;
+            }
+            return false;
+        });
+        if(index !== -1)
+            return store.getAt(index);
+
+        if(id.indexOf('measure_') === 0) {
+            index = store.findExact('name', id.substring(id.lastIndexOf('_') + 1));
+            if(index !== -1)
+                return store.getAt(index);
+        }
+
+        return null;
+    },
+
     setMeasure: function(combo, store, measureCount) {
 
         var me = this;
@@ -246,34 +295,19 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
         var id = combo.getValue();
 
-        var measure = store.getById(id);
-
-        // Fallback for concordance / internal links:
-        // Single-part sources (e.g. parts prints or arrangements) store the real measure
-        // xml:id, while the concordance references a virtual id of the form
-        // 'measure_<mdivId>_<measureNumber>'. This branch is only entered when the id did
-        // not resolve directly (measure === null) AND it looks like such a virtual id
-        // (a string starting with 'measure_'). We then recover the measure by its trailing
-        // number, matched against the store's 'name' field, and sync the combo to the
-        // resolved record so the spinner shows the real measure number.
-        if(measure === null && typeof id === 'string' && id.indexOf('measure_') === 0) {
-            var measureNumber = id.substring(id.lastIndexOf('_') + 1);
-            var index = store.findExact('name', measureNumber);
-            if(index !== -1) {
-                measure = store.getAt(index);
-                combo.setValue(measure.get('id'));
-            } else {
-                console.warn('MeasureBasedView.setMeasure: could not resolve virtual measure id "' + id +
-                    '" (measure number "' + measureNumber + '" not found in the current mdiv store).');
-            }
-        }
+        var measure = me.resolveMeasureRecord(store, id);
 
         // Nothing resolvable: keep the current display instead of blanking the view.
         if(measure === null){
-            console.warn('MeasureBasedView.setMeasure: measure id "' + id + '" could not be resolved to a ' +
-                'measure in this source; keeping the current display.');
+            console.warn('MeasureBasedView.setMeasure: measure reference "' + id + '" could not be ' +
+                'resolved to a measure in this source; keeping the current display.');
         	return;
         }
+
+        // Sync the combo when the incoming reference was not the record's own id, so the
+        // spinner shows the measure number instead of an unresolved reference.
+        if(measure.get('id') !== id)
+            combo.setValue(measure.get('id'));
 
         me.measures = measure;
 
