@@ -24,6 +24,10 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         'window.source.SourceView'
     ],
 
+    models: [
+        'MeasureShape'
+    ],
+
     init: function() {
         this.control({
             'sourceView': {
@@ -189,8 +193,11 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             Ext.bind(function(response){
                 var data = response.responseText;
 
+                // Keyed by zoneId, not by the measure id: a measure broken across systems is
+                // linked to several zones and therefore yields several shapes sharing one
+                // measure id, of which the store would keep only the last.
                 var measures = Ext.create('Ext.data.Store', {
-                    fields: ['zoneId', 'ulx', 'uly', 'lrx', 'lry', 'id', 'name', 'type', 'rest'],
+                    model: 'EdiromOnline.model.MeasureShape',
                     data: Ext.JSON.decode(data)
                 });
 
