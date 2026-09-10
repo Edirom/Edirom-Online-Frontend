@@ -353,9 +353,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var elem = Ext.get(shape);
         elem.addCls('highlighted');
 
-        var annotId = elem.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
+        this.getAnnotationElems(elem).addCls('combinedHighlight');
     },
 
     deHighlightShape: function(event, owner, shape) {
@@ -363,9 +361,36 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var elem = Ext.get(shape);
         elem.removeCls('highlighted');
 
+        this.getAnnotationElems(elem).removeCls('combinedHighlight');
+    },
+
+    /**
+     * Collects everything that belongs to the same annotation as the given element: its icons
+     * wherever they appear, and the zone containers holding them.
+     *
+     * The annotation id is carried by the annotIcon, not by the zone container, because one
+     * zone can hold icons of several annotations. Selecting by that id therefore picks up the
+     * hovered annotation's icons in every zone it touches, and leaves the icons of the other
+     * annotations sharing those zones alone. Elements without an annotation id (measures)
+     * yield an empty selection.
+     */
+    getAnnotationElems: function(elem) {
+
+        var elems = [];
         var annotId = elem.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
+
+        if(annotId) {
+            Ext.Array.each(Ext.query('[data-edirom-annot-id="' + annotId + '"]', this.el.dom), function(node) {
+
+                elems.push(node);
+
+                // an icon's zone container is highlighted along with it
+                if(node.classList.contains('annotIcon') && node.parentNode)
+                    elems.push(node.parentNode);
+            });
+        }
+
+        return Ext.select(elems);
     },
 
     addAnnotations: function(annotations) {
@@ -432,6 +457,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     var annoIcon = document.createElement('div');
                     annoIcon.id = anno.id + annoId;
                     annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
+                    annoIcon.setAttribute('data-edirom-annot-id', annoId);
                     anno.append(annoIcon);
 
                     var point = me.viewer.viewport.imageToViewportCoordinates(x, y);
@@ -446,11 +472,16 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                     var annoIcon = document.createElement('div');
                     annoIcon.id = anno.id + annoId;
                     annoIcon.className = 'annotIcon ' + categories + ' ' + priority + ' ' + partType;
+                    annoIcon.setAttribute('data-edirom-annot-id', annoId);
                     anno.dom.append(annoIcon);
                 }
 
                 // retrieve dom element of annotationIcon to bind actions
                 var annoIcon = me.el.getById(annoIcon.id);
+
+                // highlight everything belonging to this annotation while the icon is hovered
+                annoIcon.on('mouseenter', me.highlightShape, me, annoIcon, true);
+                annoIcon.on('mouseleave', me.deHighlightShape, me, annoIcon, true);
 
                 // bind onclick action to annotation icon
                 annoIcon.on('click', me.openShapeLink, me, {
