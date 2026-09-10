@@ -179,15 +179,36 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     addAnnotations: function(annotations) {
     	
         var me = this;
+        
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: ImageViewer: addAnnotaitons');
+            console.log('annotations RAW');
+            console.log(annotations);
+        }
 
+        //add empty annotations array to shapes
         me.shapes.add('annotations', []);
-
+        
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('me.shapes annotations');
+            console.log(me.shapes.get('annotations'));
+        }
+        
+        // imageViewer specifc overlay container
         var shapeDiv = me.el.getById(me.id + '_facsContEvents');
+
+        // iterate over annotations
         annotations.each(function(annotation) {
 
+            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+                console.log('Processing annotation…');
+                console.log(annotation);
+            }
+
+            var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -197,76 +218,105 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 Ext.Array.push(this.annotSVGOverlays, svg.id);
             }, me);
 
-            Ext.Array.insert(me.shapes.get('annotations'), 0, plist);
+            //push plist to me.shapes annotations
+            Ext.Array.push(me.shapes.get('annotations'), plist);
 
+            //iterate over an annotation’s plist
             Ext.Array.each(plist, function(shape) {
 
-                var id = shape.id;
+                // define participant shape properties
+                var id = shape.id; //pattern from XQL 'annotation_' || $annoId || '_' || string($p/@xml:id)
                 var x = shape.ulx;
                 var y = shape.uly;
                 var width = shape.lrx - shape.ulx;
                 var height = shape.lry - shape.uly;
-                var outerId = me.id + '_' + id;
-                var innerId = outerId + annotation.get('id');
+                var participantType = shape.type;
+
+                // calculate ids for annotation icon container and annotation icon
+                var annoIconContainerId = me.id + '_' + id;
+                var annoIconId = annoIconContainerId + annoId;
 
                 // reuse existing outer div if already present (multiple annotations on same zone)
-                var outerDiv = Ext.get(outerId);
-                if (!outerDiv) {
-                    outerDiv = Ext.DomHelper.append(shapeDiv, {
+                var annoIconContainer = Ext.get(annoIconContainerId);
+
+                if (!annoIconContainer) {
+                    
+                    // no pre-existing annotation icon container
+                    // create container
+                    annoIconContainer = Ext.DomHelper.append(shapeDiv, {
                         tag: 'div',
-                        id: outerId,
+                        id: annoIconContainerId,
                         cls: 'annotation',
-                        'data-edirom-annot-id': annotation.get('id')
+                        'data-edirom-annot-id': annoId
                     }, true);
-                    outerDiv.setStyle({
+                    annoIconContainer.setStyle({
                         position: 'absolute'
                     });
                 }
 
-                // inner annotIcon div carries taxonomy classes (categories and priority)
-                var innerDiv = Ext.DomHelper.append(outerDiv, {
+                // create annoIcon
+                // annotIcon div carries taxonomy classes (categories and priority)
+                var annoIcon = Ext.DomHelper.append(annoIconContainer, {
                     tag: 'div',
-                    id: innerId,
-                    cls: 'annotIcon ' + categories + ' ' + priority,
+                    id: annoIconId,
+                    cls: 'annotIcon ' + categories + ' ' + priority + ' ' + participantType,
                     title: name
                 }, true);
 
-                innerDiv.on('mouseenter', me.highlightShape, me, outerDiv, true);
-                innerDiv.on('mouseleave', me.deHighlightShape, me, outerDiv, true);
-                innerDiv.on('mousedown', me.listenForShapeLink, me, {
+                //* bind actions to annoIcon div *//
+                annoIcon.on('mouseenter', me.highlightShape, me, annoIconContainer, true);
+                annoIcon.on('mouseleave', me.deHighlightShape, me, annoIconContainer, true);
+                annoIcon.on('mousedown', me.listenForShapeLink, me, {
                     stopEvent : true,
-                    elem: innerDiv,
+                    elem: annoIcon,
                     fn: fn
                 });
-                innerDiv.setStyle({
+                annoIcon.setStyle({
                     position: 'relative'
                 });
 
+                // create the tooltip for the annotation
                 var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: innerId,
+                    target: annoIconId,
                     cls: 'annotationTip',
                     width: me.annotTipWidth,
                     maxWidth: me.annotTipMaxWidth,
                     height: me.annotTipHeight,
                     maxHeight: me.annotTipMaxHeight,
                     dismissDelay: 0,
+                    hideDelay: 1000,
                     anchor: 'left',
                     html: getLangString('Annotation_plus_Title', name)
                 });
 
+                // bind function to fetch the contents for the annotation tooltip
                 tip.on('afterrender', function() {
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
                         'GET',
                         {
                             uri: uri,
-                            target: 'tip',
-                            lang: getPreference('application_language'),
-                            edition: EdiromOnline.getApplication().activeEdition
+                            target: 'tip'
                         },
                         Ext.bind(function(response){
                             this.update(response.responseText);
                         }, this)
                     );
+                    this.el.on('mouseover', function() {
+                        this.addCls('mouseOverAnnot');
+                    }, this);
+                    this.el.on('mouseout', function() {
+                        this.removeCls('mouseOverAnnot');
+                    }, this);
+                }, tip);
+
+                // delay hiding the annotation tooltip
+                tip.on('beforehide', function() {
+                    if(this.el.hasCls('mouseOverAnnot')) {
+                        Ext.Function.defer(function(){
+                            this.hide();
+                        }, 1000, this);
+                        return false;
+                    }
                 }, tip);
             });
         });
@@ -479,8 +529,8 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             }catch(e) {
                 id = shape.id;
             }
-			//console.log(shapeDiv.getById(me.id + '_' + id));
-            Ext.removeNode(shapeDiv.getById(me.id + '_' + id).dom);
+            var shapeEl = shapeDiv.getById(me.id + '_' + id);
+            if (shapeEl) Ext.removeNode(shapeEl.dom);
         };
 
         if(me.shapes.get(groupName).each)

@@ -6,6 +6,19 @@ $ui_baseFont_size: 14px;
 $content_baseFont: 'Caudex', Arial, sans-serif;
 $content_baseFont_size: 14px;
 
+
+.annotationView {
+
+	/* Fix for Chrome: splitter in Annotation View */
+	.x-splitter-horizontal {
+		background-image: -webkit-radial-gradient(50% 50%,ellipse cover,#999,white 50%);
+	}
+
+	.x-splitter-vertical {
+		background-image: -webkit-radial-gradient(50% 50%,ellipse cover,#999,white 50%);
+	}
+}
+
 .annotationList {
 	.x-panel-header-default {
 		@include background(linear-gradient(top,#ffffff,#e5e5e5));
@@ -13,6 +26,10 @@ $content_baseFont_size: 14px;
 	
 	.x-grid-row-selected .x-grid-cell, .x-grid-row-selected .x-grid-rowwrap-div {
 		@include background(linear-gradient(top,lighten(#ffd538,10%), lighten(#f07822,10%)));
+	}
+	
+	.x-grid-cell.pos * {
+		text-align: right !important;
 	}
 	
 }
@@ -153,6 +170,16 @@ $content_baseFont_size: 14px;
 			max-height: 100%;
 			max-width: 100%;
 		}
+	}
+	
+	.ref {
+		color: rgb(146, 64, 92);
+	}
+
+	.ref:hover {
+		color: rgb(146, 64, 92);
+		cursor: pointer;
+		text-decoration: underline;
 	}
 
 }

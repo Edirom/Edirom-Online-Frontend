@@ -85,7 +85,8 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
             'GET',
             {
                 uri: view.uri,
-                lang: getPreference('application_language')//TODO lang
+                lang: getPreference('application_language'), //TODO lang
+                mode: 'taxonomies'
             },
             Ext.bind(function(response){
                 var me = this;
@@ -96,19 +97,31 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                     console.log(data);
                 }
+                
+                // if taxonomies array is empty but categories and priorities are
+                // populated merge those to a taxonomies array
+                var taxonomies = data['taxonomies'] || [];
+                if (taxonomies.length === 0) {
+                    var categories = data['categories'] || [];
+                    var priorities = data['priorities'] || [];
+                    if (categories.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromCategory',
+                            label: 'ediromCategory',
+                            items: categories
+                        });
+                    }
+                    if (priorities.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromPriority',
+                            label: 'ediromPriority',
+                            items: priorities
+                        });
+                    }
+                }
 
-                var priorities = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['priorities']
-                });
-                var categories = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['categories']
-                });
-
-                //TODO why not save to object store?
-
-                me.annotInfosLoaded(priorities, categories, view);
+                // hand over returned taxonomies array
+                me.annotInfosLoaded(taxonomies, view);
             }, this)
         );
 
@@ -134,8 +147,9 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         view.setMovements(movements);
     },
 
-    annotInfosLoaded: function(priorities, categories, view) {
-        view.setAnnotationFilter(priorities, categories);
+    annotInfosLoaded: function(taxonomies, view) {
+        // delegate taxonomies array handling to the view
+        view.setAnnotationFilter(taxonomies);
     },
 
     overlaysLoaded: function(overlays, view) {
@@ -230,14 +244,15 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 'GET',
                 {
                     uri: view.uri,
-                    pageId: pageId
+                    pageId: pageId,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var me = this;
                     var data = response.responseText;
 
                     var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
+                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
                         data: Ext.JSON.decode(data)
                     });
 
