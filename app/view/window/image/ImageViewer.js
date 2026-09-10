@@ -271,7 +271,49 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             });
         });
 
+        me.restackAnnotationZones();
         me.repositionShapes();
+    },
+
+    /**
+     * Stacks the annotation zone containers so that smaller zones sit above larger ones.
+     *
+     * Zone containers are absolutely positioned siblings without a z-index, so they paint in
+     * document order and the last one added wins. Where a large zone encloses (or merely
+     * overlaps) a smaller one, the large container's box covers the small zone's icons and
+     * swallows their mouse events, making those annotations unreachable. Ordering the
+     * containers by descending area puts the smaller zone on top and keeps every icon
+     * interactive.
+     */
+    restackAnnotationZones: function() {
+
+        var me = this;
+        var areas = {};
+
+        Ext.Array.each(me.getShapes('annotations') || [], function(shape) {
+
+            var containerId = me.id + '_' + shape.id;
+            var area = Math.abs((shape.lrx - shape.ulx) * (shape.lry - shape.uly));
+
+            // a zone shared by several annotations is listed once per annotation
+            if(!(containerId in areas) || area > areas[containerId])
+                areas[containerId] = area;
+        });
+
+        var containerIds = Ext.Object.getKeys(areas).sort(function(a, b) {
+            return areas[b] - areas[a];
+        });
+
+        // Measure zones carry z-index 5 (.measure in global.scss) and are pointer-active across
+        // their whole box, so the annotation stack has to start above them: numbering from 1
+        // would leave the largest annotation zones buried under every measure.
+        var zBase = 6;
+
+        Ext.Array.each(containerIds, function(containerId, index) {
+
+            var container = document.getElementById(containerId);
+            if(container) container.style.zIndex = zBase + index;
+        });
     },
 
     listenForShapeLink: function(e, dom, args) {
