@@ -304,10 +304,15 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
             return areas[b] - areas[a];
         });
 
+        // Measure zones carry z-index 5 (.measure in global.scss) and are pointer-active across
+        // their whole box, so the annotation stack has to start above them: numbering from 1
+        // would leave the largest annotation zones buried under every measure.
+        var zBase = 6;
+
         Ext.Array.each(containerIds, function(containerId, index) {
 
             var container = document.getElementById(containerId);
-            if(container) container.style.zIndex = index + 1;
+            if(container) container.style.zIndex = zBase + index;
         });
     },
 
