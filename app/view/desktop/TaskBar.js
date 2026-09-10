@@ -113,6 +113,8 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         var openConcordanceNavigatorIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_concordance_navigator"]');
                         openConcordanceNavigatorIconElem.addEventListener('click', function() { me.fireEvent('openConcordanceNavigator'); });
                     }
+                }
+            },
 
             // separator icon
             {
