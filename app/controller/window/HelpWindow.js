@@ -44,9 +44,13 @@ Ext.define('EdiromOnline.controller.window.HelpWindow', {
 		var backendURL = configController.getConfig('backendURL');
 		var backendPath = configController.getConfig('backendPath');
 
-        window.doAJAXRequest('data/xql/getHelp.xql',
+        // request goes to v2 API - relative to backendURI
+        window.doAJAXRequest('api/document',
             'GET', 
             {
+                resource: 'help_' + window.getLanguage(),
+                mediaType: 'text/html',
+                htmlProfile: 'edirom-help',
                 lang: window.getLanguage(),
                 idPrefix: win.id
             },
