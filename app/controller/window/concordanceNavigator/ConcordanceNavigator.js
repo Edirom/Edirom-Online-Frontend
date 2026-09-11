@@ -59,7 +59,7 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         app.callFunctionOfEdition(win, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [win], true));
 
         me.ediromConcordanceNavigator = document.querySelector(`#${win.id}-concordance-navigator`);
-        me.ediromConcordanceNavigator.addEventListener('show-connection-request', function (e) {
+        me.ediromConcordanceNavigator.addEventListener('connection-changed', function (e) {
             var plist = e.detail.plist;
             loadLink(plist, { useExisting: true, onlyExisting: true });
         });
