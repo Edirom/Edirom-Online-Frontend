@@ -230,6 +230,23 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         me.fitStoredRect();
     },
 
+    /**
+     * The key identifying a shape's overlay element.
+     *
+     * A measure shape is a zone, not a measure: a measure broken across systems is linked to
+     * several zones and so yields several shapes sharing one measure id. The zone id is unique
+     * and therefore keys the element; other shape groups carry no zoneId and keep using their
+     * own id. Accepts both model records and plain objects.
+     */
+    shapeKey: function(shape) {
+
+        try {
+            return shape.get('zoneId') || shape.get('id');
+        }catch(e) {
+            return shape.zoneId || shape.id;
+        }
+    },
+
     addMeasures: function(shapes) {
 
         var me = this;
@@ -238,17 +255,21 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
 
         me.shapes.get('measures').each(function(shape) {
 
-            var id = shape.get('id');
             var name = shape.get('name');
             var x = shape.get('ulx');
             var y = shape.get('uly');
             var width = shape.get('lrx') - shape.get('ulx');
             var height = shape.get('lry') - shape.get('uly');
 
+            // A shape is a zone, not a measure: a measure broken across systems is linked to
+            // several zones and so yields several shapes sharing one measure id. The zone id
+            // keys the element, so each fragment gets its own.
+            var elementId = me.id + '_' + me.shapeKey(shape);
+
             var measure = document.createElement("div");
-            measure.id = me.id + '_' + id;
+            measure.id = elementId;
             measure.className = "measure";
-            measure.innerHTML = '<span class="' + (name === ''?'measureInnerEmpty':'measureInner') + '" id="' + me.id + '_' + id + '_inner">' + name + '</span>';
+            measure.innerHTML = '<span class="' + (name === ''?'measureInnerEmpty':'measureInner') + '" id="' + elementId + '_inner">' + name + '</span>';
 
             var point = me.viewer.viewport.imageToViewportCoordinates(x, y);
             var rect = me.viewer.viewport.imageToViewportRectangle(x, y, width, height);
@@ -258,7 +279,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 location: new OpenSeadragon.Rect(point.x, point.y, rect.width, rect.height)
             });
 
-            var text = me.el.getById(me.id + '_' + id + '_inner');
+            var text = me.el.getById(elementId + '_inner');
             text.on('mouseenter', me.highlightShape, me, measure, true);
             text.on('mouseleave', me.deHighlightShape, me, measure, true);
             text.setStyle({
@@ -323,13 +344,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         // create function for each shape
         var fn = function(shape) {
 
-            var id;
-
-            try {
-                id = shape.get('id');
-            }catch(e) {
-                id = shape.id;
-            }
+            var id = me.shapeKey(shape);
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                 console.log('me.id: ' + me.id);
