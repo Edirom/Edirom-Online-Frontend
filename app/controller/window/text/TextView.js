@@ -47,13 +47,15 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
         view.checkGlobalVisibility('annotations');
 
-        window.doAJAXRequest('data/xql/getText.xql',
+        var uri = view.uri;
+
+        // request goes to v2 API - relative to backendURI
+        window.doAJAXRequest('api/document',
             'GET',
             {
-                uri: view.uri,
+                resource: uri,
                 idPrefix: view.id + '_',
-                term: view.window.term,
-                path: view.window.path
+                mediaType: 'text/html'
             },
             Ext.bind(function(response){
                 this.contentLoaded(view, response.responseText);

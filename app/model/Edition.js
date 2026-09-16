@@ -25,7 +25,7 @@ Ext.define('EdiromOnline.model.Edition', {
 
     proxy: {
         type: 'ajax',
-        url: '@backend.url@data/xql/getEdition.xql'
+        url: 'data/xql/getEdition.xql'
     },
 
     statics: {

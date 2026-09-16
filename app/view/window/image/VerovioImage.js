@@ -35,7 +35,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 		var me = this;
 
 		var configController = EdiromOnline.getApplication().getController('ConfigController');
-		var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+		var backendURL = configController.getConfig('backendURL');
 
 		var html = `<html>
         		<head>
@@ -46,8 +46,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						src="https://code.jquery.com/jquery-3.5.1.min.js"
 						integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
 						crossorigin="anonymous"></script>
-					<script
-						src="//code.iconify.design/1/1.0.6/icon ify.min.js"></script>
 				<!-- Edirom Verovio Renderer Component -->
 				<script
 					src="resources/js/edirom-verovio-renderer/edirom-verovio-renderer-component.js"

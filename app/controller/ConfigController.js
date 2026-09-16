@@ -11,40 +11,40 @@ Ext.define('EdiromOnline.controller.ConfigController', {
      * @param {Function} callback Callback function after successful loading
      * @param {Object} scope Scope for the callback
      */
-    async loadConfig(callback, scope) {
-        try {
-            const response = await fetch('config.json', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
+    loadConfig: function (callback, scope) {
+        var me = this;
+
+        Ext.Ajax.request({
+            url: 'config.json',
+            method: 'GET',
+            success: function (response) {
+                try {
+                    me.config = JSON.parse(response.responseText);
+                    console.info('config.json loaded.');
+
+                    if (callback) {
+                        Ext.callback(callback, scope || me, [me.config]);
+                    }
+                } catch (e) {
+                    console.warn('Invalid config.json; using the build-time backend URL.');
+                    me.loadDefaultConfig(callback, scope);
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Status: ${response.status}`);
+            },
+            failure: function () {
+                console.info('No config.json found; using the build-time backend URL.');
+                me.loadDefaultConfig(callback, scope);
             }
-
-            this.config = await response.json();
-            console.info('config.json for backendURL loaded.');
-
-            if (callback) {
-                callback.call(scope || this, this.config);
-            }
-        } catch (e) {
-            console.log('No custom config.json found or syntax error – Using default configuration.');
-            this.loadDefaultConfig(callback, scope);
-        }
+        });
     },
 
     /**
-     * Handles errors when loading the configuration
+     * Loads the backend URL injected by the Ant build.
      * @param {Function} callback Callback function
      * @param {Object} scope Scope for the callback
      */
     loadDefaultConfig: function (callback, scope) {
         var me = this;
 
-        // Fallback-Konfiguration
         me.config = {
             backendURL: '@backend.url@'
         };

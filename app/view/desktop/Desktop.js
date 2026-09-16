@@ -171,9 +171,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
             // set attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
-        }
-
-        else{
+                }else {
 
             // hide concordance navigator window
             thisWindow.hide();
@@ -181,9 +179,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             // unset attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
         }
-            
     },
-
 
     getSizeAndPosition: function(maxWidth, maxHeight) {
 
@@ -521,7 +517,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.add(win);
 
         win.taskButton = me.taskbar.addTaskButton(win);
-        win.animateTarget = win.taskButton.el;
+        win.animateTarget = Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
+            ? Ext.get('icon_openConcordanceNavigator')
+            : win.taskButton.el;
 
         win.on({
             activate: me.updateActiveWindow,

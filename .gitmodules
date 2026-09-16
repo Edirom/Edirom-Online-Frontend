@@ -10,3 +10,6 @@
 [submodule "resources/js/edirom-controls"]
 	path = resources/js/edirom-controls
 	url = https://github.com/Edirom/edirom-controls.git
+[submodule "resources/js/edirom-navigator"]
+	path = resources/js/edirom-navigator
+	url = https://github.com/Edirom/edirom-navigator.git
