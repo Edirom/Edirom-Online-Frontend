@@ -27,7 +27,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # Only needed in order to push. Secrets are withheld from pull requests
+      # opened from a fork, so attempting the login there fails the whole job.
       - name: Log in to DockerHub
+        if: ${{ github.event_name != 'pull_request' }}
         uses: docker/login-action@v4
         with:
           username: vifebot
@@ -53,6 +56,17 @@ jobs:
             type=semver,prefix=v,pattern={{major}}.{{minor}}
             type=semver,prefix=v,pattern={{major}}
             
+      # Verify the branch builds. Runs on every event, pull requests included,
+      # and needs no registry credentials because nothing is exported.
+      # Single-platform: emulating arm64 through QEMU is far slower than the
+      # validation is worth. Add `load: true` if a later step should run the image.
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
       # Build and push to Dockerhub
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
