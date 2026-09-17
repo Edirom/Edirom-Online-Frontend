@@ -1,5 +1,7 @@
-/* legacy annotation annotIcon styling */
-.annotation .annotIcon.Notentext:before {
+/* annotation annotIcon styling — selectors match the runtime category token
+   `annotation.category.<id>` (dots escaped, exactly like the Weber edition's
+   `wega.annotation.category.<id>` rules). */
+.annotIcon.annotation\.category\.notentext:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D5";
@@ -8,7 +10,7 @@
     left: 0.55em
 }
 
-.annotation .annotIcon.HalsungBalkung:before {
+.annotIcon.annotation\.category\.halsungBalkung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1F3";
@@ -17,7 +19,7 @@
     left: 0.59em
 }
 
-.annotation .annotIcon.TaktartMetrum:before {
+.annotIcon.annotation\.category\.taktartMetrum:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E099";
@@ -27,7 +29,7 @@
     font-size: 25px;
 }
 
-.annotation .annotIcon.Pausensetzung:before {
+.annotIcon.annotation\.category\.pausensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4E5";
@@ -37,7 +39,7 @@
     font-size: 17px;
 }
 
-.annotation .annotIcon.Tondauer:before {
+.annotIcon.annotation\.category\.tondauer:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D2";
@@ -47,7 +49,7 @@
     font-size: 20px;
 }
 
-.annotation .annotIcon.Vortragsanweisung:before {
+.annotIcon.annotation\.category\.vortragsanweisung:before {
     line-height: 1;
     font-family: Bravura;
     content: "rit.";
@@ -58,7 +60,7 @@
     font-size: 10px;
 }
 
-.annotation .annotIcon.Artikulation:before {
+.annotIcon.annotation\.category\.artikulation:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4B2";
@@ -68,7 +70,7 @@
     font-size: 25px;
 }
 
-.annotation .annotIcon.Dynamik:before {
+.annotIcon.annotation\.category\.dynamik:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E520";
@@ -78,7 +80,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Pedalsetzung:before {
+.annotIcon.annotation\.category\.pedalsetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E650";
@@ -88,7 +90,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Phrasierungsboegen:before {
+.annotIcon.annotation\.category\.phrasierungsboegen:before {
     line-height: 1;
 /*    font-family: Bravura;*/
     content: "---";
@@ -98,7 +100,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Bogensetzung:before {
+.annotIcon.annotation\.category\.bogensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4BA";
@@ -108,7 +110,7 @@
     font-size: 40px;
 }
 
-.annotation .annotIcon.Beschreibung:before {
+.annotIcon.annotation\.category\.beschreibung:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f0e5";
@@ -118,7 +120,7 @@
     top: -1px;
 }
 
-.annotation .annotIcon.Hinzufügung:before {
+.annotIcon.annotation\.category\.hinzufügung:before {
     line-height: 1;
     content: "+";
     position: relative;
@@ -127,7 +129,7 @@
     font-size: 19px;
 }
 
-.annotation .annotIcon.RasurTektur:before {
+.annotIcon.annotation\.category\.rasurTektur:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f12d";
@@ -137,7 +139,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Streichung:before {
+.annotIcon.annotation\.category\.streichung:before {
     line-height: 1;
     /*font-family: Bravura;*/
     content: "xxx";
@@ -147,7 +149,7 @@
     font-size: 9px;
 }
 
-.annotation .annotIcon.Liedtext:before {
+.annotIcon.annotation\.category\.liedtext:before {
     line-height: 1;
     /*font-family: Bravura;
     content: "\E595";*/
@@ -161,4 +163,153 @@
 .annotationList .x-grid-row-selected .x-grid-cell, .annotationList .x-grid-row-selected .x-grid-rowwrap-div {
     background: -webkit-linear-gradient(top, rgb(215, 185, 180), rgb(146, 64, 92));
     color: rgb(248, 238, 218);
+}
+
+/*
+ * Measure number badge. Duplicated from facsimile.scss because OpenSeadragon
+ * renders measure overlays inside the web component's shadow DOM, which the
+ * main document stylesheets (scoped to .ediromWindow) cannot reach.
+ *
+ */
+.measureInner {
+    display: inline-block;
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 15px;
+    padding: 3px 5px 0;
+    text-shadow: 0 1px 2px #000000, 0 0 5px #ffffff;
+    top: 50%;
+    background-image: radial-gradient(circle at center, rgba(100, 100, 100, 0.3), rgba(0, 0, 0, 0) 5px);
+}
+
+/*
+ * The `.measure` base rules below were moved here from todo.css - they were the
+ * only todo.css rules that actually reached this shadow root, so todo.css is no
+ * longer injected into the web component (see edirom-image-viewer.js).
+ */
+.measure {
+    text-align: center;
+    z-index: 5;
+    cursor: pointer;
+}
+
+/*
+ * Hover highlight for measures. Pure CSS `:hover` on the measure overlay
+ * container (the whole measure rectangle), so no JS class toggling is needed —
+ * the already-injected stylesheet produces the effect on its own. The
+ * `highlighted` class is kept as an alias in case the host toggles it directly.
+ * Duplicated (unscoped) from the `.ediromWindow .measure.highlighted` rule in
+ * facsimile.scss on the develop branch, which never reaches the web component
+ * shadow DOM.
+ */
+.measure.highlighted,
+.measure:hover {
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+}
+
+/*
+ * Annotation badge box. Duplicated from facsimile.scss because OpenSeadragon
+ * renders annotation overlays inside the web component's shadow DOM, which the
+ * main document stylesheets (scoped to .ediromWindow) cannot reach. Without
+ * this the .annotIcon boxes have no size/background and stay invisible.
+ */
+.annotIcon {
+    width: 20px;
+    height: 16px;
+    border: 1px solid #666666;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px #000000;
+    z-index: 1;
+}
+
+.annotation.highlighted {
+    border-radius: 3px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.annotIcon.ediromAnnotPrio1 {
+    background: linear-gradient(to bottom, rgba(255, 48, 25, 0.85) 0%, rgba(207, 4, 4, 0.85) 100%);
+}
+
+.annotIcon.ediromAnnotPrio2 {
+    background: linear-gradient(to bottom, rgba(255, 233, 91, 0.85) 0%, rgba(255, 107, 15, 0.85) 100%);
+}
+
+.annotIcon.ediromAnnotPrio3 {
+    background: linear-gradient(to bottom, rgba(254, 252, 234, 0.85) 0%, rgba(241, 218, 54, 0.85) 100%);
+}
+
+/*
+ * Annotation overlay layout + hover. Duplicated (unscoped) from the
+ * `.ediromWindow .annotation*` rules in todo.css, which never apply inside the
+ * web component shadow DOM because there is no .ediromWindow ancestor there.
+ * Restores icon centring, the pointer cursor and the hover elevation effect.
+ */
+.annotation {
+    z-index: 10;
+    /* OpenSeadragon writes `display: block` as an inline style on every overlay,
+       so !important is required for the flex centring to win. Stack multiple
+       annotation icons that share one zone vertically. */
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    align-content: center;
+    /* small gap so multiple stacked badges on one measure do not touch */
+    gap: 3px;
+    /* The overlay covers the whole measure but is transparent; without this it
+       would swallow the measure's hover (zoom) interaction. Only the small
+       .annotIcon badges below re-enable pointer events. */
+    pointer-events: none;
+}
+
+.annotation .annotIcon {
+    cursor: pointer;
+    /* re-enable interaction on the badge itself (parent has pointer-events:none) */
+    pointer-events: auto;
+}
+
+/*
+ * Annotation tooltip. The hover tip used to be an ExtJS Ext.tip.Tip rendered in
+ * the main document, so its box chrome came from the ExtJS `.x-tip` theme and
+ * its inner `.annotTip` content from the theme stylesheet (annotation.scss).
+ * The tip is now rendered by the web component inside its shadow DOM, where
+ * neither of those stylesheets apply, so the box chrome and the `.annotTip`
+ * content rules are duplicated (unscoped) here. The host-supplied tip HTML is
+ * `<div class="annotTip"><div class="metaBox">…</div><div class="contentBox">…
+ * </div></div>` (see getAnnotation.xql, target=tip).
+ */
+.edirom-annotation-tip {
+    background-color: #ffffff;
+    border: 1px solid #999999;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    padding: 8px 10px;
+    color: #000000;
+    font-family: 'Open Sans', 'Courier New', Courier, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* The metaBox (priority / categories / sigla / id) is hidden in tips, matching
+   the theme's `.annotTip .metaBox { display: none }`. */
+.edirom-annotation-tip .annotTip .metaBox {
+    display: none;
+}
+
+/* Tip content: title + annotation text, in the edition content font. */
+.edirom-annotation-tip .annotTip .contentBox {
+    font-family: 'Caudex', Arial, sans-serif;
+    font-size: 12px;
+}
+
+.edirom-annotation-tip .annotTip .contentBox h1 {
+    font-size: 1.3em;
+    margin: 0 0 6px;
+}
+
+.edirom-annotation-tip .annotTip .contentBox span.ref {
+    cursor: pointer;
+    text-decoration: underline;
 }
