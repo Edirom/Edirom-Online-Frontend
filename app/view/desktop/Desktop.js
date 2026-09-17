@@ -54,8 +54,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     windowMenu: null,
 
-    activeDesktop: 1,
-
     initComponent: function () {
         var me = this;
 
@@ -69,12 +67,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         me.navigator = new EdiromOnline.view.navigator.Navigator(me.getNavigatorConfig());
 
-        me.windows = {
-            desktop1: new Ext.util.MixedCollection(),
-            desktop2: new Ext.util.MixedCollection(),
-            desktop3: new Ext.util.MixedCollection(),
-            desktop4: new Ext.util.MixedCollection()
-        };
+        me.windows = new Ext.util.MixedCollection();
         
         me.contextMenu = new Ext.menu.Menu(me.createDesktopMenu());
 
@@ -108,22 +101,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     
     //------------------------------------------------------
     // Edirom Online functions
-    switchDesktop: function(desk) {
-        var me = this;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            activeWindow.hide();
-        });
-
-        me.activeDesktop = desk;
-        me.taskbar.setActiveWindowBar(desk);
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(activeWindow.hidden && !activeWindow.minimized)
-                activeWindow.show();
-        });
-    },
-
     openConcordanceNavigator: function() {
 
         var me = this;
@@ -209,7 +186,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     getActiveWindowsSet: function(excludeSpecial) {
         if(!excludeSpecial)
-            return this.windows['desktop' + this.activeDesktop];
+            return this.windows;
 
         var set = new Ext.util.MixedCollection();
 
@@ -218,9 +195,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
         ];
 
-        // add windows of active desktop to set, except ignored windows and
-        // WinBox web-component proxies (which are not tileable ExtJS windows)
-        this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+        // Add tracked windows except ignored windows and WinBox web-component
+        // proxies (which are not tileable ExtJS windows).
+        this.windows.each(function(activeWindow) {
             if(activeWindow.isExtWindowProxy)
                 return;
             if(ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
@@ -242,7 +219,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
         ];
 
-        this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+        this.windows.each(function(activeWindow) {
             if(activeWindow.isExtWindowProxy || ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
                 set.add(activeWindow);
             }

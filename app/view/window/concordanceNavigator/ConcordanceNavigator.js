@@ -23,16 +23,8 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     mixins: {
         observable: 'Ext.util.Observable'
     },
-    
-    alias: 'widget.concordanceNavigator',
 
-    requires: [
-        'Ext.button.Button',
-        'Ext.container.Container',
-        'Ext.form.Label',
-        'Ext.form.field.Text',
-        'EdiromOnline.view.utils.EnhancedSlider'
-    ],
+    alias: 'widget.concordanceNavigator',
 
     stateful: false,
     isWindow: true,
@@ -43,14 +35,15 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     closable: true,
     resizeHandles: 'e w',
     shadow: false,
+    liveDrag: true,
 
-    layout: 'anchor',
+    layout: 'fit',
     border: 0,
     bodyBorder: false,
 
     padding: 0,
-    
-    
+
+
     bodyPadding: '12',
 
     cls: 'ediromConcordanceNavigatorWindow ediromWindow',
@@ -60,7 +53,7 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     hideTaskButton: true,
 
     defaults: {
-        border:false
+        border: false
     },
 
     items: [],
@@ -69,29 +62,27 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
     collapsedHeight: 165,
 
     width: 250,
-    height: 165,
     x: 250,
     y: 200,
 
-    initComponent: function() {
+    initComponent: function () {
         var me = this;
-
-        me.addEvents('showConnection');
 
         me.title = getLangString('view.window.concordanceNavigator.ConcordanceNavigator_Title');
 
-        me.items = [
-            me.createConcordanceSelector(),
-            me.createGroupSelector(),
-            me.createItemSelector(),
-            me.createButtons()
-        ];
+        let concordanceNavigatorJsElement = document.createElement("script");
+        concordanceNavigatorJsElement.setAttribute("defer", "defer");
+        concordanceNavigatorJsElement.setAttribute("src", "resources/js/edirom-concordance-navigator/concordanceNavigatorElement.js");
+        concordanceNavigatorJsElement.setAttribute("type", "module");
+        document.querySelector("head").appendChild(concordanceNavigatorJsElement);
+
+
+        me.html = `<edirom-concordance-navigator id="${me.id}-concordance-navigator" show-connection-button-label-data="${me.showConnectionButtonLabel}"></edirom-concordance-navigator>`;
 
         me.callParent();
 
         // set attribute pressed of button for opening concordance navigator in task bar
         document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
-
     },
 
     applyWinBoxChrome: function() {

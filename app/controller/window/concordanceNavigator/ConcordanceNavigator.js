@@ -19,65 +19,115 @@
 Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavigator', {
 
     extend: 'Ext.app.Controller',
-    
+
     navwin: null,
 
     views: [
         'window.concordanceNavigator.ConcordanceNavigator'
     ],
 
-    init: function() {
-	    
-	    this.application.addListener('workSelected', this.onWorkSelected, this);
-	    
+    init: function () {
+
+        this.application.addListener('workSelected', this.onWorkSelected, this);
+
         this.control({
             'concordanceNavigator': {
                 render: this.onWindowRendered,
                 single: true
             }
         });
-        
-        this.control({
-            'concordanceNavigator': {
-                showConnection: this.onShowConnection
-            }
-        });
-    },
-    
-    onWorkSelected: function(workId) {
-	    //console.log('Werk gewechselt, von Conc registriert!');
-	    //console.log(workId);
-	    
-
-	    var me = this;
-	    if(me.navwin != null) {
-	    	var app = me.application;
-			app.callFunctionOfEdition(me.navwin, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [me.navwin], true));
-		}
-	    
     },
 
-    onWindowRendered: function(win) {
+    onWorkSelected: function (workId) {
+        var me = this;
+        if (me.navwin != null) {
+            var app = me.application;
+            app.callFunctionOfEdition(me.navwin, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [me.navwin], true));
+        }
+
+    },
+
+    onWindowRendered: function (win) {
         var me = this;
 
-        if(win.initialized) return;
+        if (win.initialized) return;
         win.initialized = true;
-        
-        this.navwin = win;
 
-        //win.on('showConnection', me.onShowConnection, me);
+        this.navwin = win;
 
         var app = me.application;
         app.callFunctionOfEdition(win, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [win], true));
+
+        me.ediromConcordanceNavigator = document.querySelector(`#${win.id}-concordance-navigator`);
+        me.ediromConcordanceNavigator.addEventListener('show-connection-request', function (e) {
+            var plist = e.detail.plist;
+            loadLink(plist, { useExisting: true, onlyExisting: true });
+        });
+        me.ediromConcordanceNavigator.addEventListener('changed-play-pause-status', function (e) {
+            // Or should it's own controller be responsible for this?
+            var newStatus = e.detail.newStatus;
+            var ediromVideoplayer = document.querySelector(`edirom-videoplayer`);
+            if (ediromVideoplayer) {
+                ediromVideoplayer.setAttribute("state", newStatus);
+            }
+        });
+        me.ediromConcordanceNavigator.addEventListener('layout-change', function (e) {
+            win.updateLayout();
+        });
     },
 
-    concordancesLoaded: function(concordanceStore, concordanceWindow) {
-        concordanceWindow.setConcordances(concordanceStore);
+    /**
+     * Checks whether a connection with the given ID exists in any of the loaded concordances
+     * (direct connections or connections within groups).
+     */
+    hasConnectionId: function (concordanceStoreRaw, connectionId) {
+        if (!Array.isArray(concordanceStoreRaw) || !connectionId) return false;
+        var normalizedId = String(connectionId);
+        for (var i = 0; i < concordanceStoreRaw.length; i++) {
+            var concordance = concordanceStoreRaw[i];
+            // Check direct connections
+            var directConnections = concordance && concordance.connections && concordance.connections.connections;
+            if (Array.isArray(directConnections)) {
+                for (var k = 0; k < directConnections.length; k++) {
+                    var conn = directConnections[k];
+                    if (conn && String(conn.id) === normalizedId) return true;
+                }
+            }
+            // Check grouped connections
+            var groups = concordance && concordance.groups && concordance.groups.groups;
+            if (!Array.isArray(groups)) continue;
+            for (var j = 0; j < groups.length; j++) {
+                var group = groups[j];
+                var groupConnections = group && group.connections && group.connections.connections;
+                if (!Array.isArray(groupConnections)) continue;
+                for (var m = 0; m < groupConnections.length; m++) {
+                    var gconn = groupConnections[m];
+                    if (gconn && String(gconn.id) === normalizedId) return true;
+                }
+            }
+        }
+        return false;
     },
 
-    onShowConnection: function(navigator, plist) {
+    concordancesLoaded: function (concordanceStore, concordanceWindow) {
         var me = this;
-        var linkController = me.application.getController('LinkController');
-        linkController.loadLink(plist, {useExisting: true, onlyExisting: true}); //TODO: in Preferences einbauen; TODO: grid sorting vorerst rausgenommen
+        console.log("Concordances loaded: " + concordanceStore.getCount() + " concordances");
+        let concordanceStoreRaw = [];
+        for (let concordance of concordanceStore.data.items) {
+            concordanceStoreRaw.push(concordance.raw);
+        }
+        me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
+
+        // Navigate to a specific connection if provided via URL parameter
+        var activeConnection = me.application.activeConnection;
+        if (activeConnection) {
+            if (me.hasConnectionId(concordanceStoreRaw, activeConnection)) {
+                me.ediromConcordanceNavigator.setAttribute("current-connection", activeConnection);
+            } else {
+                console.warn("Connection ID not found in concordances: " + activeConnection);
+            }
+            // Clear after applying to avoid re-navigation on subsequent concordance loads
+            me.application.activeConnection = null;
+        }
     }
 });
