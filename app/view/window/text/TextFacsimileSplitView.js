@@ -82,6 +82,10 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.window.on('loadInternalLink', me.loadInternalId, me);
     },
 
+    getTextContEl: function() {
+        return this.el.dom.querySelector('#' + this.id + '_textCont');
+    },
+
     createToolbarEntries: function() {
 
         var me = this;
@@ -173,7 +177,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     },
 
     toggleNotesVisibility: function(button) {
-        var notes = Ext.query('#' + this.id + '_textCont .note');
+        var notes = Ext.query('.note', this.getTextContEl());
         Ext.Array.each(notes, function(name, index, notes){
             Ext.get(name).toggleCls('hidden')
         });
@@ -183,7 +187,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         var me = this;
 
         if(me.annotationsLoaded) {
-            var annos = Ext.query('#' + me.id + '_textCont span.annotation');
+            var annos = Ext.query('span.annotation', me.getTextContEl());
             Ext.Array.each(annos, function(anno) {
                 Ext.get(anno).show();
             });
@@ -222,7 +226,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
                 });
 
                 var tip = Ext.create('Ext.tip.ToolTip', {
-                    target: me.id + '_' + p.id,
+                    target: shape,
                     cls: 'annotationTip',
                     width: 500,
                     maxWidth: 500,
@@ -284,7 +288,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
     hideAnnotations: function() {
         var me = this;
-        var annos = Ext.query('#' + me.id + '_textCont span.annotation');
+        var annos = Ext.query('span.annotation', me.getTextContEl());
         Ext.Array.each(annos, function(anno) {
             var a = Ext.get(anno);
             a.setVisibilityMode(Ext.Element.DISPLAY);
@@ -375,7 +379,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
                 visibleCategories.push(item.categoryId);
         });
 
-        var annotations = Ext.query('#' + this.id + '_textCont span.annotation');
+        var annotations = Ext.query('span.annotation', this.getTextContEl());
         var fn = Ext.bind(function(annotation) {
             var className = annotation.className.replace('annotation', '').trim();
             var classes = className.split(' ');
@@ -399,7 +403,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
     setContent: function(text) {
 		var me = this;
-		Ext.fly(me.id + '_textCont').update(text);
+        Ext.fly(me.getTextContEl()).update(text);
 		this.fireEvent('documentLoaded', me);		
     },
     
@@ -496,7 +500,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             me.gotoPage(id);
 		}else {
 		
-    		var container = Ext.fly(me.id + '_textCont');
+        var container = Ext.fly(me.getTextContEl());
     		var elem = container.getById(me.id + '_' + id);
     		if (elem) {
     			me.window.requestForActiveView(me);

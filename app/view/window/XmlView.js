@@ -45,12 +45,38 @@ Ext.define('EdiromOnline.view.window.XmlView', {
     initXmlView: function() {
         var XmlMode = ace.require("ace/mode/xml").Mode;
 
-        this.editor = ace.edit(this.id + '_editor');
+        // ace.edit(idString) resolves the element via document.getElementById,
+        // which cannot find it when this view has been reparented into a
+        // WinBox's shadow root (see Desktop.wrapEdiromWindowInWinBox) - resolve
+        // the element ourselves (works regardless of shadow-root nesting) and
+        // pass it directly instead.
+        var editorEl = this.el.dom.querySelector('#' + this.id + '_editor');
+        this.editor = ace.edit(editorEl);
         this.editor.getSession().setMode(new XmlMode());
         this.editor.getSession().setUseWrapMode(false);       //bisher keine funktionale Änderung festgestellt
         this.editor.setShowPrintMargin(false);
         this.editor.renderer.setHScrollBarAlwaysVisible(false);
         this.editor.setReadOnly(true);  // false for the editable
+
+        this.syncAceStylesIntoShadowRoot(editorEl);
+    },
+
+    // ace lazily injects its structural CSS (#ace_editor, #ace-tm, ...) into
+    // document.head. Shadow DOM style encapsulation means those rules never
+    // cascade into a WinBox's shadow root, so .ace_line etc. fall back to
+    // browser defaults (position:static, width:0) and the text layer collapses
+    // to nothing even though the gutter/line numbers still render on their own.
+    // Clone ace's <style> tags into the shadow root so its layout CSS applies.
+    syncAceStylesIntoShadowRoot: function(editorEl) {
+        var root = editorEl.getRootNode();
+        if (!root || !root.host) return; // not inside a shadow root
+
+        var headStyles = document.head.querySelectorAll('style[id^="ace"]');
+        Array.prototype.forEach.call(headStyles, function(style) {
+            if (style.id && !root.getElementById(style.id)) {
+                root.appendChild(style.cloneNode(true));
+            }
+        });
     },
 
     createToolbarEntries: function() {
@@ -87,19 +113,19 @@ Ext.define('EdiromOnline.view.window.XmlView', {
     },
 
     decreaseEditorFontSize: function(){
-
-        var currentFontSize = Ext.get(this.id + '_editor').getStyle('font-size').split('px')[0];
+        var editorEl = Ext.get(this.el.dom.querySelector('#' + this.id + '_editor'));
+        var currentFontSize = editorEl.getStyle('font-size').split('px')[0];
         var newFontSize = --currentFontSize + 'px';
 
-        Ext.get(this.id + '_editor').setStyle('font-size', newFontSize);
+        editorEl.setStyle('font-size', newFontSize);
     },
 
     increaseEditorFontSize: function(){
-
-        var currentFontSize = Ext.get(this.id + '_editor').getStyle('font-size').split('px')[0];
+        var editorEl = Ext.get(this.el.dom.querySelector('#' + this.id + '_editor'));
+        var currentFontSize = editorEl.getStyle('font-size').split('px')[0];
         var newFontSize = ++currentFontSize + 'px';
 
-        Ext.get(this.id + '_editor').setStyle('font-size', newFontSize);
+        editorEl.setStyle('font-size', newFontSize);
     },
 
     switchGutterVisibility: function(){

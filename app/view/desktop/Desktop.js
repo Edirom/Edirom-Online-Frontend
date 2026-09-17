@@ -125,104 +125,37 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             }
             
             Ext.apply(thisWindow, {y: y, x: x});           
+
+            var usableSize = me.getUsableSize();
+            var winBoxWidth = Math.min(thisWindow.width, usableSize.width - 20);
+            var winBoxHeight = Math.min(thisWindow.expandedHeight + 35, usableSize.height - 20);
+            thisWindow.winBoxInitialBounds = {
+                width: winBoxWidth,
+                height: winBoxHeight,
+                x: Math.max(0, usableSize.width - winBoxWidth - 10),
+                y: Math.max(0, usableSize.height - winBoxHeight - 10)
+            };
             
             me.addWindow(thisWindow);
+            thisWindow.applyWinBoxChrome();
             thisWindow.show();
+            EdiromOnline.getApplication().getController('desktop.Desktop').wrapEdiromWindowInWinBox(thisWindow);
 
-        }else if(document.getElementById('icon_openConcordanceNavigator').hasAttribute('pressed')){
-
-            // hide concordance navigator window
-            thisWindow.hide();
-
-            // unset attribute pressed of button for opening concordance navigator in task bar
-            document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
-        }else {
+        }else if(thisWindow.hidden){
 
             // show concordance navigator window
             thisWindow.show();
 
             // set attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
+                }else {
+
+            // hide concordance navigator window
+            thisWindow.hide();
+
+            // unset attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
         }
-            
-    },
-
-    openHelp: function() {
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.HelpWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.HelpWindow', me.getSizeAndPosition(750, 600));
-            me.addWindow(thisWindow);
-
-            // show help window
-            thisWindow.show();
-
-        }else if(thisWindow != me.getActiveWindow()){
-
-            // show help window
-            thisWindow.show();
-        
-        } else{
-
-            // hide help window
-            thisWindow.close();
-
-        }
-
-    },
-
-    openSearchWindow: function(term) {
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.search.SearchWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.search.SearchWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(thisWindow);
-            thisWindow.show();
-
-        }else {
-            thisWindow.show();
-        }
-            
-        thisWindow.doSearch(term);
-    },
-
-
-    openAbout: function() {
-
-
-        var me = this;
-        var thisWindow = null;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(Ext.getClassName(activeWindow) == 'EdiromOnline.view.window.about.AboutWindow')
-                thisWindow = activeWindow;
-        });
-
-        if(thisWindow == null) {
-            thisWindow = Ext.create('EdiromOnline.view.window.about.AboutWindow', me.getSizeAndPosition(700, 600));
-            me.addWindow(thisWindow);
-            thisWindow.show();
-
-        }else if(thisWindow != me.getActiveWindow())
-            thisWindow.show();
-
-        else
-            thisWindow.close();
-    
     },
 
     getSizeAndPosition: function(maxWidth, maxHeight) {
@@ -259,16 +192,37 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         // set of ignored windows (e.g. for tiling, cascading, ...)
         var ignoredWindows = [
-            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
-            'EdiromOnline.view.window.HelpWindow',
-            'EdiromOnline.view.window.about.AboutWindow',
-            'EdiromOnline.view.window.search.SearchWindow'
+            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
         ];
 
+        // Add tracked windows except ignored windows and WinBox web-component
+        // proxies (which are not tileable ExtJS windows).
         this.windows.each(function(activeWindow) {
+            if(activeWindow.isExtWindowProxy)
+                return;
             if(ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
                 set.add(activeWindow);
             }   
+        });
+
+        return set;
+    },
+
+    // Same as getActiveWindowsSet(true), but INCLUDES WinBox web-component
+    // window proxies (Help/About/Search/Audio/Verovio/text popups). Used by
+    // the window-arranging actions (sortHorizontally/sortVertically/
+    // sortGrid), which know how to move/resize those proxies too.
+    getArrangeableWindowsSet: function() {
+        var set = new Ext.util.MixedCollection();
+
+        var ignoredWindows = [
+            'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
+        ];
+
+        this.windows.each(function(activeWindow) {
+            if(activeWindow.isExtWindowProxy || ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
+                set.add(activeWindow);
+            }
         });
 
         return set;
@@ -408,12 +362,20 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.getActiveWindowsSet().remove(win);
         me.taskbar.removeTaskButton(win.taskButton);
 
-        me.getActiveWindowsSet().each(function(win) {
-            this.addWindowListeners(win);
-        }, me);
-
+        if (typeof me.addWindowListeners === 'function') {
+            me.getActiveWindowsSet().each(function(w) {
+                me.addWindowListeners(w);
+            });
+        }
 
         me.updateActiveWindow();
+    },
+
+    addWebComponentWindow: function(proxy) {
+        var me = this;
+        me.getActiveWindowsSet().add(proxy);
+        proxy.taskButton = me.taskbar.addTaskButton(proxy);
+        proxy.animateTarget = proxy.taskButton ? proxy.taskButton.el : null;
     },
 
     onWindowTitleChange: function(win, title) {
@@ -492,10 +454,14 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         me.getActiveWindowsSet().each(function(win) {
             var dd = win.dd, resizer = win.resizer;
-            dd.xTickSize = xt;
-            dd.yTickSize = yt;
-            resizer.widthIncrement = xt;
-            resizer.heightIncrement = yt;
+            if (dd) {
+                dd.xTickSize = xt;
+                dd.yTickSize = yt;
+            }
+            if (resizer) {
+                resizer.widthIncrement = xt;
+                resizer.heightIncrement = yt;
+            }
         });
     },
 
@@ -544,8 +510,13 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         win.on({
             boxready: function () {
-                win.dd.xTickSize = me.xTickSize;
-                win.dd.yTickSize = me.yTickSize;
+                // A WinBox-wrapped window (useWinBoxChrome) has no dd/resizer -
+                // it is draggable:false/resizable:false since WinBox itself owns
+                // move/resize for it.
+                if (win.dd) {
+                    win.dd.xTickSize = me.xTickSize;
+                    win.dd.yTickSize = me.yTickSize;
+                }
 
                 if (win.resizer) {
                     win.resizer.widthIncrement = me.xTickSize;
@@ -593,8 +564,18 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     getDesktopZIndexManager: function () {
         var windows = this.getActiveWindowsSet();
-        // TODO - there has to be a better way to get this...
-        return (windows.getCount() && windows.getAt(0).zIndexManager) || null;
+        var zmgr = null;
+        // A useWinBoxChrome window (rendered non-floating, straight into a WinBox
+        // body - see Desktop controller's wrapEdiromWindowInWinBox) has no
+        // zIndexManager at all, so don't just assume the FIRST tracked window
+        // has one - find the first one that actually does.
+        windows.each(function(w) {
+            if (w.zIndexManager) {
+                zmgr = w.zIndexManager;
+                return false;
+            }
+        });
+        return zmgr;
     },
 
     getWindow: function(id) {

@@ -42,11 +42,75 @@ Ext.define('EdiromOnline.controller.LinkController', {
     },
 
     /**
-     * Reads an URI and opens a window with the referenced content
+     * Reads an URI and opens a window with the referenced content.
+     *
+     * For a single, simple xmldb:exist:// URI (no cfg, no multi-uri batch), this
+     * first asks the backend what views the resource has. If the only views are
+     * audioView (+ optionally its sibling xmlView), the resource opens directly in
+     * the audio WinBox and the generic ExtJS window is never created at all — not
+     * even briefly. Anything else (multi-uri batches, cfg-carrying calls, or a
+     * resource with other real views too) goes through the normal
+     * loadLinkInternal/ExtJS window path, unaffected.
      *
      * @param {String} uri The URI to process.
      */
     loadLink: function(uri, cfg) {
+        var me = this;
+
+        // Navigator links call loadLink(uri, {}) — an empty (but truthy) cfg object,
+        // not omitted — so "no real cfg" must be checked by key count, not truthiness.
+        var hasRealCfg = cfg && Object.keys(cfg).length > 0;
+
+        // A #fragment (e.g. an annotation icon's `parent.loadLink(uri+'#'+annotId)`)
+        // is an internal-link target that needs getInternalIdType.xql-based tab
+        // routing (see loadLinkInternal + Window.loadInternalId) to land on the
+        // right view (annotationView/textView/sourceView) — never the direct-open
+        // fast path below, which would just reopen the resource's default view.
+        var hasFragment = typeof uri === 'string' && uri.indexOf('#') !== -1;
+
+        if (typeof uri === 'string' && !hasRealCfg && !hasFragment && uri.match(/^xmldb:exist:\/\//) && !/[\s;]/.test(uri)) {
+            window.doAJAXRequest('data/xql/getLinkTarget.xql',
+                'POST',
+                { uri: uri, lang: window.getLanguage() },
+                function(response) {
+                    var config = Ext.JSON.decode(response.responseText);
+                    var audioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'audioView'; })[0];
+                    var verovioViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'verovioView'; })[0];
+                    var xmlViewEntry = Ext.Array.filter(config.views, function(view) { return view.type == 'xmlView'; })[0];
+                    var otherViews = Ext.Array.filter(config.views, function(view) { return view.type != 'audioView' && view.type != 'xmlView' && view.type != 'verovioView'; });
+                    var hasTextView = Ext.Array.some(config.views, function(view) { return view.type == 'textView' || view.type == 'iFrameView'; });
+                    var onlyTextOrXml = config.views.length > 0 && Ext.Array.every(config.views, function(view) { return view.type == 'textView' || view.type == 'xmlView' || view.type == 'iFrameView'; });
+
+                    if (audioViewEntry && otherViews.length === 0) {
+                        // config.title (not the per-view label) matches the resource's
+                        // own navigator label, e.g. "Akkord Beispiele".
+                        me.application.getController('desktop.Desktop').openAudioView(audioViewEntry.uri, config.title, xmlViewEntry ? xmlViewEntry.uri : null);
+                    } else if (verovioViewEntry) {
+                        // Folds the ENTIRE resource (score + sibling textView/xmlView
+                        // entries) into one WinBox — see openVerovioView.
+                        me.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+                    } else if (hasTextView && onlyTextOrXml) {
+                        // Pure text/xml/iFrame resources (e.g. front-matter documents
+                        // like "Vorwort"/"Lies mich!") fold into the same WinBox, just
+                        // without a score pane — see openVerovioView.
+                        me.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+                    } else {
+                        me.loadLinkInternal(uri, cfg);
+                    }
+                }
+            );
+            return;
+        }
+
+        me.loadLinkInternal(uri, cfg);
+    },
+
+    /**
+     * Reads an URI and opens a window with the referenced content
+     *
+     * @param {String} uri The URI to process.
+     */
+    loadLinkInternal: function(uri, cfg) {
         
         //TODO: check if links should be opened in new windows
 
@@ -132,8 +196,12 @@ Ext.define('EdiromOnline.controller.LinkController', {
                 for(var j = 0; j < config['sortIncludes'].length; j++) {
                     var win = config['sortIncludes'][j];
                     var posConfig = (positions == null?{}:positions['win_' + j]);
-                    win.setSize(posConfig['width'], posConfig['height']);
-                    win.setPosition(posConfig['x'], posConfig['y']);
+                    if (win.useWinBoxChrome && win._winbox) {
+                        this.application.getController('desktop.Desktop').arrangeWinBoxWindow(win, posConfig);
+                    } else {
+                        win.setSize(posConfig['width'], posConfig['height']);
+                        win.setPosition(posConfig['x'], posConfig['y']);
+                    }
                 }
             }
         }
@@ -194,11 +262,11 @@ Ext.define('EdiromOnline.controller.LinkController', {
     },
 
     parseEdiromLink: function(uri) {
+        var me = this;
         //TODO: edirom link
 
         if(uri == 'edirom://searchWindow') {
-            //TODO: open search window
-            Ext.log('open search window');
+            me.application.getController('desktop.Desktop').openSearch('');
             return;
 
         }else if(uri.match(/^edirom:\/\/searchWindow[type:.*]/)) {
