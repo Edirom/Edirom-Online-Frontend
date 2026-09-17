@@ -21,7 +21,8 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     extend: 'EdiromOnline.view.window.View',
 
     requires: [
-        'EdiromOnline.view.window.image.OpenSeaDragonViewer'
+        'EdiromOnline.view.window.image.ImageViewer',
+        'EdiromOnline.view.window.util.PageSpinner'
     ],
 
     alias : 'widget.pageBasedView',
@@ -43,31 +44,16 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         me.owner.on('overlayVisiblityChange', me.onOverlayVisibilityChange, me);
 
         // Always use the OSD web component; digilib renders through its
-        // buildTileSource digilib branch (see OpenSeaDragonViewer.js).
-        me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
+        // buildTileSource digilib branch (see ImageViewer.js). Also wires
+        // zoomChanged/imageChanged plus the three optional handlers below
+        // (present on this view, so ImageViewerHost.initImageViewer wires them).
+        EdiromOnline.view.window.image.ImageViewerHost.initImageViewer(me);
 
         this.items = [
             me.imageViewer
         ];
 
         me.callParent();
-
- 	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
- 	   me.imageViewer.on('imageChanged', me.onViewerImageChanged, me);
-
- 	   // When the component reports a filter change (e.g. its hidden-filters
- 	   // attribute was set externally), keep the source view's filter menu
- 	   // checkboxes in sync.
- 	   me.imageViewer.on('annotationFilterChanged', me.onViewerAnnotationFilterChanged, me);
-
- 	   // When the component's tile sources shrink (e.g. the last page is removed),
- 	   // trim the page spinner / image set so its total updates and navigation
- 	   // cannot run past the last image.
- 	   me.imageViewer.on('totalPagesChanged', me.onViewerTotalPagesChanged, me);
-
- 	   // When the component's annotation visibility changes, mirror it onto the
- 	   // source view's toolbar toggle button.
- 	   me.imageViewer.on('showAnnotationsChanged', me.onViewerShowAnnotationsChanged, me);
     },
 
     // Trims the image set to match the component's reduced tile-source count so
@@ -106,20 +92,18 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             me.owner.syncAnnotationsButton(show);
     },
 
-    // Keep the page spinner's number box in sync when the image viewer changes
-    // page on its own (e.g. via the web component's native sequence navigation).
+    // Keep the page spinner's number box in sync (via the shared helper), then
+    // handle the PageBasedView-specific part: a component-initiated page
+    // change (a measure jump via the 'zone' attribute, or native next/prev
+    // navigation) does NOT run the host's setPage flow, so this page's
+    // annotations/measures were never loaded and would render empty. Detect it
+    // by comparing to the known active page: if it differs, adopt the new page
+    // and (re)load its overlays. Host-initiated setPage sets me.activePage
+    // first, so this is a no-op there (no double load).
     onViewerImageChanged: function(viewer, path, id) {
         var me = this;
-        if(me.pageSpinner && typeof me.pageSpinner.syncPage === 'function')
-            me.pageSpinner.syncPage(id);
+        EdiromOnline.view.window.image.ImageViewerHost.onViewerImageChanged(me, viewer, path, id);
 
-        // A component-initiated page change (a measure jump via the 'zone'
-        // attribute, or native next/prev navigation) does NOT run the host's
-        // setPage flow, so this page's annotations/measures were never loaded
-        // and would render empty. Detect it by comparing to the known active
-        // page: if it differs, adopt the new page and (re)load its overlays.
-        // Host-initiated setPage sets me.activePage first, so this is a no-op
-        // there (no double load).
         var currentId = (me.activePage && typeof me.activePage.get === 'function')
             ? me.activePage.get('id') : null;
         if(id != null && id !== currentId && me.imageSet) {
@@ -252,7 +236,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
 
         me.pageSpinner.setStore(me.imageSet);
 
-        // When the viewer supports native pagination (OpenSeaDragonViewer),
+        // When the viewer supports native pagination (ImageViewer),
         // load the whole set as a sequence once so page changes only switch
         // the component's page number instead of reloading a single image.
         if(typeof me.imageViewer.setImages === 'function')
@@ -279,7 +263,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         var imgIndex = me.imageSet.findExact('id', id);
         me.activePage = me.imageSet.getAt(imgIndex);
 
-        // Native sequence pagination (OpenSeaDragonViewer): the component keeps
+        // Native sequence pagination (ImageViewer): the component keeps
         // all pages loaded, so switching does NOT reload/destroy overlays. Tear
         // down the current page's overlays explicitly before navigating; the
         // visibility events below re-apply them for the new page.
@@ -368,40 +352,13 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     createToolbarEntries: function() {
 
         var me = this;
+        var imageViewerHost = EdiromOnline.view.window.image.ImageViewerHost;
 
-        var image_server = getPreference('image_server');
+        imageViewerHost.createPageSpinner(me, 100);
+        imageViewerHost.createZoomSlider(me, 100);
 
-        // page selection bar
-        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
-            width: 100,
-            cls: 'pageSpinner',
-            owner: me
-        });
-
-        // zoom slider (if applicable)
-        if (image_server === 'openseadragon' || image_server === 'digilib'){ 
-            me.zoomSlider = Ext.create('Ext.slider.Single', {
-                width: 100,
-                value: 100,
-                increment: 5,
-                // digilib now also renders through the OSD web component, so it
-                // uses the same viewport zoom-level range as 'openseadragon'.
-                minValue: 90,
-                maxValue: 700,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: 'zoomSlider',
-                tipText: function(thumb) {
-                    return Ext.String.format('{0}%', thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0)
-                }
-            });
-        }
-
-        // if image server (and zoomSlider) is defined, return zoom slider and page spinner
-        if(image_server === 'digilib' || image_server === 'openseadragon'){
+        // if image server supports zooming, return zoom slider and page spinner
+        if(me.zoomSlider){
             return [me.pageSpinner, me.zoomSlider];
         }
         // otherwise return only page spinner
@@ -411,24 +368,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
     },
 
     hideToolbarEntries: function() {
-        var me = this;
-        if(typeof me.zoomSlider !== 'undefined'){
-        	me.zoomSlider.hide();
-        }
-        me.pageSpinner.hide();
+        EdiromOnline.view.window.image.ImageViewerHost.hideToolbarEntries(this);
     },
 
     showToolbarEntries: function() {
-        var me = this;
-        if(typeof me.zoomSlider !== 'undefined'){
-        	me.zoomSlider.show();
-        }
-        me.pageSpinner.show();
-
+        EdiromOnline.view.window.image.ImageViewerHost.showToolbarEntries(this);
     },
 
     fitFacsimile: function() {
-        this.imageViewer.fitInImage();
+        EdiromOnline.view.window.image.ImageViewerHost.fitFacsimile(this);
     },
 
     showZone: function(zone) {
@@ -553,16 +501,14 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             me.imageViewer.removeShapes('annotations');
     },
 
+    // Bound as listeners by ImageViewerHost.initImageViewer/createZoomSlider,
+    // so these two names must stay stable even though the logic lives there.
     updateZoom: function(zoom) {
-    	if(typeof this.zoomSlider !== 'undefined'){
-        	this.zoomSlider.suspendEvents();
-        	this.zoomSlider.setValue(Math.round(zoom * 100));
-        	this.zoomSlider.resumeEvents();
-        }
+        EdiromOnline.view.window.image.ImageViewerHost.updateZoom(this, zoom);
     },
 
     zoomChanged: function(slider) {
-        this.imageViewer.setZoomAndCenter(slider.getValue() / 100);
+        EdiromOnline.view.window.image.ImageViewerHost.zoomChanged(this, slider);
     },
 
     getContentConfig: function() {
