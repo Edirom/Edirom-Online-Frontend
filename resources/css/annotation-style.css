@@ -132,7 +132,7 @@
 .annotIcon.annotation\.category\.beschreibung edirom-icon,
 .annotIcon.annotation\.category\.rasurTektur edirom-icon {
     --edirom-icon-size: 12px;
-    --edirom-icon-color: #fff;
+    --edirom-icon-color: #000;
 }
 
 .annotIcon.annotation\.category\.streichung:before {
