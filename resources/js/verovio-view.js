@@ -118,7 +118,7 @@ function showMovement(movementId) {
     var initWidth = Math.floor(width * 100.0 / 33.0);
 
     // Build MEI URL with movementId
-    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml&ref=" + movementId;
+    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml&ref=" + movementId + "&unwrap=true";
     
     // Get or create the component
     var renderer = document.getElementById('verovio-renderer');
