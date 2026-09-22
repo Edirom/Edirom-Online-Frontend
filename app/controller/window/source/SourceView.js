@@ -44,8 +44,10 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         if(view.initialized) return;
         view.initialized = true;
 
-        view.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
+        view.on('loadAnnotations', me.onLoadAnnotations, me);
+        view.on('measuresVisibilityChange', me.onMeasuresVisibilityChange, me);
+        view.on('loadMeasures', me.onLoadMeasures, me);
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
@@ -151,42 +153,120 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 uri: view.uri,
                 movementId: movementId
             },
-            Ext.bind(function(response){
+            function(response){
                 var data = response.responseText;
-                me.gotoMovement(Ext.String.trim(data), view);
-            }, this)
+                me.gotoMovement(data.trim(), movementId, view);
+            }
         );
     },
 
-    gotoMovement: function(pageId, view) {
+    gotoMovement: function(pageId, movementId, view) {
         if(pageId != '')
-            view.showPage(pageId);
+            // Drive the image component via its semantic 'mdiv' attribute
+            // (push model): load the movement's first page.
+            view.gotoMdivInImage(movementId, pageId);
     },
 
+    // The toolbar button only toggles VISIBILITY on the component now; the
+    // annotation data is preloaded once per page by onLoadAnnotations. So this
+    // handler does NOT fetch anything — it just shows/hides the already-pushed
+    // overlays via the component's show-annotations attribute.
+    onAnnotationsVisibilityChange: function(view, visible) {
+        var me = this;
+
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('controller: SourceView: onAnnotationsVisibilityChange: ' + visible);
+        }
+
+        if(visible)
+            view.showAnnotations();
+        else
+            view.hideAnnotations();
+    },
+
+    // Preloads the current page's annotations into the component (push model).
+    // Fired on every page load. It ONLY pushes the new page's data; it does
+    // NOT force show/hide. The component remembers the last show/hide state
+    // (this._showAnnotations) and re-applies it to every freshly rendered page,
+    // so toggling the annotations button once persists across ALL pages/images
+    // until the user toggles it again. (The `visible` arg is intentionally
+    // ignored to avoid resetting the user's choice on every page change.)
+    onLoadAnnotations: function(view, visible) {
+        var me = this;
+
+        // If there is no active page, there is nothing to load.
+        if(typeof view.getActivePage() == 'undefined') return;
+
+        var pageId = view.getActivePage().get('id');
+
+        window.doAJAXRequest('data/xql/getAnnotationsOnPage.xql',
+            'GET',
+            {
+                uri: view.uri,
+                pageId: pageId
+            },
+            function(response){
+                // Ignore stale responses after a further page change.
+                if(typeof view.getActivePage() == 'undefined'
+                    || pageId != view.getActivePage().get('id')) return;
+
+                var data = response.responseText;
+
+                var annotations = Ext.create('Ext.data.Store', {
+                    fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
+                    data: JSON.parse(data)
+                });
+
+                // Push the data only. The component re-applies its remembered
+                // visibility (_showAnnotations) to the new page's overlays, so
+                // the last show/hide choice carries over to every image.
+                // `visible` is also passed through for the legacy (non-OSD)
+                // ImageViewer, which has no such memory of its own and must be
+                // told whether to render the overlays right away.
+                view.setAnnotationsData(annotations, pageId, visible);
+            }
+        );
+    },
+
+    // Toolbar button toggles measure VISIBILITY only; the data is preloaded per
+    // page by onLoadMeasures, so this just shows/hides the already-pushed
+    // measure-number overlays via the component's 'measure' zone type.
     onMeasuresVisibilityChange: function(view, visible) {
         var me = this;
 
-        if(visible) {
-
-            // If there is now active page, we don't need to load measures
-            if(typeof view.getActivePage() == 'undefined') return;
-
-            var pageId = view.getActivePage().get('id');
-            me.fetchMeasures(view.uri, pageId, Ext.bind(me.measuresOnPageLoaded, me, [view, pageId], true));
-
-        }else {
-            view.hideMeasures();
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('controller: SourceView: onMeasuresVisibilityChange: ' + visible);
         }
+
+        if(visible)
+            view.showMeasures();
+        else
+            view.hideMeasures();
     },
 
-    fetchMeasures: function(uri, pageId, fn) {
+    // Preloads the current page's measures into the component (push model),
+    // fired on every page load. Mirrors onLoadAnnotations: it only pushes the
+    // new page's data; the component remembers the last show/hide state per
+    // zone type and re-applies it to every freshly rendered page.
+    onLoadMeasures: function(view, visible) {
+        var me = this;
+
+        // If there is no active page, there is nothing to load.
+        if(typeof view.getActivePage() == 'undefined') return;
+
+        var pageId = view.getActivePage().get('id');
+
         window.doAJAXRequest('data/xql/getMeasuresOnPage.xql',
             'GET',
             {
-                uri: uri,
+                uri: view.uri,
                 pageId: pageId
             },
-            Ext.bind(function(response){
+            function(response){
+                // Ignore stale responses after a further page change.
+                if(typeof view.getActivePage() == 'undefined'
+                    || pageId != view.getActivePage().get('id')) return;
+
                 var data = response.responseText;
 
                 var measures = Ext.create('Ext.data.Store', {
@@ -194,68 +274,12 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                     data: Ext.JSON.decode(data)
                 });
 
-                if(typeof fn == 'function')
-                    fn(measures);
-            }, this)
+                // `visible` lets the legacy (non-OSD) ImageViewer know whether
+                // to render the overlays immediately (see onLoadAnnotations).
+                view.setMeasuresData(measures, pageId, visible);
+            }
         );
     },
-
-    measuresOnPageLoaded: function(measures, view, pageId) {
-
-        if(pageId != view.getActivePage().get('id')) return;
-
-        view.showMeasures(measures);
-    },
-
-    onAnnotationsVisibilityChange: function(view, visible) {
-        var me = this;
-
-        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-            console.log('controller: SourceView: onAnnotationsVisibilityChange');
-        }
-
-        if(visible) {
-
-            if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                console.log('visible: ' + visible);
-            }
-
-            // If there is now active page, we don't need to load annotations
-            if(typeof view.getActivePage() == 'undefined') return;
-
-            var pageId = view.getActivePage().get('id');
-
-            window.doAJAXRequest('data/xql/getAnnotationsOnPage.xql',
-
-                'GET',
-                {
-                    uri: view.uri,
-                    pageId: pageId
-                },
-                Ext.bind(function(response){
-                    var me = this;
-                    var data = response.responseText;
-
-                    var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
-                        data: Ext.JSON.decode(data)
-                    });
-
-                    me.annotationsLoaded(annotations, view, pageId);
-                }, this)
-            );
-
-		} else {
-			view.hideAnnotations();
-		}
-	},
-
-	annotationsLoaded: function (annotations, view, pageId) {
-
-		if (pageId != view.getActivePage().get('id')) return;
-
-		view.showAnnotations(annotations);
-	},
 
 	onGotoMeasureByName: function (view, measure, movementId) {
 		var me = this;
@@ -267,10 +291,14 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
 				measure: measure,
 				movementId: movementId
             },
-            Ext.bind(function(response){
-                var data = response.responseText;
-				this.gotoMeasure(Ext.JSON.decode(data)[0], view);
-            }, me)
+            function(response){
+                var data = JSON.parse(response.responseText);
+				// Drive the image component via its semantic 'measure'
+				// attribute (push model): getMeasurePage.xql returns the
+				// measure's page id and pixel rectangle.
+				if (data && data.length)
+					view.gotoMeasureInImage(measure, data[0]);
+            }
         );
 	},
 
