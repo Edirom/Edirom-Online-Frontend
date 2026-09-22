@@ -64,7 +64,9 @@ Ext.define('EdiromOnline.controller.window.source.MeasureBasedView', {
 
                 // count parts and disable voice filter if parts do not exist
                 if(parts.getTotalCount() > 0){
-                    var icon = document.getElementById('icon_voiceFilterDialog_'+view.id);
+                    // document.getElementById can't find it once this view has been
+                    // reparented into a WinBox's shadow root - resolve scoped instead.
+                    var icon = view.el.dom.querySelector('#icon_voiceFilterDialog_'+view.id);
                     icon.removeAttribute('color');
                 }
             }, me)

@@ -85,7 +85,10 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         // define function to apply to relevant element IDs
         var fn = Ext.bind(function(annotationId) {
 
-            var annotDiv = Ext.get(annotationId);
+            // Ext.get(idString) resolves via document.getElementById, which can't
+            // find elements once this view has been reparented into a WinBox's
+            // shadow root - resolve scoped to this view's own element instead.
+            var annotDiv = Ext.get(me.el.dom.querySelector('#' + annotationId));
             var classList = annotDiv.dom.classList;
             var prioritiesCategories = Ext.Array.toArray(classList);
             Ext.Array.remove(prioritiesCategories, 'measure');
@@ -201,7 +204,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             var type = types[i];
             var globalVisible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
             var localVisible = sessionStorage.getItem('edirom-'+type+'-visible-' + me.owner.id) === 'true';
-            var localBlocked = document.getElementById('icon_display-'+type+'-window_' + me.owner.id).hasAttribute('pressed') && !localVisible;
+            var localBlocked = me.owner.getIconEl('icon_display-'+type+'-window_' + me.owner.id).hasAttribute('pressed') && !localVisible;
 
             // decide whether to show measures/annotations
             if(localVisible || (globalVisible && !localBlocked)){
