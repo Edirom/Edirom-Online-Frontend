@@ -20,6 +20,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     extend: 'EdiromOnline.view.window.View',
 
     requires: [
+        'EdiromOnline.view.window.util.PageSpinner'
     ],
 
     alias : 'widget.textFacsimileSplitView',
@@ -44,8 +45,10 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.image_server = getPreference('image_server');
     	
     	// Always use the OSD web component; digilib renders through its
-    	// buildTileSource digilib branch (see OpenSeaDragonViewer.js).
-        me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
+    	// buildTileSource digilib branch (see ImageViewer.js). Also wires
+    	// zoomChanged/imageChanged (previously missing here, so the zoom slider
+    	// below was never actually synced to/from the viewer).
+        EdiromOnline.view.window.image.ImageViewerHost.initImageViewer(me);
 
         me.imageViewer.region = 'center';
 
@@ -83,33 +86,28 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     createToolbarEntries: function() {
 
         var me = this;
+        var imageViewerHost = EdiromOnline.view.window.image.ImageViewerHost;
 
-		if(me.image_server === 'digilib' || me.image_server === 'openseadragon'){
-        	me.zoomSlider = Ext.create('Ext.slider.Single', {
-            	width: 140,
-            	value: 100,
-            	increment: 5,
-            	minValue: 10,
-            	maxValue: 400,
-            	checkChangeBuffer: 100,
-            	useTips: true,
-            	cls: 'zoomSlider',
-            	tipText: function(thumb){
-                	return Ext.String.format('{0}%', thumb.value);
-            	},
-            	listeners: {
-                	change: Ext.bind(me.zoomChanged, me, [], 0)
-            	}
-        	});
+        imageViewerHost.createZoomSlider(me, 140);
+        if(me.zoomSlider)
         	me.bottomBar.add(me.zoomSlider);
-		}
 
-        me.pageSpinner = Ext.create('EdiromOnline.view.window.util.PageSpinner', {
-			width: 121,
-            cls: 'pageSpinner',
-            owner: me
-        });
+        imageViewerHost.createPageSpinner(me, 121);
         me.bottomBar.add(me.pageSpinner);
+    },
+
+    // Bound as listeners by ImageViewerHost.initImageViewer/createZoomSlider,
+    // so these names must stay stable even though the logic lives there.
+    onViewerImageChanged: function(viewer, path, id) {
+        EdiromOnline.view.window.image.ImageViewerHost.onViewerImageChanged(this, viewer, path, id);
+    },
+
+    updateZoom: function(zoom) {
+        EdiromOnline.view.window.image.ImageViewerHost.updateZoom(this, zoom);
+    },
+
+    zoomChanged: function(slider) {
+        EdiromOnline.view.window.image.ImageViewerHost.zoomChanged(this, slider);
     },
 
     checkGlobalVisibility: function(type) {

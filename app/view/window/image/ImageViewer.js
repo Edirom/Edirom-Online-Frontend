@@ -25,7 +25,8 @@ var ANNOTATION_ICON_MARKUP = {
     'annotation.category.rasurTektur': '<edirom-icon name="ink_eraser"></edirom-icon>'
 };
 
-Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
+Ext.define('EdiromOnline.view.window.image.ImageViewer', {
+  
     extend: 'Ext.panel.Panel',
 
     mixins: {
