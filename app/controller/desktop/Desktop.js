@@ -1456,7 +1456,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
                 var loadTextPane = function(pane, key) {
                     var el = winboxEl.querySelector('.textPane[data-pane-key="' + key + '"]');
-                    window.doAJAXRequest('data/xql/getText.xql', 'GET', { uri: pane.uri, idPrefix: winId + '_' + key + '_', term: '', path: '' }, function(response) {
+                    window.doAJAXRequest('api/document', 'GET', { resource: pane.uri, idPrefix: winId + '_' + key + '_', mediaType: 'text/html' }, function(response) {
                         if (el) el.innerHTML = response.responseText || '';
                     });
                 };
