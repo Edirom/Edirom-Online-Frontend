@@ -80,7 +80,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                   'style="width:100%;height:100%;display:block;" ' +
                   'tilesources="[]" ' +
                   'pagenumber="1" ' +
-                  'zoom="1" ' +
+                  'zoom="0.5" ' +
                   'rotation="0" ' +
                   'preserveviewport="false" ' +
                   'clicktozoom="false" ' +
