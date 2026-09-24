@@ -37,9 +37,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             'topbar button[action=switchToMobile]': {
                 click: this.onSwitchToMobile
             },
-            'taskbar button[action=openAboutWindow]': {
-                click: this.onOpenAboutWindow
-            },
             'topbar #searchTextFieldTop': {
                 specialkey: this.onSpecialKey
             }
