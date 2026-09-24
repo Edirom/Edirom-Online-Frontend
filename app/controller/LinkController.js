@@ -45,8 +45,14 @@ Ext.define('EdiromOnline.controller.LinkController', {
      * Reads an URI and opens a window with the referenced content
      *
      * @param {String} uri The URI to process.
+     * @param {Object} cfg The configuration for the windows to open.
+     * @param {HTMLElement} origin The element the link was activated on. Needed for
+     *                             fragment-identifier-only links, which can only be
+     *                             resolved against the view that rendered them. Where an
+     *                             inline handler does not pass it on, the event currently
+     *                             being dispatched supplies it.
      */
-    loadLink: function(uri, cfg) {
+    loadLink: function(uri, cfg, origin) {
         
         //TODO: check if links should be opened in new windows
 
@@ -96,8 +102,8 @@ Ext.define('EdiromOnline.controller.LinkController', {
                 }else
                     uriWindows.add(singleUri, 'newWindow');
             }else if(singleUri.match(/^#/)) {
-                //TODO: internal link
-    
+                this.loadInternalLink(singleUri.substring(1), origin);
+
             }else if(singleUri.match(/^(http|https|mailto):\/\//)) {
                 window.open (singleUri,"_blank");
     
@@ -191,6 +197,89 @@ Ext.define('EdiromOnline.controller.LinkController', {
         var me = this;
         
         return me.application.getController('window.WindowController').createWindow(uri, cfg);
+    },
+
+    /**
+     * Resolves a link that is a bare fragment identifier (»#someId«).
+     *
+     * Such a link addresses an id of the document it was written in, so it has no meaning
+     * on its own: it is resolved against the view it was rendered into. Two cases occur,
+     * and the cheaper one is tried first.
+     *
+     * The id may name an element of the view's own rendered output — a footnote, or a
+     * cross reference within one chapter — and is then just scrolled to, without
+     * consulting the server. Or it may name an element of the view's document that is not
+     * part of that output — an annotation referencing another annotation of the same
+     * source, which is how the critical notes cross-reference each other — and the window
+     * then decides which of its views can display it, exactly as for an external link
+     * carrying a fragment.
+     *
+     * @private
+     *
+     * @param {String} id The id, without the leading »#«.
+     * @param {HTMLElement} origin The element the link was activated on.
+     */
+    loadInternalLink: function(id, origin) {
+
+        var me = this;
+        var view = me.getOriginView(origin);
+
+        if(view == null) {
+            Ext.log('LinkController: no originating view for internal link #' + id);
+            return;
+        }
+
+        if(typeof view.scrollToInternalId != 'undefined' && view.scrollToInternalId(id)) {
+            view.window.requestForActiveView(view);
+            return;
+        }
+
+        // the server knows the document, not the rendered page, so the view's id prefix
+        // has to come off again before the id is looked up
+        var prefix = view.id + '_';
+        var docId = (id.indexOf(prefix) == 0)? id.substring(prefix.length) : id;
+
+        window.doAJAXRequest('data/xql/getInternalIdType.xql',
+            'GET',
+            {
+                uri: view.uri + '#' + docId
+            },
+            Ext.bind(function(response){
+                view.window.loadInternalId(docId, response.responseText.trim());
+                view.window.show();
+            }, me)
+        );
+    },
+
+    /**
+     * Returns the view a DOM element was rendered into.
+     *
+     * Links come from server-rendered HTML and call loadLink() from an inline handler, so
+     * the element that was clicked is the only context they carry.
+     *
+     * @private
+     *
+     * @param {HTMLElement} origin The element the link was activated on. Defaults to the
+     *                             target of the event currently being dispatched.
+     * @return {EdiromOnline.view.window.View} The view, or null if the element is not
+     *                                         inside one.
+     */
+    getOriginView: function(origin) {
+
+        var el = origin || (window.event && (window.event.target || window.event.srcElement));
+        var cmp = null;
+
+        // only a component's own element carries its id, so this finds the innermost
+        // component the element was rendered into
+        while(el != null && el.nodeType === 1 && cmp == null) {
+            if(el.id) cmp = Ext.getCmp(el.id);
+            el = el.parentNode;
+        }
+
+        while(cmp != null && typeof cmp.viewType == 'undefined')
+            cmp = cmp.ownerCt;
+
+        return (cmp != null && cmp.window)? cmp : null;
     },
 
     parseEdiromLink: function(uri) {
