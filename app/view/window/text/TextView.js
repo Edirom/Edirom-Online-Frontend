@@ -133,7 +133,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         me.annotationsLoaded = true;
 
-        var tpl = Ext.DomHelper.createTemplate('<div class="annotation"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}"></div></div>');
+        var tpl = Ext.DomHelper.createTemplate('<div class="annotation" style="display: inline-block;"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}" style="margin: auto;"></div></div>');
         tpl.compile();
 
         annotations.each(function(annotation) {
