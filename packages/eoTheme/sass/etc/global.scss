@@ -130,8 +130,18 @@ left: 10px;
 }
 
 
-div.annotation.combinedHighlight div.annotIcon {
+/* Hovering an annotation icon highlights that annotation alone: its own icons in every zone
+   it touches, and the zone containers holding them. The border must sit on the icon itself —
+   as a descendant rule it also hit the icons of the other annotations sharing a zone.
+   Scoped to div so the text views, whose span.annotation carries the annotation id itself,
+   keep their own styling. */
+div.annotIcon.combinedHighlight {
     border: 1px solid white;
+}
+
+div.annotation.combinedHighlight {
+    border-radius: 3px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 #workSwitch {
 	padding-left: 10px !important;
