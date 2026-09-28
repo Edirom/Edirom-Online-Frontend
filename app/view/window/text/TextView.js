@@ -364,19 +364,25 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         var annotations = Ext.query('#' + this.id + '_textCont div.annotation, #' + this.id + '_textCont span.annotation');
         var fn = Ext.bind(function(annotation) {
-            var className = annotation.className.replace('annotation', '').trim();
-            var classes = className.split(' ');
+            var filterElement = annotation.tagName.toLowerCase() === 'div'
+                ? annotation.querySelector('.annotIcon')
+                : annotation;
+            var classes = filterElement ? Ext.Array.toArray(filterElement.classList) : [];
 
-            var hasCategory = false;
-            var hasPriority = false;
+            var hasCategory = Ext.Array.contains(visibleCategories, 'undefined');
+            var hasPriority = Ext.Array.contains(visiblePriorities, 'undefined');
 
             for(var i = 0; i < classes.length; i++) {
-                hasCategory |= Ext.Array.contains(visibleCategories, classes[i]);
-                hasPriority |= Ext.Array.contains(visiblePriorities, classes[i]);
+                hasCategory = hasCategory || Ext.Array.contains(visibleCategories, classes[i]);
+                hasPriority = hasPriority || Ext.Array.contains(visiblePriorities, classes[i]);
             }
 
-            Ext.get(annotation).setVisibilityMode(Ext.Element.DISPLAY);
-            Ext.get(annotation).setVisible(hasCategory & hasPriority);
+            var annotationElement = Ext.get(annotation);
+            var isVisible = hasCategory && hasPriority;
+            annotationElement.setVisibilityMode(Ext.Element.DISPLAY);
+            annotationElement.setVisible(isVisible);
+            if(isVisible)
+                annotationElement.dom.style.display = 'inline-block';
         }, me);
 
         if(annotations.each)
