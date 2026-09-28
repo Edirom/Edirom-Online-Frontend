@@ -40,39 +40,63 @@ Ext.define('EdiromOnline.controller.webComponents.EdiromConnectedWorkspace', {
         if (component.initialized) return;
         component.initialized = true;
 
-        var app = me.application;
         me.ediromConnectedWorkspace = document.querySelector("#connected-workspace");
-        me.ediromConnectedWorkspace.addEventListener('received-message', function (e) {
-            console.log("Received Event!");
-            console.log("detail:");
-            console.log(e.detail);
-            var detail = e.detail || {};
+        if (!me.ediromConnectedWorkspace) return;
 
-            if (detail.type === 'syncState') {
-                var connectionId = detail.payload && detail.payload.connection;
-                if (!connectionId) return;
-                var concordanceNavigatorController = app.getController('window.concordanceNavigator.ConcordanceNavigator');
-                if (concordanceNavigatorController) {
-                    concordanceNavigatorController.applyRemoteConnection(connectionId);
-                }
+        // The view loads the component's module through a script tag, so the element
+        // may not be upgraded yet when the view renders.
+        customElements.whenDefined('edirom-connected-workspace').then(function () {
+            var workspace = me.ediromConnectedWorkspace;
+            if (typeof workspace.registerStateHandler !== 'function') {
+                console.warn('Connected workspace component has no state sync support (outdated version); sessions will not sync state.');
                 return;
             }
-
-            var plist = detail.links;
-            if (!plist) return;
-            var linkController = app.getController('LinkController');
-            linkController.loadLink(plist, { useExisting: true, onlyExisting: false, sort: "sortHorizontally" });
+            workspace.registerStateHandler({
+                keys: ['edition', 'work', 'connection'],
+                get: Ext.bind(me.getState, me),
+                apply: Ext.bind(me.applyState, me)
+            });
         });
     },
 
     /**
-     * Broadcasts this client's current concordance connection to the other clients
-     * in the WebSocket session, using the same "syncState" message shape edirom-mobile
-     * sends/expects (`{ connection: connectionId }`).
+     * The part of this client's state that is synced through the WebSocket session.
+     * `null` means "not set" (for `connection`: no concordance connection selected).
      */
-    broadcastConnection: function (connectionId) {
-        var me = this;
-        if (!me.ediromConnectedWorkspace) return;
-        me.ediromConnectedWorkspace.sendMessage('syncState', { connection: connectionId });
+    getState: function () {
+        var app = this.application;
+        var concordanceNavigator = app.getController('window.concordanceNavigator.ConcordanceNavigator');
+        return {
+            edition: app.activeEdition || null,
+            work: app.activeWork || null,
+            connection: (concordanceNavigator && concordanceNavigator.getWorkspaceConnection()) || null
+        };
     },
+
+    /**
+     * Moves this client to a state the WebSocket server asked for. The connected workspace
+     * does not report the result back as a new change, and reports what this client
+     * actually ended up with if it differs from the request.
+     *
+     * Only the connection is applied on Desktop for now: changing the edition reloads the
+     * page (which would leave the session), and Desktop has no free-exploration mode, so
+     * `connection: null` is not applied either.
+     */
+    applyState: function (patch) {
+        if (!patch || !patch.connection) return Promise.resolve();
+        var concordanceNavigator = this.application.getController('window.concordanceNavigator.ConcordanceNavigator');
+        if (!concordanceNavigator) return Promise.resolve();
+        return concordanceNavigator.applyWorkspaceConnection(patch.connection);
+    },
+
+    /**
+     * Reports this client's current state to the WebSocket session. Safe to call any time:
+     * without a connected workspace (no wsURL configured) or outside a session it does
+     * nothing, and values the server already knows are not sent again.
+     */
+    notifyStateChanged: function () {
+        var workspace = this.ediromConnectedWorkspace;
+        if (!workspace || typeof workspace.updateState !== 'function') return;
+        workspace.updateState(this.getState());
+    }
 });
