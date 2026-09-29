@@ -321,7 +321,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         me.annotMenu.show();
 
-        me.window.getTopbar().addViewSpecificItem({xtype: 'tbfill'}, me.id);
+        me.window.getTopbar().add({xtype: 'tbfill'});
 
         me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
             html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
