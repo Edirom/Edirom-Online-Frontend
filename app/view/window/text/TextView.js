@@ -24,7 +24,9 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     alias : 'widget.textView',
 
-    layout: 'fit',
+    layout: 'border',
+
+    border: 0,
     
     cls: 'textView',
 
@@ -38,10 +40,25 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             'gotoChapter',
             'documentLoaded');
 
+        this.viewerContainer = Ext.create('Ext.panel.Panel', {
+            region: 'center',
+            border: 0,
+            layout: 'card',
+            items: [
+                {
+                    html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
+                }
+            ]
+        });
+
+        // define bottom bar
+        this.bottomBar = new EdiromOnline.view.window.BottomBar(
+            { owner:this, region:'south', enableOverflow: false }
+        );
+
         this.items = [
-            {
-                html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
-            }
+            this.viewerContainer,
+            this.bottomBar
         ];
 
         this.callParent();
@@ -321,14 +338,14 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         me.annotMenu.show();
 
-        me.window.getTopbar().add({xtype: 'tbfill'});
+        me.bottomBar.add({xtype: 'tbfill'});
 
         me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
             html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.toggleAnnotations, me, [])
         });
-        me.window.getTopbar().addViewSpecificItem(me.toggleAnnotationDisplay, me.id);
+        me.bottomBar.add(me.toggleAnnotationDisplay);
     },
 
     annotationFilterChanged: function(item, event) {
