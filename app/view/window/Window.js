@@ -37,6 +37,7 @@ Ext.define('EdiromOnline.view.window.Window', {
     constrainHeader: true,
     minimizable: true,
     maximizable: true,
+    liveDrag: true,
     layout: 'card',
     activeItem: 0,
     cls: 'ediromWindow',

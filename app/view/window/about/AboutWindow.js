@@ -38,6 +38,7 @@ Ext.define('EdiromOnline.view.window.about.AboutWindow', {
     maximizable: false,
     closable: true,
     shadow: false,
+    liveDrag: true,
     layout: 'fit',
     border: 0,
     bodyBorder: false,
