@@ -24,13 +24,28 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
         'navigator.Navigator'
     ],
 
+    concordanceTabId: 'concordance',
+
     init: function() {
 
+        this.mainContent = null;
+
+        this.concordanceConnection = null; // last { connectionId, plist } reported by the concordance navigator
+        this.concordanceDefinition = [];   // navigatorDefinition built from that connection
+        this.concordanceTabShown = false;
+        this.concordanceRequestId = 0;     // discards results of superseded or cancelled builds
+
         this.application.addListener('workSelected', this.onWorkSelected, this);
+        this.application.addListener('concordanceConnectionChanged', this.onConcordanceConnectionChanged, this);
 
         this.control({
             'navigator': {
                 afterrender: this.onNavigatorRendered
+            },
+            'concordanceNavigator': {
+                show: this.onConcordanceWindowShown,
+                hide: this.onConcordanceWindowHidden,
+                destroy: this.onConcordanceWindowHidden
             }
         });
     },
@@ -42,10 +57,32 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
         var lang = window.getLanguage('application_language');
 
         this.fetchNavigatorContent(workId, editionId, lang, function (navigatorContent) {
-            me.ediromNavigator.setAttribute('navigator-data', JSON.stringify(navigatorContent));
+            me.mainContent = navigatorContent;
+            me.applyNavigatorData();
         });
 
 
+    },
+
+    applyNavigatorData: function (activeTab) {
+        if (!this.ediromNavigator) return;
+
+        var tabs = [{
+            id: 'main',
+            name: getLangString('controller.navigator.Navigator_NavigationTab'),
+            navigatorDefinition: (this.mainContent && this.mainContent.navigatorDefinition) || []
+        }];
+
+        if (this.concordanceTabShown) {
+            tabs.push({
+                id: this.concordanceTabId,
+                name: getLangString('controller.navigator.Navigator_ConcordanceTab'),
+                navigatorDefinition: this.concordanceDefinition
+            });
+        }
+
+        this.ediromNavigator.setAttribute('navigator-data', JSON.stringify(tabs));
+        if (activeTab) this.ediromNavigator.setAttribute('active-tab', activeTab);
     },
 
     fetchNavigatorContent: function (workId, editionId, lang, onSuccess) {
@@ -68,6 +105,7 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
         var me = this;
 
         me.ediromNavigator = document.querySelector(`#${navigator.id}-navigator`);
+        me.ediromNavigator.setAttribute('no-content-message', getLangString('controller.navigator.Navigator_NoContent'));
 
         this.updateNavigatorContent(this.application.activeWork);
 
@@ -77,6 +115,108 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
             loadLink(target, config);
         });
 
+    },
+
+    onConcordanceConnectionChanged: function (connection) {
+        this.concordanceConnection = connection;
+        if (this.concordanceTabShown) this.refreshConcordanceTab();
+    },
+
+    onConcordanceWindowShown: function () {
+        this.concordanceTabShown = true;
+        this.applyNavigatorData(this.concordanceTabId);
+        if (this.concordanceConnection) this.refreshConcordanceTab();
+    },
+
+    onConcordanceWindowHidden: function () {
+        this.concordanceTabShown = false;
+        this.concordanceRequestId++;
+        this.applyNavigatorData();
+    },
+
+    refreshConcordanceTab: function () {
+        var me = this;
+        var requestId = ++me.concordanceRequestId;
+
+        me.buildConcordanceDefinition(me.concordanceConnection.plist).then(function (definition) {
+            if (requestId !== me.concordanceRequestId) return;
+
+            me.concordanceDefinition = definition;
+            me.applyNavigatorData(); // no active tab: never pull the user away from the tab they are on
+        });
+    },
+
+    /**
+     * Turns a connection's plist into a navigatorDefinition
+     */
+    buildConcordanceDefinition: function (plist) {
+        var me = this;
+        var uris = (plist || '').split(/[\s;]+/).filter(Boolean);
+        var docUris = uris.filter(function (uri) { return /^xmldb:exist:\/\//.test(uri); });
+        var externalUris = uris.filter(function (uri) { return /^https?:\/\//.test(uri); });
+
+        return Promise.all(docUris.map(function (uri) { return me.fetchLinkTarget(uri); })).then(function (linkTargets) {
+            var docItems = [];
+
+            docUris.forEach(function (uri, i) {
+                var linkTarget = linkTargets[i];
+                // documents without any view cannot be opened
+                if (!linkTarget || !linkTarget.views || !linkTarget.views.length) return;
+
+                docItems.push({
+                    name: linkTarget.title || getLangString('global_unknown'),
+                    targets: uri + '[useExisting=true]'
+                });
+            });
+
+            return me.toNavigatorDefinition([
+                { name: getLangString('controller.navigator.Navigator_ConcordanceDocuments'), items: docItems },
+                {
+                    name: getLangString('controller.navigator.Navigator_ConcordanceExternalResources'),
+                    items: externalUris.map(function (uri) { return { name: uri, targets: uri }; })
+                }
+            ]);
+        });
+    },
+
+    /**
+     * Adds the ids and types the navigator element expects and drops empty groups.
+     */
+    toNavigatorDefinition: function (groups) {
+        var definition = [];
+
+        groups.forEach(function (group) {
+            if (!group.items.length) return;
+
+            var index = definition.length;
+            definition.push({
+                id: 'concordance-category-' + index,
+                type: 'navigatorCategory',
+                name: group.name,
+                items: group.items.map(function (item, i) {
+                    return {
+                        id: 'concordance-item-' + index + '-' + i,
+                        type: 'navigatorItem',
+                        name: item.name,
+                        targets: item.targets
+                    };
+                })
+            });
+        });
+
+        return definition;
+    },
+
+    /**
+     * Resolves with the parsed getLinkTarget response ({ title, views, ... }), or null if it cannot be parsed.
+     * The success callback must not throw, otherwise doAJAXRequest retries the request.
+     */
+    fetchLinkTarget: function (uri) {
+        return new Promise(function (resolve) {
+            window.doAJAXRequest('data/xql/getLinkTarget.xql', 'POST', { uri: uri }, function (response) {
+                resolve(Ext.JSON.decode(response.responseText, true));
+            });
+        });
     },
 
 
@@ -202,6 +342,11 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
     },
 
     onWorkSelected: function(workId) {
+
+        this.concordanceConnection = null;
+        this.concordanceDefinition = [];
+        this.concordanceRequestId++;
+        this.applyNavigatorData();
 
         this.updateNavigatorContent(workId);
 
