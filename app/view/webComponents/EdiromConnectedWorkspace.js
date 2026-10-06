@@ -59,7 +59,9 @@ Ext.define('EdiromOnline.view.webComponents.EdiromConnectedWorkspace', {
         var sessionParam = EdiromOnline.getApplication().getURLParameter('session');
         var sessionAttr = sessionParam !== null ? ` session="${sessionParam.replace(/"/g, '&quot;')}"` : '';
 
-        me.html = `<edirom-connected-workspace id="connected-workspace" ws-url="${wsUrl}" invite-url="${inviteUrl}"${sessionAttr}></edirom-connected-workspace>`;
+        var lang = String(window.getLanguage()).replace(/[^a-zA-Z-]/g, '');
+
+        me.html = `<edirom-connected-workspace id="connected-workspace" ws-url="${wsUrl}" invite-url="${inviteUrl}" lang="${lang}"${sessionAttr}></edirom-connected-workspace>`;
         me.style = {
             "--primary-color": "#000000",
             "--secondary-color": "#cacaca",
