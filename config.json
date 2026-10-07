@@ -1,4 +1,5 @@
 {
     "backendURL": "@backend.url@",
-    "backendPath": "@backend.path@"
+    "backendPath": "@backend.path@",
+    "wsURL": "@ws.url@"
 }

@@ -22,6 +22,14 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
 
     navwin: null,
 
+    // --- Connected-workspace session sync -----------------------------------
+    // Exists only to report this client's connection to the WebSocket session
+    // (see EdiromConnectedWorkspace.js); the navigator's own window/URL-param
+    // logic below never reads these.
+    workspaceConnection: null,        // connection ID last reported to the session (null: none)
+    pendingWorkspaceConnection: null, // requested by the session before concordances were loaded; consumed in concordancesLoaded
+    concordancesReady: false,         // true once the current work's concordances were passed to the navigator
+
     views: [
         'window.concordanceNavigator.ConcordanceNavigator'
     ],
@@ -40,6 +48,14 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
 
     onWorkSelected: function (workId) {
         var me = this;
+
+        // Connections belong to a work: forget the old work's connection, and tell
+        // the WebSocket session about the new work (a no-op without a session).
+        me.workspaceConnection = null;
+        me.pendingWorkspaceConnection = null;
+        me.concordancesReady = false;
+        me.notifyConnectedWorkspace();
+
         if (me.navwin != null) {
             var app = me.application;
             app.callFunctionOfEdition(me.navwin, 'getConcordances', Ext.bind(me.concordancesLoaded, me, [me.navwin], true));
@@ -62,6 +78,12 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         me.ediromConcordanceNavigator.addEventListener('connection-changed', function (e) {
             var plist = e.detail.plist;
             loadLink(plist, { useExisting: true, onlyExisting: true });
+
+            // Tell the WebSocket session. The connected workspace compares against what the
+            // server already knows, so a change that was itself applied from the session
+            // is not sent back out.
+            me.workspaceConnection = e.detail.connectionId || null;
+            me.notifyConnectedWorkspace();
         });
         me.ediromConcordanceNavigator.addEventListener('changed-play-pause-status', function (e) {
             // Or should it's own controller be responsible for this?
@@ -74,6 +96,47 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         me.ediromConcordanceNavigator.addEventListener('layout-change', function (e) {
             win.updateLayout();
         });
+    },
+
+    /**
+     * The connection to report to the WebSocket session: a connection still waiting for
+     * the navigator counts as current, since that is where it will end up.
+     */
+    getWorkspaceConnection: function () {
+        return this.pendingWorkspaceConnection || this.workspaceConnection || null;
+    },
+
+    /**
+     * Asks the connected workspace (if there is one) to report this client's state.
+     */
+    notifyConnectedWorkspace: function () {
+        var connectedWorkspace = this.application.getController('webComponents.EdiromConnectedWorkspace');
+        if (connectedWorkspace) {
+            connectedWorkspace.notifyStateChanged();
+        }
+    },
+
+    /**
+     * Navigates the concordance navigator to a connection requested by the WebSocket
+     * session. Any resulting `connection-changed` is not sent back to the session (the
+     * connected workspace recognises it as the state the server just asked for).
+     *
+     * If the navigator window isn't open or its concordances aren't loaded yet, the
+     * connection is remembered and applied by concordancesLoaded. The returned promise
+     * resolves right away in that case, and never blocks later syncs.
+     *
+     * @return {Promise} Resolves once the navigation was attempted
+     */
+    applyWorkspaceConnection: function (connectionId) {
+        var me = this;
+        if (!connectionId) return Promise.resolve();
+        if (me.ediromConcordanceNavigator && me.concordancesReady) {
+            me.ediromConcordanceNavigator.navigateToConnectionById(connectionId);
+        } else {
+            me.pendingWorkspaceConnection = connectionId;
+            me.application.activeConnection = connectionId;
+        }
+        return Promise.resolve();
     },
 
     /**
@@ -117,6 +180,7 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
             concordanceStoreRaw.push(concordance.raw);
         }
         me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
+        me.concordancesReady = true;
 
         // Navigate to a specific connection if provided via URL parameter
         var activeConnection = me.application.activeConnection;
@@ -128,6 +192,13 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
             }
             // Clear after applying to avoid re-navigation on subsequent concordance loads
             me.application.activeConnection = null;
+        }
+
+        // A connection requested by the WebSocket session has now been applied (or turned out
+        // not to exist): report what this client actually shows.
+        if (me.pendingWorkspaceConnection) {
+            me.pendingWorkspaceConnection = null;
+            me.notifyConnectedWorkspace();
         }
     }
 });

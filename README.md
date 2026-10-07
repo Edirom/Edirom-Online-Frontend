@@ -5,9 +5,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15013104.svg)](https://doi.org/10.5281/zenodo.15013104)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
 
-
 </div>
-
 
 ## Get started
 
@@ -21,7 +19,7 @@ git clone <project url>
 
 ### Building locally
 
-For building Edirom Online you need *ant* installed on your system.
+For building Edirom Online you need _ant_ installed on your system.
 Alternatively, you can use a Docker container image for building, e.g. [bwbohl/sencha-cmd]
 
 ```bash
@@ -57,10 +55,12 @@ If you are interested in the deeper structure of the build process, please refer
 Build properties can be overridden by creating a `local.properties` file in the root directory. This file allows you to customize any Ant properties without modifying the build script.
 
 Available properties for override:
+
 - `backend.protocol` (default: `http`)
 - `backend.host` (default: `localhost`)
 - `backend.port` (default: `8080`)
 - `backend.path` (default: `/exist/apps/Edirom-Online-Backend/`)
+- `ws.url` (default: empty — WebSocket features disabled)
 - `project.version` (default: `1.5.0`)
 - `project.app` (default: `Edirom-Online-Frontend`)
 - `project.title` (default: `Edirom-Online Frontend`)
@@ -72,18 +72,21 @@ Available properties for override:
 - `exist.dir` (default: `exist-packaging`)
 
 Example `local.properties`:
+
 ```properties
 backend.protocol=https
 backend.host=my-custom-host
 backend.port=9090
+ws.url=wss://example.com/ws
 project.version=2.0.0
 ```
 
 #### Setting Backend URL at Runtime in Container environments
 
-The Edirom Online Frontend relies on the corresponding Edirom Online Backend which runs in an eXist database. The frontend needs to know the backend URL to communicate with it. This is managed by the values set in the `config.json` file. 
+The Edirom Online Frontend relies on the corresponding Edirom Online Backend which runs in an eXist database. The frontend needs to know the backend URL to communicate with it. This is managed by the values set in the `config.json` file.
 
 The `config.json` file has the following structure:
+
 ```json
 {
   "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/"
@@ -94,48 +97,47 @@ When the frontend is deployed as a regular web server like nginx or httpd Docker
 
 1. the environment variables `BACKEND_URL` / `BACKEND_PATH` of the eXist process
 2. a JSON file (default path `/exist-config/config.json`, configurable via the environment variable `BACKEND_CONFIG_FILE`) with the shape:
-    ```json
-    {
-      "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
-      "backendPath": "/exist/apps/Edirom-Online-Backend/"
-    }
-    ```
+   ```json
+   {
+     "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
+     "backendPath": "/exist/apps/Edirom-Online-Backend/"
+   }
+   ```
 
 If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
 
-
 ### Starting an Edirom instance locally
 
-* prepare **exist-db**
-  * also see [exist-db via Docker]
-  * `docker run -it -d -p 8080:8080 -p 8443:8443 --name exist stadlerpeter/existdb:6` (see stadlerpeter/existdb)
-  * open in browser: `http://localhost:8080` (Note: there were problems opening this in Safari)
-  * Login with "admin:[empty]"
-* build and deploy **xar of Edirom-Online Backend**
-  * also see [building locally] above
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.5.0-[TIMESTAMP].xar`
-* build and deploy **xar of Edirom-Online Frontend**
-  * for building the frontend module please see https://github.com/Edirom/Edirom-Online-Frontend
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.5.0-[TIMESTAMP].xar`
-* build **xar of sample data** for deploying at exist-db
-  * also see [building sample data]
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_EDITION_EXAMPLE_REPO/build/EditionExample-0.1.1.xar`
-* in **eXist-db Package Manager** click on the "Edirom Online Frontend" entry - you will be directed to the running Edirom at `http://localhost:8080/exist/apps/Edirom-Online-Frontend/index.html`
+- prepare **exist-db**
+  - also see [exist-db via Docker]
+  - `docker run -it -d -p 8080:8080 -p 8443:8443 --name exist stadlerpeter/existdb:6` (see stadlerpeter/existdb)
+  - open in browser: `http://localhost:8080` (Note: there were problems opening this in Safari)
+  - Login with "admin:[empty]"
+- build and deploy **xar of Edirom-Online Backend**
+  - also see [building locally] above
+  - at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.5.0-[TIMESTAMP].xar`
+- build and deploy **xar of Edirom-Online Frontend**
+  - for building the frontend module please see https://github.com/Edirom/Edirom-Online-Frontend
+  - at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.5.0-[TIMESTAMP].xar`
+- build **xar of sample data** for deploying at exist-db
+  - also see [building sample data]
+  - at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_EDITION_EXAMPLE_REPO/build/EditionExample-0.1.1.xar`
+- in **eXist-db Package Manager** click on the "Edirom Online Frontend" entry - you will be directed to the running Edirom at `http://localhost:8080/exist/apps/Edirom-Online-Frontend/index.html`
 
 ## Documentation
 
 Some useful information regarding documentation is captured in the [docs](https://github.com/Edirom/Edirom-Online/tree/develop/docs) folder of the Edirom-Online repo. It contains:
-* Customize Edirom Online and content
-* Edirom Online – Release Workflow
-* Setup Edirom Online on a local machine
-* a data creation workflow for the Edirom-Online
+
+- Customize Edirom Online and content
+- Edirom Online – Release Workflow
+- Setup Edirom Online on a local machine
+- a data creation workflow for the Edirom-Online
 
 ## Dependencies
 
 Edirom-Online Frontend depends on the following libraries:
 
-* ./.
-
+- ./.
 
 ## Roadmap
 
@@ -150,9 +152,10 @@ If you encounter a security issue in the code, please see the [Security Policy](
 ## Get in touch
 
 Even if you are not ready (yet) to contribute to this wonderful project, maybe instead you just have a question or want to get to know the people involved in the project a little better, here are some ideas for you:
-* there is an [Edirom mailinglist] with the option for selfsubscription, we send invitations to the community meetings via this list and we have Edirom related discussions on this list
-* the edirom community is meeting regularly every month at the first wednesday of a month, see the [wiki] for more information and meeting minutes
-* start a discussion at [GitHub Discussions]
+
+- there is an [Edirom mailinglist] with the option for selfsubscription, we send invitations to the community meetings via this list and we have Edirom related discussions on this list
+- the edirom community is meeting regularly every month at the first wednesday of a month, see the [wiki] for more information and meeting minutes
+- start a discussion at [GitHub Discussions]
 
 ## Code of Conduct
 
