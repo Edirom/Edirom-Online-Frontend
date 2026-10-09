@@ -63,6 +63,11 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
         
         me.searchButton.textField = me.searchTextField;
 
+        me.loginButton = Ext.create('Ext.button.Button', {
+            html: '<edirom-authentication backend-url="' + EdiromOnline.getApplication().backendURL + '"></edirom-authentication>',
+            baseCls: 'edirom-icon-button'
+        });
+
         me.items = [
             new Ext.toolbar.Toolbar({
                 flex: 1,
@@ -81,7 +86,8 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
                     	me.workCombo,
                         '->',
                         me.searchTextField,
-                        me.searchButton
+                        me.searchButton,
+                        me.loginButton
                 ]
             })
         ];
