@@ -215,24 +215,26 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                     outerDiv = Ext.DomHelper.append(shapeDiv, {
                         tag: 'div',
                         id: outerId,
-                        cls: 'annotation',
-                        'data-edirom-annot-id': annotation.get('id')
+                        cls: 'annotation'
                     }, true);
                     outerDiv.setStyle({
                         position: 'absolute'
                     });
                 }
 
-                // inner annotIcon div carries taxonomy classes (categories and priority)
+                // inner annotIcon div carries taxonomy classes (categories and priority) and the
+                // id of the annotation it belongs to; the zone container cannot carry that id
+                // because a zone shared by several annotations holds one icon per annotation
                 var innerDiv = Ext.DomHelper.append(outerDiv, {
                     tag: 'div',
                     id: innerId,
                     cls: 'annotIcon ' + categories + ' ' + priority,
+                    'data-edirom-annot-id': annotation.get('id'),
                     title: name
                 }, true);
 
-                innerDiv.on('mouseenter', me.highlightShape, me, outerDiv, true);
-                innerDiv.on('mouseleave', me.deHighlightShape, me, outerDiv, true);
+                innerDiv.on('mouseenter', me.highlightShape, me, innerDiv, true);
+                innerDiv.on('mouseleave', me.deHighlightShape, me, innerDiv, true);
                 innerDiv.on('mousedown', me.listenForShapeLink, me, {
                     stopEvent : true,
                     elem: innerDiv,
@@ -330,21 +332,46 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     },
 
     highlightShape: function(event, owner, shape) {
-    
+
         shape.addCls('highlighted');
-        
-        var annotId = shape.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
+
+        this.getAnnotationElems(shape).addCls('combinedHighlight');
     },
 
     deHighlightShape: function(event, owner, shape) {
-    
+
         shape.removeCls('highlighted');
-        
-        var annotId = shape.getAttribute('data-edirom-annot-id');
-        Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
-        Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
+
+        this.getAnnotationElems(shape).removeCls('combinedHighlight');
+    },
+
+    /**
+     * Collects everything that belongs to the same annotation as the given element: its icons
+     * wherever they appear, and the zone containers holding them.
+     *
+     * The annotation id is carried by the annotIcon, not by the zone container, because one
+     * zone can hold icons of several annotations. Selecting by that id therefore picks up the
+     * hovered annotation's icons in every zone it touches, and leaves the icons of the other
+     * annotations sharing those zones alone. Elements without an annotation id (measures)
+     * yield an empty selection.
+     */
+    getAnnotationElems: function(elem) {
+
+        var elems = [];
+        var annotId = elem.getAttribute('data-edirom-annot-id');
+
+        if(annotId) {
+            Ext.Array.each(Ext.query('[data-edirom-annot-id="' + annotId + '"]', this.el.dom), function(node) {
+
+                elems.push(node);
+
+                // an icon's zone container is highlighted along with it
+                if(node.classList.contains('annotIcon') && node.parentNode)
+                    elems.push(node.parentNode);
+            });
+        }
+
+        return Ext.select(elems);
     },
 
     repositionShapes: function() {
