@@ -119,6 +119,12 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         }
         me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
 
+        // The component reports a connection only if there is one. Tell the navigator tab there is none,
+        // so that it can show its empty message.
+        if (concordanceStoreRaw.length === 0) {
+            me.application.fireEvent('concordanceConnectionChanged', { connectionId: null, plist: '' });
+        }
+
         // Navigate to a specific connection if provided via URL parameter
         var activeConnection = me.application.activeConnection;
         if (activeConnection) {

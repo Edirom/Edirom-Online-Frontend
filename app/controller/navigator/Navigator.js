@@ -31,9 +31,10 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
         this.mainContent = null;
         this.mainContentWorkId = null;     // the work that mainContent belongs to
 
+        this.concordanceWindowOpen = false;
         this.concordanceConnection = null; // last { connectionId, plist } reported by the concordance navigator
         this.concordanceDefinition = [];   // navigatorDefinition built from that connection
-        this.concordanceTabShown = false;
+        this.concordanceTabShown = false;  // set once the first definition is built, so the tab is created with its content
         this.concordanceRequestId = 0;     // discards results of superseded or cancelled builds
 
         this.application.addListener('workSelected', this.onWorkSelected, this);
@@ -61,13 +62,13 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
             me.mainContent = navigatorContent;
             me.mainContentWorkId = workId;
             me.applyNavigatorData();
-            if (me.concordanceTabShown && me.concordanceConnection) me.refreshConcordanceTab(); // arranged like this config
+            if (me.concordanceWindowOpen && me.concordanceConnection) me.refreshConcordanceTab(); // arranged like this config
         });
 
 
     },
 
-    applyNavigatorData: function (activeTab) {
+    applyNavigatorData: function () {
         if (!this.ediromNavigator) return;
 
         var tabs = [{
@@ -85,7 +86,13 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
         }
 
         this.ediromNavigator.setAttribute('navigator-data', JSON.stringify(tabs));
-        if (activeTab) this.ediromNavigator.setAttribute('active-tab', activeTab);
+
+        // The component keeps a requested tab that has vanished and re-activates it when it returns (e.g. the
+        // concordance tab the user had selected); the navigator should stay on the tab it fell back to instead.
+        var requested = this.ediromNavigator.getAttribute('active-tab');
+        if (requested && !Ext.Array.some(tabs, function (tab) { return tab.id === requested; })) {
+            this.ediromNavigator.setAttribute('active-tab', tabs[0].id);
+        }
     },
 
     fetchNavigatorContent: function (workId, editionId, lang, onSuccess) {
@@ -120,18 +127,24 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
 
     },
 
+    // The connection may arrive while the window is hidden (work switch) or before it is shown (the
+    // concordances are cached and reported while the window renders): it is remembered, and the tab is
+    // built once the window is open.
     onConcordanceConnectionChanged: function (connection) {
         this.concordanceConnection = connection;
-        if (this.concordanceTabShown) this.refreshConcordanceTab();
+        if (this.concordanceWindowOpen) this.refreshConcordanceTab();
     },
 
+    // The tab is created only once its content is built (see refreshConcordanceTab), so it comes
+    // with its content in a single update. Without a connection yet, the first one creates it.
     onConcordanceWindowShown: function () {
-        this.concordanceTabShown = true;
-        this.applyNavigatorData(this.concordanceTabId);
-        if (this.concordanceConnection) this.refreshConcordanceTab();
+        this.concordanceWindowOpen = true;
+        if (this.concordanceConnection && !this.concordanceTabShown) this.refreshConcordanceTab();
     },
 
     onConcordanceWindowHidden: function () {
+        this.concordanceWindowOpen = false;
+        this.concordanceDefinition = [];
         this.concordanceTabShown = false;
         this.concordanceRequestId++;
         this.applyNavigatorData();
@@ -145,7 +158,8 @@ Ext.define('EdiromOnline.controller.navigator.Navigator', {
             if (requestId !== me.concordanceRequestId) return;
 
             me.concordanceDefinition = definition;
-            me.applyNavigatorData(); // no active tab: never pull the user away from the tab they are on
+            me.concordanceTabShown = true;
+            me.applyNavigatorData();
         });
     },
 
