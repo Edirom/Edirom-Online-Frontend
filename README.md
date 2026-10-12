@@ -60,7 +60,7 @@ Available properties for override:
 - `backend.host` (default: `localhost`)
 - `backend.port` (default: `8080`)
 - `backend.path` (default: `/exist/apps/Edirom-Online-Backend/`)
-- `ws.url` (default: empty — WebSocket features disabled)
+- `ws.url` (default: empty — WebSocket features disabled, see [Enabling the Connected Workspace](#enabling-the-connected-workspace-websocket-server-url))
 - `project.version` (default: `1.5.0`)
 - `project.app` (default: `Edirom-Online-Frontend`)
 - `project.title` (default: `Edirom-Online Frontend`)
@@ -105,6 +105,29 @@ When the frontend is deployed as a regular web server like nginx or httpd Docker
    ```
 
 If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
+
+#### Enabling the Connected Workspace (WebSocket server URL)
+
+The optional **Connected Workspace** feature needs the URL of a WebSocket server. Without it, the feature is not loaded. For what the feature does, how to use it and how to run the server, see the [Connected Workspace documentation].
+
+The URL can be configured in two ways:
+
+1. **At build time** via the `ws.url` build property in `local.properties`, see [Overriding build properties locally](#overriding-build-properties-locally). It is written to the `wsURL` key of `config.json`:
+
+   ```properties
+   ws.url=ws://localhost:3000
+   ```
+
+2. **At runtime** by adding the `wsURL` key to the `config.json` file, as for the backend URL described [above](#setting-backend-url-at-runtime-in-container-environments):
+
+   ```json
+   {
+     "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
+     "wsURL": "ws://localhost:3000"
+   }
+   ```
+
+   This works when the frontend is deployed as a regular web server like nginx or httpd Docker container. An empty or missing `wsURL` disables the feature.
 
 ### Starting an Edirom instance locally
 
@@ -190,6 +213,7 @@ Edirom-Online Frontend is released to the public under the terms of the [MIT] op
 [Sencha Cmd: Inside The App Build Process]: https://docs.sencha.com/cmd/7.0.0/guides/advanced_cmd/cmd_build.html
 [apache-ant]: https://ant.apache.org/
 [exist-db via Docker]: https://exist-db.org/exist/apps/doc/docker
+[Connected Workspace documentation]: https://github.com/Edirom/Edirom-Online/blob/develop/docs/connected-workspace.md
 [building sample data]: https://github.com/Edirom/EditionExample?tab=readme-ov-file#building
 [Edirom mailinglist]: https://lists.uni-paderborn.de/mailman/listinfo/edirom-l
 [wiki]: https://github.com/Edirom/Edirom-Online/wiki
