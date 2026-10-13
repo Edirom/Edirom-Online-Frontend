@@ -38,7 +38,6 @@ Ext.define('EdiromOnline.Application', {
         'window.HeaderView',
         'window.HelpWindow',
         'window.SingleWindowController',
-        'window.SummaryView',
         'window.iFrameView',
         'window.WindowController',
         'window.XmlView',
@@ -65,7 +64,7 @@ Ext.define('EdiromOnline.Application', {
     
     activeEdition: '',
     activeWork: '', 
-    backendURL: '@backend.url@',
+    activeConnection: null,
     
     init: function () {
         
@@ -82,7 +81,7 @@ Ext.define('EdiromOnline.Application', {
         var me = this;
 
         me.getController('ConfigController').loadConfig(function (config) {
-            me.backendURL = config.backendURL || me.backendURL;
+            me.backendURL = config.backendURL;
             EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Annotation.updateProxyUrl(me.backendURL);
@@ -129,7 +128,7 @@ Ext.define('EdiromOnline.Application', {
                         me.loadEdiromForEdition();
 
                     // If there are multiple editions in the backend show a selection screen
-                    }else {
+                    } else {
                         let html = `<div class="container" style="margin: 8.75%;">
                                         <img src="icon.png"/>
                                         <h1 style="margin-top:5px;">Edirom Online</h1>
@@ -188,6 +187,13 @@ Ext.define('EdiromOnline.Application', {
         var workParam = me.getURLParameter('work');
         if(workParam !== null)
             me.activeWork = workParam;
+
+        var connectionParam = me.getURLParameter('connection');
+        // connection requires work (hierarchy: edition > work > connection)
+        if (connectionParam !== null && workParam !== null)
+            me.activeConnection = connectionParam;
+        else
+            me.activeConnection = null;
         
         window.doAJAXRequest('data/xql/getWorkID.xql',
             'GET', 

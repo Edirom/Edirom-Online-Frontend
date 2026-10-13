@@ -98,11 +98,6 @@ Ext.define('EdiromOnline.view.desktop.App', {
 
         Ext.apply(cfg, me.taskbarConfig);
         Ext.apply(cfg, {
-            quickStart: [
-/*                { name: 'Accordion Window', iconCls: 'accordion', module: 'acc-win' },
-                { name: 'Grid Window', iconCls: 'icon-grid', module: 'grid-win' }
-*/                
-            ],
             trayItems: [
                 { xtype: 'trayclock', flex: 1 }
             ]

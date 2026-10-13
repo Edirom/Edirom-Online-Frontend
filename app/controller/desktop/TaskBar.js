@@ -32,10 +32,6 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
         me.control({
             'taskbar': {
                 render: this.onTaskbarRendered,
-                switchDesktop: {
-                    fn: this.onSwitchDesktop,
-                    scope: this
-                },
                 switchLanguage: this.onSwitchLanguage,
                 toggleMeasuresGlobally: this.onMeasuresVisibilityChanged,
                 toggleAnnotationsGlobally: this.onAnnotationsVisibilityChanged
@@ -45,11 +41,15 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
 
     onTaskbarRendered: function(taskbar) {
         this.taskbars.push(taskbar);
-        /*this.updateLanguageButton();*/
-    },
-    
-    onSwitchDesktop: function(num) {
-        this.application.switchDesktop(num);
+
+        // Restore global toggle button states from sessionStorage on page load
+        var types = { measures: 'icon_toggleMeasuresGlobally', annotations: 'icon_toggleAnnotationsGlobally' };
+        Ext.Object.each(types, function(type, iconId) {
+            if (sessionStorage.getItem('edirom-' + type + '-visible-global') === 'true') {
+                var icon = document.getElementById(iconId);
+                if (icon) icon.setAttribute('pressed', '');
+            }
+        });
     },
     
     onSwitchLanguage: function() {

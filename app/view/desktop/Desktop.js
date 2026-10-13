@@ -54,8 +54,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     windowMenu: null,
 
-    activeDesktop: 1,
-
     initComponent: function () {
         var me = this;
 
@@ -69,12 +67,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
         me.navigator = new EdiromOnline.view.navigator.Navigator(me.getNavigatorConfig());
 
-        me.windows = {
-            desktop1: new Ext.util.MixedCollection(),
-            desktop2: new Ext.util.MixedCollection(),
-            desktop3: new Ext.util.MixedCollection(),
-            desktop4: new Ext.util.MixedCollection()
-        };
+        me.windows = new Ext.util.MixedCollection();
         
         me.contextMenu = new Ext.menu.Menu(me.createDesktopMenu());
 
@@ -108,22 +101,6 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
     
     //------------------------------------------------------
     // Edirom Online functions
-    switchDesktop: function(desk) {
-        var me = this;
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            activeWindow.hide();
-        });
-
-        me.activeDesktop = desk;
-        me.taskbar.setActiveWindowBar(desk);
-
-        me.getActiveWindowsSet().each(function(activeWindow) {
-            if(activeWindow.hidden && !activeWindow.minimized)
-                activeWindow.show();
-        });
-    },
-
     openConcordanceNavigator: function() {
 
         var me = this;
@@ -152,22 +129,20 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             me.addWindow(thisWindow);
             thisWindow.show();
 
-        }else if(thisWindow != me.getActiveWindow()){
-
-            // show concordance navigator window
-            thisWindow.show();
-
-            // set attribute pressed of button for opening concordance navigator in task bar
-            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
-        }
-
-        else{
+        }else if(document.getElementById('icon_openConcordanceNavigator').hasAttribute('pressed')){
 
             // hide concordance navigator window
             thisWindow.hide();
 
             // unset attribute pressed of button for opening concordance navigator in task bar
             document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
+        }else {
+
+            // show concordance navigator window
+            thisWindow.show();
+
+            // set attribute pressed of button for opening concordance navigator in task bar
+            document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
         }
             
     },
@@ -225,7 +200,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         thisWindow.doSearch(term);
     },
 
-    openAboutWindow: function() {
+
+    openAbout: function() {
+
 
         var me = this;
         var thisWindow = null;
@@ -244,7 +221,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             thisWindow.show();
 
         else
-            thisWindow.destroy();
+            thisWindow.close();
     
     },
 
@@ -276,7 +253,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
 
     getActiveWindowsSet: function(excludeSpecial) {
         if(!excludeSpecial)
-            return this.windows['desktop' + this.activeDesktop];
+            return this.windows;
 
         var set = new Ext.util.MixedCollection();
 
@@ -288,8 +265,7 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
             'EdiromOnline.view.window.search.SearchWindow'
         ];
 
-        // add windows of active desktop to set, except ignored windows
-        this.windows['desktop' + this.activeDesktop].each(function(activeWindow) {
+        this.windows.each(function(activeWindow) {
             if(ignoredWindows.indexOf(Ext.getClassName(activeWindow)) == -1) {
                 set.add(activeWindow);
             }   
@@ -552,7 +528,9 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         me.add(win);
 
         win.taskButton = me.taskbar.addTaskButton(win);
-        win.animateTarget = win.taskButton.el;
+        win.animateTarget = Ext.getClassName(win) == 'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator'
+            ? Ext.get('icon_openConcordanceNavigator')
+            : win.taskButton.el;
 
         win.on({
             activate: me.updateActiveWindow,

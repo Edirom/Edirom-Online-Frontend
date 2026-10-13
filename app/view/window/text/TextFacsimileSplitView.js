@@ -44,9 +44,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.image_server = getPreference('image_server');
     	
     	if(me.image_server === "openseadragon") {
-            me.imageViewer = Ext.create(
-                "EdiromOnline.view.window.image.OpenSeaDragonViewer",
-            );
+            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
         }else{
     		me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
     	}
@@ -80,8 +78,8 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         me.callParent();
         
-        me.on('afterrender', this.createToolbarEntries, me, {single: true});
-        me.window.on('loadInternalLink', this.loadInternalId, me);
+        me.on('afterrender', me.createToolbarEntries, me, {single: true});
+        me.window.on('loadInternalLink', me.loadInternalId, me);
     },
 
     createToolbarEntries: function() {

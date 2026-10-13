@@ -36,11 +36,12 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
     onWindowRendered: function(win) {
         var me = this;
 
+        // get backend info from config
         if(win.initialized) return;
         win.initialized = true;
 
         var configController = EdiromOnline.getApplication().getController('ConfigController');
-        var backendURL = configController && configController.hasConfig('backendURL') ? configController.getConfig('backendURL') : '@backend.url@';
+        var backendURL = configController.getConfig('backendURL');
 
 
         // Specify URLs of CITATION.cff files of frontend and backend

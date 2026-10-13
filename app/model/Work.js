@@ -27,7 +27,7 @@ Ext.define('EdiromOnline.model.Work', {
 
     proxy: {
         type: 'ajax',
-        url: '@backend.url@data/xql/getWorks.xql'
+        url: 'data/xql/getWorks.xql'
     },
 
     statics: {

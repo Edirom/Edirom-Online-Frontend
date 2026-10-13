@@ -38,6 +38,7 @@ Ext.define('EdiromOnline.view.window.search.SearchWindow', {
     maximizable: false,
     closable: true,
     shadow: false,
+    liveDrag: true,
 
     layout: {
         type: 'vbox',
