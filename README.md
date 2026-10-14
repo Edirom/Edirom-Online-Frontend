@@ -61,7 +61,7 @@ Available properties for override:
 - `backend.host` (default: `localhost`)
 - `backend.port` (default: `8080`)
 - `backend.path` (default: `/exist/apps/Edirom-Online-Backend/`)
-- `project.version` (default: `1.4.0`)
+- `project.version` (default: `1.5.0`)
 - `project.app` (default: `Edirom-Online-Frontend`)
 - `project.title` (default: `Edirom-Online Frontend`)
 - `repo.target` (default: `Edirom-Online-Frontend`)
@@ -79,21 +79,29 @@ backend.port=9090
 project.version=2.0.0
 ```
 
-#### Setting Backend URL at Runtime
+#### Setting Backend URL at Runtime in Container environments
 
-You can override the backend URL at runtime by creating a `config.json` file in the application root directory. This allows you to change the backend endpoint after deployment without rebuilding.
+The Edirom Online Frontend relies on the corresponding Edirom Online Backend which runs in an eXist database. The frontend needs to know the backend URL to communicate with it. This is managed by the values set in the `config.json` file. 
 
-Create a `config.json` file:
+The `config.json` file has the following structure:
 ```json
 {
   "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/"
 }
 ```
 
-**How it works:**
-- On application startup, the `ConfigController` attempts to load `config.json`
-- If the file exists and is valid, the `backendURL` from `config.json` is used
-- If the file is missing or invalid, the application falls back to the backend URL configured at build time
+When the frontend is deployed as a regular web server like nginx or httpd Docker container, this `config.json` file can simply be replaced by mounting a different file over it. When the frontend is deployed to an **eXist database** via the frontend `.xar`, `config.json` is part of the package and cannot be replaced that way. For this case, the `.xar` includes a post-install script (`exist-packaging/post-install.xq`) that, right after the package is installed, updates only the `backendURL`/`backendPath` values in the deployed `config.json` for which an override is found, resolved in the following order:
+
+1. the environment variables `BACKEND_URL` / `BACKEND_PATH` of the eXist process
+2. a JSON file (default path `/exist-config/config.json`, configurable via the environment variable `BACKEND_CONFIG_FILE`) with the shape:
+    ```json
+    {
+      "backendURL": "https://edirom.example.com:443/exist/apps/Edirom-Online-Backend/",
+      "backendPath": "/exist/apps/Edirom-Online-Backend/"
+    }
+    ```
+
+If neither source provides a value for a given key, the value already present in the deployed `config.json` (baked in at build time) is left untouched, and all other keys of `config.json` are preserved as-is.
 
 
 ### Starting an Edirom instance locally
@@ -105,10 +113,10 @@ Create a `config.json` file:
   * Login with "admin:[empty]"
 * build and deploy **xar of Edirom-Online Backend**
   * also see [building locally] above
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.4.0-[TIMESTAMP].xar`
+  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Backend-1.5.0-[TIMESTAMP].xar`
 * build and deploy **xar of Edirom-Online Frontend**
   * for building the frontend module please see https://github.com/Edirom/Edirom-Online-Frontend
-  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.4.0-[TIMESTAMP].xar`
+  * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_REPO/build-xar/Edirom-Online-Frontend-1.5.0-[TIMESTAMP].xar`
 * build **xar of sample data** for deploying at exist-db
   * also see [building sample data]
   * at `http://localhost:8080/exist/apps/dashboard/admin#` (signed-in) go to "Package Manager" then "Upload" and select the xar file which (supposed above build-method was used) was built at `/PATH_TO_LOCAL_EDIROM_EDITION_EXAMPLE_REPO/build/EditionExample-0.1.1.xar`

@@ -241,6 +241,15 @@
 
 		}
 
+	/*Override brackets in tei.css for notes*/
+		span.note::before {
+			content: none;
+		}
+
+		span.note::after {
+			content: none;
+		}
+
 	/*other*/
 		.figure, .stdheader { 
 			border: none; 

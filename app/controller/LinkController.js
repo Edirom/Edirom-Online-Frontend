@@ -169,9 +169,8 @@ Ext.define('EdiromOnline.controller.LinkController', {
                             win.show();
                         }, this)
                     );
-                }else
-                    win.showView('summaryView');
-                    
+                }
+
                 windowsUsed.add(win);
             }
 

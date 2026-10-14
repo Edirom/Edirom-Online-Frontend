@@ -41,16 +41,33 @@ Ext.define('EdiromOnline.controller.window.HeaderView', {
 
         var uri = view.uri;
         var type = view.type;
-
-        window.doAJAXRequest('data/xql/getHeader.xql',
-            'GET', 
-            {
-                uri: uri,
-                type: type
-            },
-            Ext.bind(function(response){
-                view.setContent(response.responseText);
-            }, this)
-        );
+        
+        if(type == 'work' || type == 'source' || type == 'recording') {
+            // for mei files, the request goes to v2 API - relative to backendURI
+            window.doAJAXRequest('api/document',
+                'GET', 
+                {
+                    resource: uri,
+                    ref: 'meiHead',
+                    mediaType: 'text/html',
+                    htmlProfile: 'edirom-header',
+                    idPrefix: view.id + '_'
+                },
+                Ext.bind(function(response){
+                    view.setContent(response.responseText);
+                }, this)
+            );
+        } else { // anything else, included 'text' (see backend issue #27)
+            window.doAJAXRequest('data/xql/getHeader.xql',
+                'GET', 
+                {
+                    uri: uri,
+                    type: type
+                },
+                Ext.bind(function(response){
+                    view.setContent(response.responseText);
+                }, this)
+            );
+        }
     }
 });

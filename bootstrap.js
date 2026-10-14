@@ -28,7 +28,6 @@ Ext.Loader.addClassPathMappings({
 });
 Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.Application": [],
-  "EdiromOnline.controller.AJAXController": [],
   "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
@@ -43,7 +42,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.window.HeaderView": [],
   "EdiromOnline.controller.window.HelpWindow": [],
   "EdiromOnline.controller.window.SingleWindowController": [],
-  "EdiromOnline.controller.window.SummaryView": [],
   "EdiromOnline.controller.window.WindowController": [],
   "EdiromOnline.controller.window.XmlView": [],
   "EdiromOnline.controller.window.about.AboutWindow": [],
@@ -74,7 +72,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.window.BottomBar": [],
   "EdiromOnline.view.window.HeaderView": [],
   "EdiromOnline.view.window.HelpWindow": [],
-  "EdiromOnline.view.window.SummaryView": [],
   "EdiromOnline.view.window.TopBar": [],
   "EdiromOnline.view.window.View": [],
   "EdiromOnline.view.window.Window": [],
@@ -940,7 +937,6 @@ Ext.ClassManager.addNameAlternateMappings({
 });
 Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.Application": [],
-  "EdiromOnline.controller.AJAXController": [],
   "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
@@ -955,7 +951,6 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.window.HeaderView": [],
   "EdiromOnline.controller.window.HelpWindow": [],
   "EdiromOnline.controller.window.SingleWindowController": [],
-  "EdiromOnline.controller.window.SummaryView": [],
   "EdiromOnline.controller.window.WindowController": [],
   "EdiromOnline.controller.window.XmlView": [],
   "EdiromOnline.controller.window.about.AboutWindow": [],
@@ -1003,10 +998,6 @@ Ext.ClassManager.addNameAliasMappings({
   ],
   "EdiromOnline.view.window.HelpWindow": [
     "widget.helpWindow"
-  ],
-  "EdiromOnline.view.window.SummaryView": [
-    "widget.layout-border",
-    "widget.summaryView"
   ],
   "EdiromOnline.view.window.TopBar": [
     "widget.window.topbar"
