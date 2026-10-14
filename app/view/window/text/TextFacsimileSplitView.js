@@ -25,7 +25,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     alias : 'widget.textFacsimileSplitView',
 
     layout: 'border',
-    
+
     cls: 'textFacsimileSplitView',
 
     annotationsVisible: false,
@@ -37,12 +37,12 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     initComponent: function () {
 
         var me = this;
-        
+
         me.addEvents('annotationsVisibilityChange', 'afterImagesLoaded', 'afterImageChanged',
             'documentLoaded');
-            
+
         me.image_server = getPreference('image_server');
-    	
+
     	if(me.image_server === "openseadragon") {
             me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
         }else{
@@ -52,7 +52,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.imageViewer.region = 'center';
 
         me.centerPanel = me.imageViewer;
-        
+
         me.westPanel = Ext.create('Ext.panel.Panel', {
             layout: 'fit',
             region: 'west',
@@ -77,7 +77,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         ];
 
         me.callParent();
-        
+
         me.on('afterrender', me.createToolbarEntries, me, {single: true});
         me.window.on('loadInternalLink', me.loadInternalId, me);
     },
@@ -115,15 +115,15 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     },
 
     checkGlobalVisibility: function(type) {
-        
+
         // TODO: align with checkGlobalVisibility in SourceView.js
 
         var me = this;
-        
+
         // If: measures visibility was set locally, do nothing
         if(me[type+'VisibilitySetLocaly']) return;
-        
-        // Otherwise: check local visibility state and decide on next visibility state        
+
+        // Otherwise: check local visibility state and decide on next visibility state
         // only if local state is null (case in which window does not override global) fire event with global visibility
         var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
         if(localState === null) {
@@ -136,15 +136,15 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
     /*
     checkGlobalAnnotationsVisibility: function(visible) {
-        
+
         var me = this;
-        
+
         if(me.annotationsVisibilitySetLocaly) return;
-        
+
         me.annotationsVisible = visible;
         if(typeof me.toggleAnnotationsVisibility != 'undefined')
             me.toggleAnnotationsVisibility.setChecked(visible, true);
-        
+
         //TODO: Controller mit einbeziehen
         if(visible && me.annotationsLoaded)
             me.showAnnotations();
@@ -194,7 +194,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         me.annotationsLoaded = true;
 
         var tpl = Ext.DomHelper.createTemplate('<span id="{0}" class="annotation {1} {2} {3}" data-edirom-annot-id="{3}"></span>');
-        
+
         tpl.compile();
 
         annotations.each(function(annotation) {
@@ -202,7 +202,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -212,7 +212,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
                 var target = me.el.getById(me.id + '_' + targetId);
 
                 var shape = tpl.append(target, [me.id + '_' + p.id, categories, priority, annotation.get('id')], true);
-                
+
                 shape.on('mouseenter', me.highlightShape, me, shape, true);
                 shape.on('mouseleave', me.deHighlightShape, me, shape, true);
                 shape.on('mousedown', me.listenForShapeLink, me, {
@@ -234,7 +234,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
                 tip.on('afterrender', function() {
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
-                        'GET', 
+                        'GET',
                         {
                             uri: uri,
                             target: 'tip'
@@ -249,10 +249,10 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         }, me);
     },
-    
+
     highlightShape: function(event, owner, shape) {
         shape.addCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
@@ -260,7 +260,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
     deHighlightShape: function(event, owner, shape) {
         shape.removeCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
@@ -292,12 +292,14 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         });
     },
 
-        //TODO: in mixin verpacken, wenn möglich
-    setAnnotationFilter: function(priorities, categories) {
+    //TODO: in mixin verpacken, wenn möglich
+    setAnnotationFilter: function(taxonomies) {
         var me = this;
 
-        if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
+        // abort if taxonomies array is empty
+        if (!taxonomies || taxonomies.length === 0) return;
 
+        // create toggle button for showing/hiding annotations in window
         me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
             id: me.id + '_showAnnotations',
             checked: me.annotationsVisible,
@@ -305,10 +307,11 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             checkHandler: Ext.bind(me.toggleAnnotations, me, [], true)
         });
 
-        me.annotMenu =  Ext.create('Ext.button.Button', {
+        // create annotMenu with window-spcific toggle for annotation visibility
+        me.annotMenu = Ext.create('Ext.button.Button', {
             text: getLangString('view.window.text.TextView_annotMenu'),
             indent: false,
-            menu : {
+            menu: {
                 items: [
                     me.toggleAnnotationsVisibility
                 ]
@@ -316,44 +319,37 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         });
         me.window.getTopbar().addViewSpecificItem(me.annotMenu, me.id);
 
-        var prioritiesItems = [];
-        priorities.each(function(priority) {
-            prioritiesItems.push({
-                text: priority.get('name'),
-                priorityId: priority.get('id'),
-                checked: true,
-                handler: Ext.bind(me.annotationFilterChanged, me)
+        me.annotTaxonomyMenus = {};
+
+        // iterate over taonomies
+        Ext.Array.each(taxonomies, function(taxonomy) {
+
+            // abort if taxonomy is empty
+            if (!taxonomy.items || taxonomy.items.length === 0) return;
+
+            // process taxonomy items
+            var items = Ext.Array.map(taxonomy.items, function(item) {
+                return {
+                    text: item.name,
+                    classId: item.id,
+                    taxonomyId: taxonomy.id,
+                    checked: true,
+                    handler: Ext.bind(me.annotationFilterChanged, me)
+                };
             });
-        });
 
-        me.annotPrioritiesMenu = Ext.create('Ext.menu.Menu', {
-             items: prioritiesItems
-        });
+            // create menu for taxonomy items
+            var menu = Ext.create('Ext.menu.Menu', { items: items });
 
-        me.annotMenu.menu.add({
-            id: me.id + '_annotCategoryFilter',
-            text: getLangString('view.window.text.TextView_prioMenu'),
-            menu: me.annotPrioritiesMenu
-        });
+            // push taxonomy menu to taxonomy menus array
+            me.annotTaxonomyMenus[taxonomy.id] = menu;
 
-        var categoriesItems = [];
-        categories.each(function(category) {
-            categoriesItems.push({
-                text: category.get('name'),
-                categoryId: category.get('id'),
-                checked: true,
-                handler: Ext.bind(me.annotationFilterChanged, me)
+            // add entry for taxonomy to annotMenu
+            me.annotMenu.menu.add({
+                // set button text to taxonomy.label if it doesn’t match taxonomy.id, else get from locale files
+                text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
+                menu: menu
             });
-        });
-
-        me.annotCategoriesMenu = Ext.create('Ext.menu.Menu', {
-             items: categoriesItems
-        });
-
-        me.annotMenu.menu.add({
-            id: me.id + '_annotPriorityFilter',
-            text: getLangString('view.window.text.TextView_categoriesMenu'),
-            menu: me.annotCategoriesMenu
         });
 
         me.annotMenu.show();
@@ -362,17 +358,19 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     annotationFilterChanged: function(item, event) {
         var me = this;
 
-        if(!me.annotationsVisible) return;
+        if (!me.annotationsVisible) return;
 
-        var visiblePriorities = [];
-        me.annotPrioritiesMenu.items.each(function(item) {
-            if(item.checked)
-                visiblePriorities.push(item.priorityId);
-        });
-        var visibleCategories = [];
-        me.annotCategoriesMenu.items.each(function(item) {
-            if(item.checked)
-                visibleCategories.push(item.categoryId);
+        var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
+        Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
+            var visibleIds = [];
+            var allIds = [];
+            menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
+                if (menuItem.checked) visibleIds.push(menuItem.classId);
+            });
+            visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
         });
 
         var annotations = Ext.query('#' + this.id + '_textCont span.annotation');
@@ -380,18 +378,34 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
             var className = annotation.className.replace('annotation', '').trim();
             var classes = className.split(' ');
 
-            var hasCategory = false;
-            var hasPriority = false;
+            var visible = true;
+            Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = allTaxonomyIds[taxonomyId] || [];
 
-            for(var i = 0; i < classes.length; i++) {
-                hasCategory |= Ext.Array.contains(visibleCategories, classes[i]);
-                hasPriority |= Ext.Array.contains(visiblePriorities, classes[i]);
-            }
+                // Skip this taxonomy if the annotation has no class from it
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
 
-            Ext.get(annotation).setVisible(hasCategory & hasPriority);
+                var matches = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(visibleIds, classes[i])) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) visible = false;
+            });
+
+            Ext.get(annotation).setVisible(visible);
         }, me);
 
-        if(annotations.each)
+        if (annotations.each)
             annotations.each(fn);
         else
             Ext.Array.each(annotations, fn);
@@ -400,9 +414,9 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
     setContent: function(text) {
 		var me = this;
 		Ext.fly(me.id + '_textCont').update(text);
-		this.fireEvent('documentLoaded', me);		
+		this.fireEvent('documentLoaded', me);
     },
-    
+
     setImageSet: function(imageSet) {
         var me = this;
         me.imageSet = imageSet;
@@ -415,7 +429,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         }else if(me.imageSet.getCount() > 0)
             me.pageSpinner.setPage(me.imageSet.getAt(0));
-            
+
         me.fireEvent('afterImagesLoaded', me, imageSet);
     },
 
@@ -432,10 +446,10 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 
         me.imageViewer.showImage(me.activePage.get('path'),
             me.activePage.get('width'), me.activePage.get('height'));
-            
+
         me.fireEvent('afterImageChanged', me, null);
-    }, 
-    
+    },
+
     getActivePage: function() {
         var me = this;
         return (typeof me.activePage !== 'undefined' && me.activePage !== null?me.activePage.get('id'):null);
@@ -445,7 +459,7 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
         var me = this;
 
 		if (chapters.getTotalCount() == 0) return;
-		
+
 		me.gotoMenu = Ext.create('Ext.button.Button', {
 			text: getLangString('view.window.text.TextView_gotoMenu'),
 			indent: false,
@@ -455,9 +469,9 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 			}
 		});
 		me.window.getTopbar().addViewSpecificItem(me.gotoMenu, me.id);
-		
+
 		me.chapters = chapters;
-		
+
 		var chapterItems =[];
 		chapters.each(function (chapter) {
 			chapterItems.push({
@@ -465,37 +479,37 @@ Ext.define('EdiromOnline.view.window.text.TextFacsimileSplitView', {
 				handler: Ext.bind(me.gotoChapter, me, chapter.get('pageId'), true)
 			});
 		});
-		
+
 		me.gotoMenu.menu.add(chapterItems);
 		me.gotoMenu.show();
 	},
-	
+
 	gotoChapter: function (menuItem, event, pageId) {
 		this.fireEvent('gotoChapter', this, pageId);
 	},
-	
+
 	gotoPage: function (pageId) {
 		var me = this;
 		me.pageSpinner.setPage(me.imageSet.getById(pageId));
 	},
-	
+
 	getWeightForInternalLink: function (uri, type, id) {
 		var me = this;
-		
+
 		if (me.uri != uri)
 		return 0;
-		
+
 		return 50;
 	},
-	
+
 	loadInternalId: function (id, type) {
 		var me = this;
-		
+
 		if(type == 'graphic' || type == 'surface') {
             me.window.requestForActiveView(me);
             me.gotoPage(id);
 		}else {
-		
+
     		var container = Ext.fly(me.id + '_textCont');
     		var elem = container.getById(me.id + '_' + id);
     		if (elem) {
