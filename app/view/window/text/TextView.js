@@ -188,7 +188,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -347,31 +347,18 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
         if (!me.annotationsVisible) return;
 
-        // set visible Priorities
-        var visiblePriorities = [];
-
-        // iterate over corresponding menu to get priorities
-        if(me.annotPrioritiesMenu != null && me.annotPrioritiesMenu.items.length != 0) {
-            me.annotPrioritiesMenu.items.each(function(item) {
-                if(item.checked)
-                    visiblePriorities.push(item.priorityId);
+        var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
+        Ext.Object.each(me.annotTaxonomyMenus || {}, function(taxonomyId, menu) {
+            var visibleIds = [];
+            var allIds = [];
+            menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
+                if (menuItem.checked) visibleIds.push(menuItem.classId);
             });
-        } else {
-            visiblePriorities.push('undefined');
-        }
-
-        // set visible categories
-        var visibleCategories = [];
-
-        // iterate over corresponding menu to get categories
-        if(me.annotCategoriesMenu != null && me.annotCategoriesMenu.items.length != 0) {
-            me.annotCategoriesMenu.items.each(function(item) {
-                if(item.checked)
-                    visibleCategories.push(item.categoryId);
-            });
-        } else {
-            visibleCategories.push('undefined');
-        }
+            visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
+        });
 
         var annotations = Ext.query('#' + this.id + '_textCont div.annotation, #' + this.id + '_textCont span.annotation');
         var fn = Ext.bind(function(annotation) {
@@ -380,19 +367,34 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
                 : annotation;
             var classes = filterElement ? Ext.Array.toArray(filterElement.classList) : [];
 
-            var hasCategory = Ext.Array.contains(visibleCategories, 'undefined');
-            var hasPriority = Ext.Array.contains(visiblePriorities, 'undefined');
+            var visible = true;
+            Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = allTaxonomyIds[taxonomyId] || [];
 
-            for(var i = 0; i < classes.length; i++) {
-                hasCategory = hasCategory || Ext.Array.contains(visibleCategories, classes[i]);
-                hasPriority = hasPriority || Ext.Array.contains(visiblePriorities, classes[i]);
-            }
+                // Ignore taxonomies that do not apply to this annotation.
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
+
+                var matches = false;
+                for (var j = 0; j < classes.length; j++) {
+                    if (Ext.Array.contains(visibleIds, classes[j])) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) visible = false;
+            });
 
             var annotationElement = Ext.get(annotation);
-            var isVisible = hasCategory && hasPriority;
             annotationElement.setVisibilityMode(Ext.Element.DISPLAY);
-            annotationElement.setVisible(isVisible);
-            if(isVisible)
+            annotationElement.setVisible(visible);
+            if(visible)
                 annotationElement.dom.style.display = 'inline-block';
         }, me);
 

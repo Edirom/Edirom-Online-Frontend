@@ -144,7 +144,7 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
                     var data = response.responseText;
 
                     var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
+                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
                         data: Ext.JSON.decode(data)
                     });
 
