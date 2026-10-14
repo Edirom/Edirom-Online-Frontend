@@ -60,19 +60,15 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
  	   me.imageViewer.on('zoomChanged', me.updateZoom, me);
     },
 
-    annotationFilterChanged: function(visibleCategories, visiblePriorities) {
+    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
 
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
             console.log('View: PageBasedView: annotationFilterChanged');
-            console.log('visibleCategories');
-            console.log(visibleCategories);
-            console.log('visiblePriorities');
-            console.log(visiblePriorities);
+            console.log('visibleTaxonomies');
+            console.log(visibleTaxonomies);
         }
-
-       	var image_server = getPreference('image_server');
 
         var annotations = me.imageViewer.getShapes('annotations');
 
@@ -82,59 +78,66 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(me.imageViewer.shapes.get('annotations'));
         }
 
-        // define function to apply to relevant element IDs
+        // Callback applied to each annotation child div: shows or hides it based on the active taxonomy filters.
+        // Bound to `me` so `this` refers to the view component inside the function body.
         var fn = Ext.bind(function(annotationId) {
 
             var annotDiv = Ext.get(annotationId);
+            // Get the raw DOM class list and convert it to a plain array for Ext manipulation
             var classList = annotDiv.dom.classList;
-            var prioritiesCategories = Ext.Array.toArray(classList);
-            Ext.Array.remove(prioritiesCategories, 'measure');
-            Ext.Array.remove(prioritiesCategories, 'annoIcon');
+            var classes = Ext.Array.toArray(classList);
+            // Strip structural/UI classes that are not taxonomy identifiers
+            Ext.Array.remove(classes, 'measure');
+            Ext.Array.remove(classes, 'annoIcon');
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
                 console.log('View: PageBasedView: annotationFilterChanged: annotations fn');
                 console.log(annotationId);
                 console.log(annotDiv);
                 console.log(classList);
-                console.log(prioritiesCategories);
+                console.log(classes);
             }
 
-            // create category and priority match variables
-            var matchesCategoryFilter = false;
-            var matchesPriorityFilter = false;
+            // An annotation is visible only if it matches at least one selected id in every active taxonomy
+            var visible = true;
+            Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = (allTaxonomyIds || {})[taxonomyId] || [];
 
-            // iterate over annotation class attribute values to see if they match visibleCategories or visiblePriorities
-            for(var i = 0; i < prioritiesCategories.length; i++) {
-                matchesCategoryFilter |= Ext.Array.contains(visibleCategories, prioritiesCategories[i]);
+                // If the annotation has no class from this taxonomy, skip this taxonomy's check
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
 
-                matchesPriorityFilter |= Ext.Array.contains(visiblePriorities, prioritiesCategories[i]);
-            }
+                // Check whether any of the annotation's classes belong to this taxonomy's visible set
+                var matches = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(visibleIds, classes[i])) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) visible = false;
+            });
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
-                console.log(matchesCategoryFilter);
-                console.log(matchesPriorityFilter);
+                console.log(visible);
             }
 
-            // if filter results are false check if visibleCategories are undefined and if so assign true
-            if( matchesCategoryFilter == false && visibleCategories == 'undefined') {
-                matchesCategoryFilter = true;
-            }
-
-            // if filter results are falsey check if visibleCategories are undefined and if so assign true
-            if( matchesPriorityFilter == false && visiblePriorities == 'undefined') {
-                matchesPriorityFilter = true;
-            }
-
-            // depending on match results assign or remove class 'hidden'
-            if(matchesCategoryFilter & matchesPriorityFilter)
+            // Toggle visibility by adding/removing the 'hidden' CSS class
+            if (visible)
                 annotDiv.removeCls('hidden');
             else
                 annotDiv.addCls('hidden');
         }, me);
 
-
         var annotationDivIds = [];
 
+        // Collect the ids of all child shape elements for each annotation
         Ext.Array.each(annotations, function(annotation) {
 
             if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -146,10 +149,10 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
                 console.log(me.owner.owner);
             }
 
+            // Retrieve the SVG/HTML shape element rendered for this annotation
             var annotDiv = me.imageViewer.getShapeElem(annotation.id);
+            // Each annotation shape has child elements (e.g. icon, label); collect their ids
             var children = Ext.Array.toArray(annotDiv.dom.childNodes);
-
-            // Ext.Array.push(annotationDivIds, annotation.id);
             Ext.Array.push(annotationDivIds, Ext.Array.pluck(children, 'id'));
         });
 
@@ -157,6 +160,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
             console.log(annotationDivIds);
         }
 
+        // Apply the visibility filter function to every collected child div id
         Ext.Array.each(annotationDivIds, fn);
     },
 
@@ -245,7 +249,7 @@ Ext.define('EdiromOnline.view.window.source.PageBasedView', {
         });
 
         // zoom slider (if applicable)
-        if (image_server === 'openseadragon' || image_server === 'digilib'){ 
+        if (image_server === 'openseadragon' || image_server === 'digilib'){
             me.zoomSlider = Ext.create('Ext.slider.Single', {
                 width: 100,
                 value: 100,
