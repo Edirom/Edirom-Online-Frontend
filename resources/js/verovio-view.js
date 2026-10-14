@@ -36,7 +36,7 @@ function initializeComponent() {
     var initWidth = Math.floor($(document).width() * 100.0 / 33.0);
     
     // Build initial MEI URL (without movementId)
-    var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml";
     
     // Create the component element
     var renderer = document.createElement('edirom-verovio-renderer');
@@ -46,7 +46,6 @@ function initializeComponent() {
     renderer.setAttribute('zoom', '33');
     renderer.setAttribute('pagewidth', initWidth);
     renderer.setAttribute('pageheight', initHeight);
-    renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
     renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
     renderer.style.display = 'none'; // Hidden until ready
     
@@ -119,7 +118,7 @@ function showMovement(movementId) {
     var initWidth = Math.floor(width * 100.0 / 33.0);
 
     // Build MEI URL with movementId
-    var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition + "&movementId=" + movementId;
+    var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml&ref=" + movementId + "&unwrap=true";
     
     // Get or create the component
     var renderer = document.getElementById('verovio-renderer');
@@ -133,7 +132,6 @@ function showMovement(movementId) {
         renderer.setAttribute('id', 'verovio-renderer');
         renderer.setAttribute('pagenumber', '1');
         renderer.setAttribute('zoom', '33');
-        renderer.setAttribute('verovio-url', 'https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js');
         renderer.setAttribute('enable-measure-shadow', 'true'); // Enable measure shadow on annotation hover
         
         // Add it to the output div

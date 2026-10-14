@@ -41,8 +41,6 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
         		<head>
 					<title>Verovio</title>
 					<script
-						src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
-					<script
 						src="https://code.jquery.com/jquery-4.0.0.min.js"
 						integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao="
 						crossorigin="anonymous"></script>
@@ -61,7 +59,7 @@ Ext.define('EdiromOnline.view.window.image.VerovioImage', {
 						var edition = "${edition}";
 						var movementId = "";
 						var appBasePath = "${backendURL}";
-						var meiUrl = appBasePath + "/data/xql/getMusicInMdiv.xql?uri=" + uri + "&edition=" + edition;
+						var meiUrl = appBasePath + "api/document?resource=" + uri + "&tree=musicStructure&mediaType=application/mei%2Bxml";
 						</script>
 					
 					<div id="output">
