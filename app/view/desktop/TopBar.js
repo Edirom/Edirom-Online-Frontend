@@ -24,9 +24,9 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
         'Ext.form.field.Text'
     ],
 
-    alias : 'widget.topbar',
-	id : 'ediromToolbar',
-	
+    alias: 'widget.topbar',
+    id: 'ediromToolbar',
+
     height: 41,
 
     initComponent: function () {
@@ -38,14 +38,14 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
             cls: 'taskSquareButton home',
             tooltip: { text: getLangString('view.desktop.TaskBar_home'), align: 'tl-bl' }
         });
-        
+
         me.workCombo = Ext.create('Ext.button.Button', {
             text: 'work',
             id: 'workSwitch',
             cls: 'insetButton',
             indent: false,
-            menu : {
-	            maxHeight:500,
+            menu: {
+                maxHeight: 500,
                 items: []
             }
         });
@@ -60,29 +60,37 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
             width: 180,
             id: 'searchTextFieldTop'
         });
-        
+
         me.searchButton.textField = me.searchTextField;
+
+        // The connected workspace should only instantiate when a wsURL is actually configured.
+        var wsUrl = EdiromOnline.getApplication().getController('ConfigController').getConfig('wsURL');
+        if (wsUrl) {
+            me.connectedWorkspace = Ext.create('EdiromOnline.view.webComponents.EdiromConnectedWorkspace', {});
+        }
 
         me.items = [
             new Ext.toolbar.Toolbar({
                 flex: 1,
                 cls: 'ux-desktop-topbar-flex',
                 items: [
-                        me.homeButton,
-                        { xtype: 'tbtext', text: getLangString('view.desktop.TopBar_homeBtnLabel'), id: 'homeBtnLabel' },
-                        this.workCombo,
-                        {
-                            xtype: 'splitter',
-                            html: '&#160;',
-                            height: 14,
-                            width: 2, //TODO - there should be a CSS way here
-                            cls: 'x-toolbar-separator x-toolbar-separator-horizontal ediTopBarSep'
-                        },
-                    	me.workCombo,
-                        '->',
-                        me.searchTextField,
-                        me.searchButton
-                ]
+                    me.homeButton,
+                    { xtype: 'tbtext', text: getLangString('view.desktop.TopBar_homeBtnLabel'), id: 'homeBtnLabel' },
+                    this.workCombo,
+                    {
+                        xtype: 'splitter',
+                        html: '&#160;',
+                        height: 14,
+                        width: 2, //TODO - there should be a CSS way here
+                        cls: 'x-toolbar-separator x-toolbar-separator-horizontal ediTopBarSep'
+                    },
+                    me.workCombo,
+                    '->',
+                    me.searchTextField,
+                    me.searchButton,
+                    me.connectedWorkspace,
+                    me.aboutButton
+                ].filter(function (item) { return !!item; })
             })
         ];
 
