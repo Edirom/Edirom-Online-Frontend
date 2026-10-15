@@ -7,6 +7,9 @@
 [submodule "resources/js/edirom-audio-player"]
 	path = resources/js/edirom-audio-player
 	url = https://github.com/Edirom/edirom-audio-player.git
+[submodule "resources/js/edirom-image-viewer"]
+	path = resources/js/edirom-image-viewer
+	url = https://github.com/Edirom/edirom-image-viewer.git
 [submodule "resources/js/edirom-navigator"]
 	path = resources/js/edirom-navigator
 	url = https://github.com/Edirom/edirom-navigator.git
@@ -19,3 +22,17 @@
 [submodule "resources/js/edirom-connected-workspace"]
 	path = resources/js/edirom-connected-workspace
 	url = https://github.com/Edirom/edirom-connected-workspace.git
+[submodule "resources/js/edirom-annotation-view"]
+	path = resources/js/edirom-annotation-view
+	url = https://github.com/Edirom/edirom-annotation-view.git
+[submodule "resources/js/edirom-controls"]
+	path = resources/js/edirom-controls
+	url = https://github.com/Edirom/edirom-controls.git
+[submodule "resources/js/edirom-text-viewer"]
+	path = resources/js/edirom-text-viewer
+	url = https://github.com/Edirom/edirom-text-viewer.git
+
+[submodule "mobile"]
+	path = mobile
+	url = https://github.com/Edirom/edirom-mobile.git
+
