@@ -74,7 +74,6 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
             baseCls: 'edirom-icon-button',
             action: 'switchToMobile'
         });
-
         me.items = [
             new Ext.toolbar.Toolbar({
                 flex: 1,
