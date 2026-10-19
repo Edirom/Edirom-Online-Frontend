@@ -108,8 +108,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     },
 
     onSwitchToMobile: function() {
-        localStorage.setItem('edirom-ui-mode', 'mobile');
-
         var params = new URLSearchParams();
         params.set('ui', 'mobile');
         if (this.application.activeEdition) params.set('edition', this.application.activeEdition);
