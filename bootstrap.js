@@ -27,7 +27,6 @@ Ext.Loader.addClassPathMappings({
 });
 Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.Application": [],
-  "EdiromOnline.controller.AJAXController": [],
   "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
@@ -38,6 +37,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.desktop.TaskBar": [],
   "EdiromOnline.controller.desktop.TopBar": [],
   "EdiromOnline.controller.navigator.Navigator": [],
+  "EdiromOnline.controller.webComponents.EdiromConnectedWorkspace": [],
   "EdiromOnline.controller.window.AnnotationView": [],
   "EdiromOnline.controller.window.HeaderView": [],
   "EdiromOnline.controller.window.HelpWindow": [],
@@ -56,9 +56,9 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.window.text.FacsimileView": [],
   "EdiromOnline.controller.window.text.TextFacsimileSplitView": [],
   "EdiromOnline.controller.window.text.TextView": [],
-  "EdiromOnline.model.Annotation": [],
   "EdiromOnline.model.AnnotationParticipant": [],
   "EdiromOnline.model.Edition": [],
+  "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
   "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
@@ -69,6 +69,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.navigator.Navigator": [],
   "EdiromOnline.view.utils.EnhancedSlider": [],
   "EdiromOnline.view.utils.Lightbox": [],
+  "EdiromOnline.view.webComponents.EdiromConnectedWorkspace": [],
   "EdiromOnline.view.window.AnnotationView": [],
   "EdiromOnline.view.window.BottomBar": [],
   "EdiromOnline.view.window.HeaderView": [],
@@ -936,7 +937,6 @@ Ext.ClassManager.addNameAlternateMappings({
 });
 Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.Application": [],
-  "EdiromOnline.controller.AJAXController": [],
   "EdiromOnline.controller.ConfigController": [],
   "EdiromOnline.controller.CookieController": [],
   "EdiromOnline.controller.LanguageController": [],
@@ -947,6 +947,7 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.desktop.TaskBar": [],
   "EdiromOnline.controller.desktop.TopBar": [],
   "EdiromOnline.controller.navigator.Navigator": [],
+  "EdiromOnline.controller.webComponents.EdiromConnectedWorkspace": [],
   "EdiromOnline.controller.window.AnnotationView": [],
   "EdiromOnline.controller.window.HeaderView": [],
   "EdiromOnline.controller.window.HelpWindow": [],
@@ -965,9 +966,9 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.window.text.FacsimileView": [],
   "EdiromOnline.controller.window.text.TextFacsimileSplitView": [],
   "EdiromOnline.controller.window.text.TextView": [],
-  "EdiromOnline.model.Annotation": [],
   "EdiromOnline.model.AnnotationParticipant": [],
   "EdiromOnline.model.Edition": [],
+  "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
   "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
@@ -988,6 +989,9 @@ Ext.ClassManager.addNameAliasMappings({
   ],
   "EdiromOnline.view.utils.EnhancedSlider": [],
   "EdiromOnline.view.utils.Lightbox": [],
+  "EdiromOnline.view.webComponents.EdiromConnectedWorkspace": [
+    "widget.ediromConnectedWorkspace"
+  ],
   "EdiromOnline.view.window.AnnotationView": [
     "widget.annotationView"
   ],

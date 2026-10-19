@@ -16,38 +16,23 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Edirom Online.  If not, see <http://www.gnu.org/licenses/>.
  */
-Ext.define('EdiromOnline.model.Annotation', {
+
+/**
+ * One measure overlay on a page, as delivered by getMeasuresOnPage.xql.
+ *
+ * A shape is a zone, not a measure: a measure broken across systems or pages is encoded as a
+ * single measure linked to two or more zones, so several shapes can carry the same measure
+ * 'id'. The store is therefore keyed by 'zoneId', which is unique per shape. Keying it by the
+ * default 'id' made the second of two fragments replace the first in the store's collection,
+ * leaving one of them without an overlay.
+ */
+Ext.define('EdiromOnline.model.MeasureShape', {
 
     requires: [],
 
     extend: 'Ext.data.Model',
-    fields: ['id',
-        'title',
-        'categories',
-        'priority',
-        'sigla',
-        {
-            name: 'pos',
-            type: 'int'
-        }
-    ],
 
-    proxy: {
-        type: 'ajax',
-        url: 'data/xql/getAnnotations.xql',
-        reader: {
-            type: 'json',
-            root: 'annotations',
-            totalProperty: 'total'
-        }
-    },
+    idProperty: 'zoneId',
 
-    statics: {
-        updateProxyUrl: function (backendURL) {            
-            var model = Ext.ModelManager.getModel('EdiromOnline.model.Annotation');
-            if (model) {
-                model.getProxy().url = backendURL + 'data/xql/getAnnotations.xql';
-            }
-        }
-    }
+    fields: ['zoneId', 'ulx', 'uly', 'lrx', 'lry', 'id', 'name', 'type', 'rest']
 });
