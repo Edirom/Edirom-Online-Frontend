@@ -144,16 +144,37 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
         // Re-apply a pending rectangle once the image's tiles have been drawn.
         me.webComponent.addEventListener('image-ready', function() {
+            // As soon as OSD exists, treat the first user pan/zoom gesture as
+            // leaving the initial auto-fit, so later resizes keep that view
+            // instead of snapping back home (see onResize).
+            if (!me._osdInteractionHooked && me.webComponent.openSeaDragon) {
+                me._osdInteractionHooked = true;
+                var stopAutoFit = function() { me._autoFit = false; };
+                me.webComponent.openSeaDragon.addHandler('canvas-drag', stopAutoFit);
+                me.webComponent.openSeaDragon.addHandler('canvas-scroll', stopAutoFit);
+                me.webComponent.openSeaDragon.addHandler('canvas-pinch', stopAutoFit);
+            }
+
             // Apply an initial page requested before the viewer was ready
             // (e.g. a deep link to a page other than the first one).
+            var hadPendingPage = false;
             if (me.pendingPageIndex != null) {
                 var idx = me.pendingPageIndex;
                 me.pendingPageIndex = null;
-                if (idx > 0) me.webComponent.setAttribute('pagenumber', String(idx + 1));
+                if (idx > 0) {
+                    me.webComponent.setAttribute('pagenumber', String(idx + 1));
+                    hadPendingPage = true;
+                }
             }
 
             if (me.rect && me.rect != null) {
                 me.fitStoredRect();
+            } else if (!hadPendingPage) {
+                // Fit the page to the viewport (centred) once its first tiles
+                // are ready. Stays in "auto-fit" mode (see onResize) so it keeps
+                // re-centring while the window/layout settles, until the user
+                // pans or zooms.
+                me.fitInImage();
             }
         });
 
@@ -420,17 +441,25 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
     fitInImage: function() {
 
         var me = this;
+        // Re-enter auto-fit: the page is now fitted/centred, so keep it that way
+        // across container resizes until the user next pans or zooms.
+        me._autoFit = true;
+        // Make sure OSD knows its current container size before homing.
+        me.syncViewerSize();
         // Drive the component declaratively: bump the 'triggerhome' attribute so
         // attributeChangedCallback fires even on repeated fits.
         if (me.webComponent) {
             me._homeNonce = (me._homeNonce || 0) + 1;
             me.webComponent.setAttribute('triggerhome', String(me._homeNonce));
         }
+        me.redrawViewer();
     },
 
     setZoomAndCenter: function(z) {
 
         var me = this;
+        // An explicit zoom (e.g. the zoom slider) leaves the initial auto-fit.
+        me._autoFit = false;
         // Drive the zoom via the 'zoom' attribute. The slider stays in sync with
         // the actual viewport zoom (via the 'zoomChanged' event), so consecutive
         // values differ and attributeChangedCallback fires reliably.
@@ -465,6 +494,10 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
 
         var me = this;
         if(!me.webComponent || !me.rect) return;
+
+        // Ensure OSD's viewport matches the current container size (its autoResize
+        // does not fire in this embedding) before fitting the stored rectangle.
+        me.syncViewerSize();
 
         var r = me.rect;
         var x = r.x;
@@ -501,12 +534,62 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         me._fitNonce = (me._fitNonce || 0) + 1;
         me.webComponent.setAttribute('fitrect',
             [x, r.y, width, r.height, me._fitNonce].join(','));
+        me.redrawViewer();
     },
 
     // Re-fit the stored zone after layout changes so measure-based viewers keep
-    // the same displayed staff height when viewers are added or removed.
+    // the same displayed staff height when viewers are added or removed. For a
+    // plain page view still at its initial auto-fit, re-fit+centre the page so a
+    // container resize (layout settling on open, or a window resize) keeps it
+    // centred; once the user has panned/zoomed, their view is left untouched.
     onResize: function() {
-        this.fitStoredRect();
+        var me = this;
+        if (me.rect) {
+            me.fitStoredRect();
+        } else if (me._autoFit) {
+            me.fitInImage();
+        }
+    },
+
+    // OpenSeadragon's autoResize loop does not advance in this embedding, so it
+    // never notices that its container element changed size; every fit/home then
+    // uses the stale initial size and the image ends up off-centre / wrongly
+    // zoomed. Push the element's real size into the viewport ourselves so the
+    // following fit/home works against the current container. maintain=true keeps
+    // the image placed sensibly; the caller re-fits/centres right after.
+    syncViewerSize: function() {
+        var me = this;
+        if (!me.webComponent) return;
+
+        var osd = me.webComponent.openSeaDragon;
+        if (!osd || !osd.viewport) return;
+        if (typeof OpenSeadragon === 'undefined' || !OpenSeadragon.Point) return;
+
+        var el = osd.container || osd.element;
+        if (!el) return;
+
+        var r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;
+
+        var cs = osd.viewport.getContainerSize();
+        if (Math.abs(cs.x - r.width) < 2 && Math.abs(cs.y - r.height) < 2) return;
+
+        osd.viewport.resize(new OpenSeadragon.Point(r.width, r.height), true);
+    },
+
+    // OSD's draw loop is idle in this embedding, so after a programmatic viewport
+    // change (resize / home / fitBounds) the canvas is not repainted on its own;
+    // wake it explicitly. world.update() marks the tiled image for redraw and
+    // forceRedraw() schedules the paint.
+    redrawViewer: function() {
+        var me = this;
+        if (!me.webComponent) return;
+
+        var osd = me.webComponent.openSeaDragon;
+        if (!osd) return;
+
+        if (osd.world && typeof osd.world.update === 'function') osd.world.update();
+        if (typeof osd.forceRedraw === 'function') osd.forceRedraw();
     },
 
     // Pushes a named SVG layer's raw markup + visibility to the component via
