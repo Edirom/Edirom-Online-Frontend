@@ -90,6 +90,18 @@
         </copy>
     </target>
 
+    <target name="copy-mobile">
+        <copy todir="${build.dir}/mobile" preservelastmodified="true">
+            <fileset dir="${basedir}/mobile">
+                <exclude name=".git/**"/>
+                <exclude name=".github/**"/>
+                <exclude name="Dockerfile"/>
+                <exclude name="docker-compose.yml"/>
+                <exclude name="README.md"/>
+            </fileset>
+        </copy>
+    </target>
+
     <target name="copy-xar-resources">
         <copy todir="${build.dir}" preservelastmodified="true">
             <fileset dir="${exist.dir}">
@@ -122,6 +134,7 @@
         <echo message="EDIROM AFTER RESOURCES"/>
         <antcall target="download-euryanthe"/>
         <antcall target="inject-properties"/>
+        <antcall target="copy-mobile"/>
         <antcall target="copy-xar-resources"/>
         <antcall target="-xar"/>
     </target>

@@ -21,6 +21,12 @@
     <head>
         <meta charset="UTF-8"/>
         <title>EdiromOnline</title>
+
+        <!-- **Mobile/Desktop gateway** — must run before any other script/link
+             below so a mobile redirect happens before Desktop's CSS/JS loads. -->
+        <script src="resources/js/bowser/bowser_2.14.1.js"></script>
+        <script src="resources/js/device-gateway.js"></script>
+
         <!-- **CSS** -->
         <!--<link rel="stylesheet" type="text/css" href="resources/css/edirom.css"/>-->
         <link rel="stylesheet" type="text/css" href="resources/css/annotation-style.css"/>
