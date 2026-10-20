@@ -196,24 +196,34 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
                 text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
                 menu: menu
             });
-        },
+        });
 
-        me.annotMenu.enable());
+        me.annotMenu.enable();
+
+        // Push the actual taxonomy id lists to the viewer right away so the
+        // component starts with the real filter (all visible) instead of the
+        // template's placeholder, without waiting for the user to toggle a menu.
+        me.annotationFilterChanged();
     },
 
     annotationFilterChanged: function(item, event) {
         var me = this;
 
-        if (!me.annotationsVisible) return;
-
+        // Build, per taxonomy, the set of visible (checked) class ids and the
+        // set of all class ids. Also build the generic exclusion set for the web
+        // component: every taxonomy token the user has UNCHECKED.
         var visibleTaxonomies = {};
         var allTaxonomyIds = {};
+        var hiddenFilters = [];
         Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
             var visibleIds = [];
             var allIds = [];
             menu.items.each(function(menuItem) {
                 allIds.push(menuItem.classId);
-                if (menuItem.checked) visibleIds.push(menuItem.classId);
+                if (menuItem.checked)
+                    visibleIds.push(menuItem.classId);
+                else
+                    hiddenFilters.push(menuItem.classId);
             });
             visibleTaxonomies[taxonomyId] = visibleIds;
             allTaxonomyIds[taxonomyId] = allIds;
@@ -225,8 +235,29 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             console.log(visibleTaxonomies);
         }
 
-        me.pageBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
-        me.measureBasedView.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
+        me.pageBasedView.annotationFilterChanged(hiddenFilters, visibleTaxonomies, allTaxonomyIds);
+        me.measureBasedView.annotationFilterChanged(hiddenFilters, visibleTaxonomies, allTaxonomyIds);
+    },
+
+    // Updates the annotation filter menu checkboxes to mirror the given HIDDEN
+    // token set. Called when the filter changes outside the menu (e.g. the
+    // image component's hidden-filters attribute is set externally). Child
+    // handlers are suppressed (setChecked second arg) so this does not loop back
+    // into annotationFilterChanged.
+    syncAnnotationFilterMenu: function(hiddenFilters) {
+        var me = this;
+
+        var hidden = Array.isArray(hiddenFilters) ? hiddenFilters : [];
+
+        // A menu item is checked (visible) unless its class id is in the hidden set.
+        Ext.Object.each(me.annotTaxonomyMenus, function(taxonomyId, menu) {
+            if(menu == null || menu.items.length == 0) return;
+            menu.items.each(function(item) {
+                var shouldCheck = hidden.indexOf(item.classId) === -1;
+                if(item.checked !== shouldCheck)
+                    item.setChecked(shouldCheck, true);
+            });
+        });
     },
 
     setMovements: function(movements) {
@@ -530,6 +561,14 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         }
 
         me.activeView = viewId;
+
+        // Reflect the active view as a declarative attribute on the page-based
+        // view's image component, so the component (and anything observing it)
+        // is driven by the same attribute convention as the other controls.
+        var iv = me.pageBasedView && me.pageBasedView.imageViewer;
+        if (iv && iv.webComponent && iv.webComponent.setAttribute) {
+            iv.webComponent.setAttribute('view-mode', viewId);
+        }
     },
 
     fitFacsimile: function() {
@@ -565,22 +604,17 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.measuresVisible = sessionStorage.getItem('edirom-measures-visible-'+me.id) === 'true';
         me.measuresVisibilitySetLocaly = iconElem.hasAttribute('pressed');
 
-        // just hide measures first to avoid double display
-        me.hideMeasures();
-
         // fire event
         this.fireEvent('measuresVisibilityChange', me, me.measuresVisible);
 
     },
 
-    showMeasures: function(measures) {
+    toggleAnnotations: function(item, state) {
         var me = this;
-        me.pageBasedView.showMeasures(measures);
-    },
+        me.annotationsVisible = state;
+        me.annotationsVisibilitySetLocaly = true;
 
-    hideMeasures: function() {
-        var me = this;
-        me.pageBasedView.hideMeasures();
+        this.fireEvent('annotationsVisibilityChange', me, state);
     },
 
     gotoMeasureDialog: function() {
@@ -618,6 +652,26 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.pageBasedView.showZone(zone);
     },
 
+    // Jump to a measure in the page-based image component via its semantic
+    // 'measure' attribute. `m` is the resolved region returned by
+    // getMeasurePage.xql ({pageId, ulx, uly, lrx, lry, ...}).
+    gotoMeasureInImage: function(measureKey, m) {
+        var me = this;
+        if (me.activeView !== 'pageBasedView')
+            me.switchInternalView('pageBasedView');
+        me.pageBasedView.gotoMeasureInImage(measureKey, m);
+    },
+
+    // Load / jump to a movement's first page in the page-based image component
+    // via its semantic 'mdiv' attribute. `pageId` is the movement's first page
+    // id returned by getMovementsFirstPage.xql.
+    gotoMdivInImage: function(mdivKey, pageId) {
+        var me = this;
+        if (me.activeView !== 'pageBasedView')
+            me.switchInternalView('pageBasedView');
+        me.pageBasedView.gotoMdivInImage(mdivKey, pageId);
+    },
+
     toggleAnnotations: function() {
 
 
@@ -650,15 +704,61 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
 
     },
 
-    showAnnotations: function(annotations) {
+    // Mirror the annotation toolbar button's pressed state onto the actual
+    // visibility reported by the image component (show-annotations attribute),
+    // so the button always reflects the real state even when the attribute is
+    // changed outside the button (API or direct edit). Does NOT fire the
+    // visibility event (the component is already in this state).
+    syncAnnotationsButton: function(visible) {
         var me = this;
-        me.pageBasedView.showAnnotations(annotations);
+        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
+        if(!iconElem) return;
+
+        if(visible) {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
+        } else {
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
+        }
+
+        me.annotationsVisible = visible;
+        me.annotationsVisibilitySetLocaly = visible;
+    },
+
+    // Pushes the page's annotations to the image component once (push model);
+    // the toolbar button then only toggles their visibility.
+    setAnnotationsData: function(annotations, pageId, visible) {
+        var me = this;
+        me.pageBasedView.setAnnotationsData(annotations, pageId, visible);
         me.annotationFilterChanged();
+    },
+
+    showAnnotations: function() {
+        var me = this;
+        me.pageBasedView.showAnnotations();
     },
 
     hideAnnotations: function() {
         var me = this;
         me.pageBasedView.hideAnnotations();
+    },
+
+    // Pushes the page's measures to the image component once (push model); the
+    // toolbar button then only toggles their visibility.
+    setMeasuresData: function(measures, pageId, visible) {
+        var me = this;
+        me.pageBasedView.setMeasuresData(measures, pageId, visible);
+    },
+
+    showMeasures: function() {
+        var me = this;
+        me.pageBasedView.showMeasures();
+    },
+
+    hideMeasures: function() {
+        var me = this;
+        me.pageBasedView.hideMeasures();
     },
 
     getContentConfig: function() {

@@ -36,6 +36,15 @@ Ext.define('EdiromOnline.view.window.util.PageSpinner', {
         me.owner.setPage(me.combo, me.combo.store);
     },
 
+    // Updates only the displayed page number without triggering navigation.
+    // Used to keep the spinner in sync when the page is changed elsewhere
+    // (e.g. by the image viewer's own page-changed event).
+    syncPage: function(id) {
+        var me = this;
+        if(me.combo)
+            me.combo.setValue(id);
+    },
+
     setStore: function(store) {
         var me = this;
         me.removeAll();
