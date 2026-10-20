@@ -34,6 +34,14 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     annotationsLoaded: false,
     annotationsVisibilitySetLocaly: false,
 
+    // Resolves this view's own text container element WITHOUT going through
+    // document.getElementById/Ext.get(string) - this view can be reparented
+    // into a WinBox's shadow root (see Desktop.wrapEdiromWindowInWinBox),
+    // where a document-scoped id lookup can't see it.
+    getTextContEl: function() {
+        return this.el.dom.querySelector('#' + this.id + '_textCont');
+    },
+
     initComponent: function () {
 
         this.addEvents('annotationsVisibilityChange',
@@ -150,14 +158,14 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     },
 
     toggleNotesVisibility: function(button) {
-        var notes = Ext.query('#' + this.id + '_textCont .note');
+        var notes = Ext.query('.note', this.getTextContEl());
         Ext.Array.each(notes, function(name, index, notes){
             Ext.get(name).toggleCls('hidden')
         });
     },
 
     togglePbVisibility: function(button) {
-        var notes = Ext.query('#' + this.id + '_textCont .pagebreak');
+        var notes = Ext.query('.pagebreak', this.getTextContEl());
         Ext.Array.each(notes, function(name, index, notes){
             Ext.get(name).toggleCls('hidden')
         });
@@ -167,7 +175,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         var me = this;
 
         if(me.annotationsLoaded) {
-            var annos = Ext.query('#' + me.id + '_textCont div.annotation');
+            var annos = Ext.query('div.annotation', me.getTextContEl());
             Ext.Array.each(annos, function(anno) {
                 Ext.get(anno).show();
                 anno.style.display = 'inline-block';
@@ -272,7 +280,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     hideAnnotations: function() {
         var me = this;
-        var annos = Ext.query('#' + me.id + '_textCont div.annotation');
+        var annos = Ext.query('div.annotation', me.getTextContEl());
         Ext.Array.each(annos, function(anno) {
             var a = Ext.get(anno);
             a.setVisibilityMode(Ext.Element.DISPLAY);
@@ -360,7 +368,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             allTaxonomyIds[taxonomyId] = allIds;
         });
 
-        var annotations = Ext.query('#' + this.id + '_textCont div.annotation, #' + this.id + '_textCont span.annotation');
+        var annotations = Ext.query('div.annotation, span.annotation', this.getTextContEl());
         var fn = Ext.bind(function(annotation) {
             var filterElement = annotation.tagName.toLowerCase() === 'div'
                 ? annotation.querySelector('.annotIcon')
@@ -406,11 +414,11 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     setContent: function(text) {
         var me = this;
-
-		Ext.fly(me.id + '_textCont').update(text);
+		
+		Ext.fly(me.getTextContEl()).update(text);
 		this.fireEvent('documentLoaded', me);
-
-		Ext.Array.each(Ext.query('.scrollto'), function(dom, n, all) {
+		
+		Ext.Array.each(Ext.query('.scrollto', me.getTextContEl()), function(dom, n, all) {
             var elem = Ext.get(dom);
             var scrollTo = elem.getAttribute('data-footnote');
             elem.on('click', Ext.bind(me.scrollToId, me, [scrollTo]));
@@ -473,8 +481,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 	loadInternalId: function (internalId, internalIdType) {
 		var me = this;
 
-        var container = Ext.fly(me.id + '_textCont');
-        var elem = container.getById(me.id + '_' + me.window.internalId);
+        var elem = me.getTextContEl().querySelector('#' + me.id + '_' + me.window.internalId);
         if(elem) {
             me.window.requestForActiveView(me);
             me.scrollToId(me.window.internalId);
@@ -482,8 +489,8 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     },
 
     scrollToId: function(id) {
-
-        var elem = Ext.get(this.id + '_' + id);
+        
+        var elem = Ext.get(this.getTextContEl().querySelector('#' + this.id + '_' + id));
 
         var showHide = !elem.isVisible();
 

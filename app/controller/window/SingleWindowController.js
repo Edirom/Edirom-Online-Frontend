@@ -38,15 +38,12 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
     ],
 
     init: function() {
-        this.control({
-            'ediromWindow': {
-                show: this.onWindowRendered,
-                single: true
-            }
-        });
     },
 
-    onWindowRendered: function(win) {
+    // WindowController calls this before the ExtJS window is added to the
+    // desktop. Pure audio resources are normally intercepted earlier by
+    // LinkController; all other resources retain the normal ExtJS lifecycle.
+    loadWindowContent: function(win) {
         var me = this;
         var lang = getPreference('application_language');
 
@@ -71,16 +68,83 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 
         var me = this;
         var views = [];
-        
+
+        // If this resource has an audioView, its sibling xmlView entry (if any) is
+        // shown inline in the audio WinBox as its "XML-Ansicht" mode instead of also
+        // opening as a separate, persisting ExtJS tab/window.
+        var hasAudioView = Ext.Array.some(config.views, function(view) { return view.type == "audioView"; });
+        var xmlViewEntries = Ext.Array.filter(config.views, function(view) { return view.type == "xmlView"; });
+        var xmlViewEntry = xmlViewEntries.length ? xmlViewEntries[0] : null;
+
+        // A verovioView folds its ENTIRE resource (score + sibling textView/xmlView
+        // entries) into one WinBox popup with its own "Ansicht" switcher, mirroring
+        // the ExtJS window's TopBar ("Ansicht" + "Gehe zu" in the same header row) —
+        // so the ExtJS shell is skipped entirely rather than only the verovioView tab.
+        // ONLY for a plain top-level open though (internalIdType 'unknown', e.g. a
+        // navigator click): a real internal-link target (internalIdType 'annot',
+        // 'note', 'zone', 'measure', ...) — e.g. clicking an annotation icon in the
+        // score — must fall through to the normal ExtJS window below, whose existing
+        // view-weight logic (Window.loadInternalId) picks the matching tab (like
+        // annotationView) instead of always landing back on the score.
+        var hasVerovioView = Ext.Array.some(config.views, function(view) { return view.type == "verovioView"; });
+        var isPlainOpen = !config.internalIdType || config.internalIdType == "unknown";
+
+        // Render windows that contain complex or document-oriented views in a
+        // WinBox shell while retaining their existing ExtJS view/tab lifecycle.
+        var hasWinBoxView = Ext.Array.some(config.views, function(view) {
+            return view.type == "sourceView" ||
+                view.type == "annotationView" ||
+                view.type == "summaryView" ||
+                view.type == "headerView" ||
+                view.type == "iFrameView" ||
+                view.type == "textFacsimileSplitView" ||
+                view.type == "facsimileView";
+        });
+
+        if (hasVerovioView && isPlainOpen) {
+            this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+            win.destroy();
+            return;
+        }
+
+        // Pure text/xml/iFrame resources (front-matter documents like "Vorwort"/
+        // "Lies mich!"/"TEI Testdatei" — no facsimile, annotation, source or other
+        // view) fold into the SAME multi-pane WinBox as verovioView resources above
+        // (openVerovioView also works with no score pane), instead of opening the
+        // full ExtJS shell window. Same isPlainOpen guard: a deep link into a
+        // specific note/annotation inside the text still needs the normal ExtJS
+        // window's internalId routing.
+        var hasFoldableContent = Ext.Array.some(config.views, function(view) { return view.type == "textView" || view.type == "iFrameView"; });
+        var onlyFoldableTypes = config.views.length > 0 && Ext.Array.every(config.views, function(view) { return view.type == "textView" || view.type == "xmlView" || view.type == "iFrameView"; });
+        if (hasFoldableContent && onlyFoldableTypes && isPlainOpen) {
+            this.application.getController('desktop.Desktop').openVerovioView(config.views, config.title);
+            win.destroy();
+            return;
+        }
+
         Ext.Array.each(config.views, function(view) {
 	        var uri = view.uri;
-	        
+
 	        if(view.type == "iFrameView" && config["term"] != "" && config["path"] != "") {
 		        uri = uri + "?term=" + config["term"] + "&path=" + config["path"] + "#searchTarget";
 	        }
-	        
+
 	        if(view.type == "iFrameView" && config["internalId"] != "") {
 		        uri = uri + "#" + config["internalId"];
+	        }
+
+	        // Audio content opens in its own WinBox popup instead of an ExtJS tab.
+	        if(view.type == "audioView") {
+		        var xmlUri = xmlViewEntry ? xmlViewEntry.uri : null;
+		        // config.title (not the per-view label) matches the resource's own
+		        // navigator label, e.g. "Akkord Beispiele".
+		        this.application.getController('desktop.Desktop').openAudioView(uri, config.title, xmlUri);
+		        return;
+	        }
+
+	        // Already folded into the audio WinBox above — skip the separate ExtJS tab.
+	        if(view.type == "xmlView" && hasAudioView) {
+		        return;
 	        }
 
             views.push(this.createView(view.type, {
@@ -94,9 +158,32 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
 
         }, me);
 
+        // Every view was folded into the audio WinBox (audioView + xmlView only, no
+        // other tabs) — close the ExtJS shell window instead of leaving it persisting
+        // behind the WinBox popup.
+        if (views.length === 0 && hasAudioView) {
+            win.destroy();
+            return;
+        }
+
         config.views = views;
+        this.application.getController('desktop.Desktop').addWindowToActiveDesktop(win);
         win.setWindowConfig(config);
+
+        // Must run AFTER addWindowToActiveDesktop (so its animateTarget override
+        // sticks) and BEFORE the window's first render (show()) - header/
+        // draggable/resizable/shadow are only read by ExtJS at render time.
+        if (hasWinBoxView) {
+            win.applyWinBoxChrome();
+        }
+
+        win.show();
+
+        if (hasWinBoxView) {
+            this.application.getController('desktop.Desktop').wrapEdiromWindowInWinBox(win);
+        }
     },
+
 
     createView: function(type, config) {
 
@@ -137,8 +224,8 @@ Ext.define('EdiromOnline.controller.window.SingleWindowController', {
             case 'audioView': return 'EdiromOnline.view.window.audio.AudioView';
 	    case 'verovioView': return 'EdiromOnline.view.window.source.VerovioView';
             case 'headerView': return 'EdiromOnline.view.window.HeaderView';
-            case 'textView': return 'EdiromOnline.view.window.text.TextView';
             case 'facsimileView': return 'EdiromOnline.view.window.text.FacsimileView';
+            case 'textView': return 'EdiromOnline.view.window.text.TextView';
             case 'annotationView': return 'EdiromOnline.view.window.AnnotationView';
             case 'textFacsimileSplitView': return 'EdiromOnline.view.window.text.TextFacsimileSplitView';
             //TODO:case 'searchView': return 'EdiromOnline.view.window.SearchView';

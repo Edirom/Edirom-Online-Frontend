@@ -1,5 +1,5 @@
 /* legacy annotation annotIcon styling */
-.annotation .annotIcon.Notentext:before {
+.annotIcon.annotation\.category\.notentext:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D5";
@@ -8,7 +8,7 @@
     left: 0.55em
 }
 
-.annotation .annotIcon.HalsungBalkung:before {
+.annotIcon.annotation\.category\.halsungBalkung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1F3";
@@ -17,7 +17,7 @@
     left: 0.59em
 }
 
-.annotation .annotIcon.TaktartMetrum:before {
+.annotIcon.annotation\.category\.taktartMetrum:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E099";
@@ -27,7 +27,7 @@
     font-size: 25px;
 }
 
-.annotation .annotIcon.Pausensetzung:before {
+.annotIcon.annotation\.category\.pausensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4E5";
@@ -37,7 +37,7 @@
     font-size: 17px;
 }
 
-.annotation .annotIcon.Tondauer:before {
+.annotIcon.annotation\.category\.tondauer:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E1D2";
@@ -47,7 +47,7 @@
     font-size: 20px;
 }
 
-.annotation .annotIcon.Vortragsanweisung:before {
+.annotIcon.annotation\.category\.vortragsanweisung:before {
     line-height: 1;
     font-family: Bravura;
     content: "rit.";
@@ -58,7 +58,7 @@
     font-size: 10px;
 }
 
-.annotation .annotIcon.Artikulation:before {
+.annotIcon.annotation\.category\.artikulation:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4B2";
@@ -68,7 +68,7 @@
     font-size: 25px;
 }
 
-.annotation .annotIcon.Dynamik:before {
+.annotIcon.annotation\.category\.dynamik:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E520";
@@ -78,7 +78,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Pedalsetzung:before {
+.annotIcon.annotation\.category\.pedalsetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E650";
@@ -88,7 +88,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Phrasierungsboegen:before {
+.annotIcon.annotation\.category\.phrasierungsboegen:before {
     line-height: 1;
 /*    font-family: Bravura;*/
     content: "---";
@@ -98,7 +98,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Bogensetzung:before {
+.annotIcon.annotation\.category\.bogensetzung:before {
     line-height: 1;
     font-family: Bravura;
     content: "\E4BA";
@@ -108,7 +108,7 @@
     font-size: 40px;
 }
 
-.annotation .annotIcon.Beschreibung:before {
+.annotIcon.annotation\.category\.beschreibung:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f0e5";
@@ -118,7 +118,7 @@
     top: -1px;
 }
 
-.annotation .annotIcon.Hinzufügung:before {
+.annotIcon.annotation\.category\.hinzufügung:before {
     line-height: 1;
     content: "+";
     position: relative;
@@ -127,7 +127,7 @@
     font-size: 19px;
 }
 
-.annotation .annotIcon.RasurTektur:before {
+.annotIcon.annotation\.category\.rasurTektur:before {
     line-height: 1;
     font-family: FontAwesome;
     content: "\f12d";
@@ -137,7 +137,7 @@
     font-size: 12px;
 }
 
-.annotation .annotIcon.Streichung:before {
+.annotIcon.annotation\.category\.streichung:before {
     line-height: 1;
     /*font-family: Bravura;*/
     content: "xxx";
@@ -147,7 +147,7 @@
     font-size: 9px;
 }
 
-.annotation .annotIcon.Liedtext:before {
+.annotIcon.annotation\.category\.liedtext:before {
     line-height: 1;
     /*font-family: Bravura;
     content: "\E595";*/
