@@ -278,6 +278,19 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         me.imgPath = path;
         me.imgId = pageId;
 
+        // Loading a brand-new single image invalidates every overlay pushed for
+        // the previous image. Single-image viewers (e.g. the measure-based
+        // view's per-voice viewers) push their measures page-agnostically, so
+        // without this reset the previous image's measure/annotation zones stay
+        // in the zone maps and get re-rendered on top of the new image's own
+        // overlays (duplicate measure numbers across image switches). The
+        // sequence-based page view never calls showImage (it uses goToPageById
+        // + removeShapes), so it is unaffected.
+        me._measureZones = {};
+        me._annotationZones = {};
+        me._mdivZones = {};
+        me.pushZonesData();
+
         me.webComponent.setAttribute('tilesources', JSON.stringify([me.buildTileSource(path, width, height)]));
 
         me.fireEvent('imageChanged', me, path, pageId);
