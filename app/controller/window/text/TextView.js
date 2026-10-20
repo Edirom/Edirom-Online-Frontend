@@ -55,7 +55,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             {
                 resource: uri,
                 idPrefix: view.id + '_',
-                mediaType: 'text/html'
+                mediaType: 'text/html',
+                htmlProfile: 'edirom-text'
             },
             Ext.bind(function(response){
                 this.contentLoaded(view, response.responseText);
@@ -88,20 +89,38 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             'GET',
             {
                 uri: view.uri,
-                lang: getPreference('application_language')
+                lang: getPreference('application_language'),
+                mode: 'taxonomies'
             },
             Ext.bind(function(response){
-                var data = Ext.JSON.decode(response.responseText);
-                var priorities = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data.priorities
-                });
-                var categories = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data.categories
-                });
+                var me = this;
+                var data = response.responseText;
 
-                me.annotInfosLoaded(priorities, categories, view);
+                data = Ext.JSON.decode(data);
+
+                // if taxonomies array is empty but categories and priorities are
+                // populated merge those to a taxonomies array
+                var taxonomies = data['taxonomies'] || [];
+                if (taxonomies.length === 0) {
+                    var categories = data['categories'] || [];
+                    var priorities = data['priorities'] || [];
+                    if (categories.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromCategory',
+                            label: 'ediromCategory',
+                            items: categories
+                        });
+                    }
+                    if (priorities.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromPriority',
+                            label: 'ediromPriority',
+                            items: priorities
+                        });
+                    }
+                }
+
+                me.annotInfosLoaded(taxonomies, view);
             }, this)
         );
     },
@@ -121,7 +140,7 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
                 },
                 Ext.bind(function(response){
                     var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
+                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
                         data: Ext.JSON.decode(response.responseText)
                     });
 
@@ -137,8 +156,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.showAnnotations(annotations);
     },
 
-    annotInfosLoaded: function(priorities, categories, view) {
-        view.setAnnotationFilter(priorities, categories);
+    annotInfosLoaded: function(taxonomies, view) {
+        view.setAnnotationFilter(taxonomies);
     },
 
     onGotoChapter: function(view, chapter) {

@@ -22,7 +22,6 @@ Ext.define('EdiromOnline.Application', {
     extend: 'Ext.app.Application',
     
     controllers: [
-        'AJAXController',
         'ConfigController',
         'CookieController',
         'LanguageController',
@@ -46,7 +45,8 @@ Ext.define('EdiromOnline.Application', {
         'window.source.VerovioView',
         'window.text.FacsimileView',
         'window.text.TextFacsimileSplitView',
-        'window.text.TextView'
+        'window.text.TextView',
+        'webComponents.EdiromConnectedWorkspace'
     ],
     
     models: [
@@ -77,11 +77,14 @@ Ext.define('EdiromOnline.Application', {
     launch: function() {
         var me = this;
 
+        // initialize methods from non-ExtJS controllers
+        window.initializeAJAX(this);
+
+        // load config and initialize application
         me.getController('ConfigController').loadConfig(function (config) {
             me.backendURL = config.backendURL || me.backendURL;
             EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
-            EdiromOnline.model.Annotation.updateProxyUrl(me.backendURL);
             me.initializeApplication();
         }, me);
     },
@@ -97,13 +100,9 @@ Ext.define('EdiromOnline.Application', {
 
         if(editionParam == null) {
 
-            Ext.Ajax.request({
-                url: me.backendURL + "data/xql/getEditions.xql",
-                method: 'GET',
-                params: {},
-                success: Ext.bind(function(response){
-                    var editions = JSON.parse(response.responseText);
-                    
+            fetch(me.backendURL + "data/xql/getEditions.xql")
+                .then(response => response.json())
+                .then(editions => {
                     // If there is no edition in the backend
                     if(editions == null) {
                         let html = `<div class="container" style="margin: 8.75%;">
@@ -154,12 +153,12 @@ Ext.define('EdiromOnline.Application', {
                         html += '</ul></div>';
                         document.body.innerHTML = html;
                     }                 
+                })
+                .catch(error => {
+                    console.error('Error fetching editions:', error);
+                });
 
-                }, this),
-                async: true
-            });
-
-        }else {
+        } else {
             me.activeEdition = editionParam;
             me.loadEdiromForEdition();
         }

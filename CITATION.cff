@@ -11,44 +11,44 @@ authors:
   - given-names: Benjamin W.
     family-names: Bohl
     orcid: https://orcid.org/0000-0001-7217-9167
-  - given-names: Nikolaos
-    family-names: Beer
-    orcid: https://orcid.org/0009-0005-4739-5227
   - given-names: Daniel
     family-names: Jettka
     orcid: https://orcid.org/0000-0002-2375-2227
+  - given-names: Nikolaos
+    family-names: Beer
+    orcid: https://orcid.org/0009-0005-4739-5227
   - given-names: Silke
     family-names: Reich
     orcid: https://orcid.org/0009-0007-8817-0299
+  - given-names: Dennis
+    family-names: Friedl
+    orcid: https://orcid.org/0009-0000-4410-4627
   - given-names: Kristin
     family-names: Herold
     orcid: https://orcid.org/0000-0003-2915-353X
+  - given-names: Hizkiel
+    family-names: Alemayehu
+    orcid: https://orcid.org/0009-0006-3345-086X
+  - given-names: Francesco
+    family-names: Maccarini
+    orcid: https://orcid.org/0000-0002-0219-5898
   - given-names: Peter
     family-names: Stadler
     orcid: https://orcid.org/0000-0002-2544-1481
   - given-names: Tobias
     family-names: Bachmann
     orcid: https://orcid.org/0009-0003-9952-7899
-  - given-names: Hizkiel
-    family-names: Alemayehu
-    orcid: https://orcid.org/0009-0006-3345-086X
-  - given-names: Dennis
-    family-names: Friedl
-    orcid: https://orcid.org/0009-0000-4410-4627
-  - given-names: Francesco
-    family-names: Maccarini
-    orcid: https://orcid.org/0000-0002-0219-5898
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.21394137
+    value: 10.5281/zenodo.23059179
     description: Edirom Online Frontend
 repository-code: https://github.com/Edirom/Edirom-Online-Frontend
-commit: 07a72706f5d3c2084bf4adbb40410e05a574cd8a
+commit: 5fbcf90fe4383095220fd7761a7be9812577cb8c
 abstract: >-
   Edirom Online Frontend is the frontend for the Edirom 
   Online which is used for the presentation and
   analysis of critical musical editions in a digital format,
   particularly in the fields of musicology and philology.
 license: GPL-3.0
-version: v1.4.0
-date-released: 2026-07-21
+version: v1.5.0
+date-released: 2026-09-30
