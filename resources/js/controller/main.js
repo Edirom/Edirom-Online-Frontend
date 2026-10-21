@@ -24,7 +24,8 @@
     "use strict";
 
     var controllerFiles = [
-        "resources/js/controller/ajax-controller.js"
+        "resources/js/controller/ajax-controller.js",
+        "resources/js/controller/notification-controller.js"
     ];
 
     controllerFiles.forEach(function (file) {
