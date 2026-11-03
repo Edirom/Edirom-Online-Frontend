@@ -61,6 +61,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         <edirom-icon role="button" id="icon_toggleMeasuresGlobally" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
                         <edirom-icon role="button" id="icon_toggleAnnotationsGlobally" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
                         <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
+                        <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
                     </div>
                 `,
                 listeners: {
@@ -114,12 +115,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         openConcordanceNavigatorIconElem.addEventListener('click', function() { me.fireEvent('openConcordanceNavigator'); });
                     }
                 }
-            },
-
-            // separator icon
-            {
-                xtype: 'component', 
-                html: '<edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>'
             },
 
             me.windowBar,
