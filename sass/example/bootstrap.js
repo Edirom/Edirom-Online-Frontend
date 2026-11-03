@@ -6,7 +6,6 @@
  */
 Ext.Loader.addClassPathMappings({
   "EdiromOnline": "../../app",
-  "EdiromOnline.view.desktop.TrayClock": "../../app/view/desktop/TaskBar.js",
   "EdiromOnline.view.window.image.ImageLoader": "../../app/view/window/image/ImageViewer.js",
   "EdiromOnline.view.window.source.GotoMsg": "../../app/view/window/source/SourceView.js",
   "EdiromOnline.view.window.source.HorizontalMeasureViewer": "../../app/view/window/source/MeasureBasedView.js",
@@ -57,7 +56,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.desktop.Desktop": [],
   "EdiromOnline.view.desktop.TaskBar": [],
   "EdiromOnline.view.desktop.TopBar": [],
-  "EdiromOnline.view.desktop.TrayClock": [],
   "EdiromOnline.view.navigator.Navigator": [],
   "EdiromOnline.view.utils.EnhancedSlider": [],
   "EdiromOnline.view.utils.Lightbox": [],
@@ -967,9 +965,6 @@ Ext.ClassManager.addNameAliasMappings({
   ],
   "EdiromOnline.view.desktop.TopBar": [
     "widget.topbar"
-  ],
-  "EdiromOnline.view.desktop.TrayClock": [
-    "widget.trayclock"
   ],
   "EdiromOnline.view.navigator.Navigator": [
     "widget.navigator"

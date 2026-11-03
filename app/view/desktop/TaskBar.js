@@ -47,8 +47,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         me.windowBar = new Ext.toolbar.Toolbar(me.getWindowBarConfig());
 
-        me.tray = new Ext.toolbar.Toolbar(me.getTrayConfig());
-
         me.items = [
             {
                 xtype: 'component',
@@ -140,21 +138,8 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
                         openHelpIconElem.addEventListener('click', function() { me.fireEvent('openHelp'); });
                     }
                 }
-            },
+            }
             
-
-            // language switch button
-            /*{
-                xtype: 'component', 
-                html: '',
-                listeners: {
-                    afterrender: function(c) {
-                        c.getEl().on('click', function(e) { me.fireEvent('switchLanguage'); });
-                    }
-                }
-            },*/
-
-            me.tray
         ];
 
         me.callParent();
@@ -173,19 +158,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             items: [ '&#160;' ],
             layout: { overflowHandler: 'Scroller' }
         };
-    },
-
-    /**
-     * This method returns the configuration object for the Tray toolbar. A derived
-     * class can override this method, call the base version to build the config and
-     * then modify the returned object before returning it.
-     */
-    getTrayConfig: function () {
-        var ret = {
-            items: this.trayItems
-        };
-        delete this.trayItems;
-        return ret;
     },
 
     getWindowBtnFromEl: function (el) {
@@ -279,60 +251,4 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         }
     }
     
-});
-
-/**
- * @class Ext.ux.desktop.TrayClock
- * @extends Ext.toolbar.TextItem
- * This class displays a clock on the toolbar.
- */
-Ext.define('EdiromOnline.view.desktop.TrayClock', {
-    extend: 'Ext.toolbar.TextItem',
-
-    alias: 'widget.trayclock',
-
-    cls: 'ux-desktop-trayclock',
-
-    html: '&#160;',
-
-    timeFormat: 'g:i A',
-
-    tpl: '{time}',
-
-    initComponent: function () {
-        var me = this;
-
-        me.callParent();
-
-        if (typeof(me.tpl) == 'string') {
-            me.tpl = new Ext.XTemplate(me.tpl);
-        }
-    },
-
-    afterRender: function () {
-        var me = this;
-        Ext.Function.defer(me.updateTime, 100, me);
-        me.callParent();
-    },
-
-    onDestroy: function () {
-        var me = this;
-
-        if (me.timer) {
-            window.clearTimeout(me.timer);
-            me.timer = null;
-        }
-
-        me.callParent();
-    },
-
-    updateTime: function () {
-        var me = this, time = Ext.Date.format(new Date(), me.timeFormat),
-            text = me.tpl.apply({ time: time });
-        if (me.lastText != text) {
-            me.setText(text);
-            me.lastText = text;
-        }
-        me.timer = Ext.Function.defer(me.updateTime, 10000, me);
-    }
 });

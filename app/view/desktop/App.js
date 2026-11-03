@@ -101,11 +101,6 @@ Ext.define('EdiromOnline.view.desktop.App', {
         };
 
         Ext.apply(cfg, me.taskbarConfig);
-        Ext.apply(cfg, {
-            trayItems: [
-                { xtype: 'trayclock', flex: 1 }
-            ]
-        });
 
         return cfg;
     },
