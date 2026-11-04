@@ -1,3 +1,9 @@
+/* The viewer component draws these badges' symbol as an inline SVG (centred by
+   geometry); suppress the CSS ::before glyph so it is not drawn twice. */
+.annotIcon.edirom-symbol:before {
+    display: none !important;
+}
+
 /* annotation annotIcon styling — selectors match the runtime category token
    `annotation.category.<id>` (dots escaped, exactly like the Weber edition's
    `wega.annotation.category.<id>` rules). */
