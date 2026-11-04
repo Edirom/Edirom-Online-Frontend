@@ -25,6 +25,16 @@ var ANNOTATION_ICON_MARKUP = {
     'annotation.category.rasurTektur': '<edirom-icon name="ink_eraser"></edirom-icon>'
 };
 
+// Symbol geometry for a badge's categories. Derived from whatever annotation CSS
+// the page has loaded for the edition (see resources/js/annotation-symbols.js) -
+// the edition's stylesheet filename is arbitrary, so nothing is tied to a
+// specific file. The category's own `::before` glyph is read and measured, so
+// centring works for any edition's categories without a hard-coded table.
+function getAnnotationSymbol(categories) {
+    if (!EdiromOnline.getAnnotationSymbol) return null;
+    return EdiromOnline.getAnnotationSymbol('annotIcon ' + (categories || ''));
+}
+
 Ext.define('EdiromOnline.view.window.image.ImageViewer', {
   
     extend: 'Ext.panel.Panel',
@@ -732,6 +742,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 var priority = annotation.get('priority');
                 var fn = annotation.get('fn');
                 var plist = Ext.Array.toArray(annotation.get('plist'));
+                var symbol = getAnnotationSymbol(categories);
 
                 var zoneKeys = [];
                 Ext.Array.each(plist, function(shape) {
@@ -755,6 +766,7 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                         containerClass: 'annotation',
                         innerClass: innerClass,
                         iconHtml: iconHtml,
+                        symbol: symbol,
                         group: 'annotation:' + me.id + '_' + rectId,
                         title: title,
                         tooltip: '',
