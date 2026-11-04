@@ -22,7 +22,7 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
     requires: [
         "EdiromOnline.view.window.image.ImageViewer",
-        "EdiromOnline.view.window.image.OpenSeaDragonViewer"
+        "EdiromOnline.view.window.util.PageSpinner"
     ],
 
     alias: "widget.facsimileView",
@@ -46,14 +46,10 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         me.addEvents();
 
-        var image_server = getPreference("image_server");
-
-        if (image_server === "openseadragon") {
-            me.imageViewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer');
-        } else {
-            /*TODO: test agains 'digilib'? -> what should be the fallback? */
-            me.imageViewer = Ext.create('EdiromOnline.view.window.image.ImageViewer');
-        }
+        // Always use the OSD web component; digilib renders through its
+        // buildTileSource digilib branch (see ImageViewer.js). Also wires
+        // zoomChanged/imageChanged.
+        EdiromOnline.view.window.image.ImageViewerHost.initImageViewer(me);
 
         me.imageViewer.region = "center";
 
@@ -69,7 +65,6 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         me.on("afterrender", me.createMenuEntries, me, { single: true });
         me.on("afterrender", me.createToolbarEntries, me, { single: true });
-        me.imageViewer.on("zoomChanged", me.updateZoom, me);
 
         me.window.on("loadInternalLink", me.loadInternalId, me);
     },
@@ -102,6 +97,13 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
         me.pageSpinner.setStore(me.imageSet);
 
+        // When the viewer supports native pagination (ImageViewer),
+        // load the whole set as a sequence once so page changes only switch
+        // the component's page number instead of reloading a single image.
+        if (typeof me.imageViewer.setImages === 'function') {
+            me.imageViewer.setImages(me.imageSet);
+        }
+
         if (me.imageToShow != null) {
             me.pageSpinner.setPage(me.imageSet.getById(me.imageToShow));
             me.imageToShow = null;
@@ -120,6 +122,13 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         var id = combo.getValue();
         var imgIndex = me.imageSet.findExact("id", id);
         me.activePage = me.imageSet.getAt(imgIndex);
+
+        // Prefer the viewer's native sequence pagination; fall back to
+        // reloading a single image (e.g. the digilib ImageViewer).
+        if (typeof me.imageViewer.goToPageById === 'function'
+                && me.imageViewer.goToPageById(id)) {
+            return;
+        }
 
         me.imageViewer.showImage(
             me.activePage.get("path"),
@@ -143,58 +152,34 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
         return this.activePage;
     },
 
+    // Bound as listeners by ImageViewerHost.initImageViewer/createZoomSlider,
+    // so these names must stay stable even though the logic lives there.
+    onViewerImageChanged: function (viewer, path, id) {
+        EdiromOnline.view.window.image.ImageViewerHost.onViewerImageChanged(this, viewer, path, id);
+    },
+
+    updateZoom: function (zoom) {
+        EdiromOnline.view.window.image.ImageViewerHost.updateZoom(this, zoom);
+    },
+
+    zoomChanged: function (slider) {
+        EdiromOnline.view.window.image.ImageViewerHost.zoomChanged(this, slider);
+    },
+
+    fitFacsimile: function () {
+        EdiromOnline.view.window.image.ImageViewerHost.fitFacsimile(this);
+    },
+
+    hideToolbarEntries: function () {
+        EdiromOnline.view.window.image.ImageViewerHost.hideToolbarEntries(this);
+    },
+
+    showToolbarEntries: function () {
+        EdiromOnline.view.window.image.ImageViewerHost.showToolbarEntries(this);
+    },
+
     createMenuEntries: function () {
         var me = this;
-
-        var image_server = getPreference("image_server");
-
-        if (image_server === "digilib") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 10,
-                maxValue: 400,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-        if (image_server === "openseadragon") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 90,
-                maxValue: 700,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-
-        /*TODO
-            pageSppinner
-            separator
-        */
-
-        if (image_server === "digilib" || image_server === "openseadragon") {
-            return [me.zoomSlider, me.separator, me.pageSpinner];
-        } else {
-            return [me.pageSpinner];
-        }
 
         me.viewMenu = Ext.create("Ext.button.Button", {
             text: getLangString("view.window.source.SourceView_viewMenu"),
@@ -217,70 +202,22 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
 
     createToolbarEntries: function () {
         var me = this;
+        var imageViewerHost = EdiromOnline.view.window.image.ImageViewerHost;
 
-        var image_server = getPreference("image_server");
-
-        if (image_server === "digilib") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 10,
-                maxValue: 400,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-        if (image_server === "openseadragon") {
-            me.zoomSlider = Ext.create("Ext.slider.Single", {
-                width: 140,
-                value: 100,
-                increment: 5,
-                minValue: 90,
-                maxValue: 700,
-                checkChangeBuffer: 100,
-                useTips: true,
-                cls: "zoomSlider",
-                tipText: function (thumb) {
-                    return Ext.String.format("{0}%", thumb.value);
-                },
-                listeners: {
-                    change: Ext.bind(me.zoomChanged, me, [], 0),
-                },
-            });
-        }
-
-        me.pageSpinner = Ext.create(
-            "EdiromOnline.view.window.util.PageSpinner",
-            {
-                width: 121,
-                cls: "pageSpinner",
-                owner: me,
-            }
-        );
-
+        imageViewerHost.createZoomSlider(me, 140);
+        imageViewerHost.createPageSpinner(me, 121);
         me.separator = Ext.create("Ext.toolbar.Separator");
 
         var entries = [];
 
-        if (image_server === "digilib" || image_server === "openseadragon") {
+        if (me.zoomSlider) {
             entries = [me.zoomSlider, me.separator, me.pageSpinner];
         } else {
             entries = [me.pageSpinner];
         }
 
         Ext.Array.each(entries, function (entry) {
-            if (
-                image_server === "digilib" ||
-                image_server === "openseadragon"
-            ) {
+            if (me.zoomSlider) {
                 me.bottomBar.add(entry);
             } else if (
                 entry.initialCls !== "zoomSlider" &&
@@ -289,44 +226,6 @@ Ext.define("EdiromOnline.view.window.text.FacsimileView", {
                 me.bottomBar.add(entry);
             }
         });
-    },
-
-    hideToolbarEntries: function () {
-        var me = this;
-        if (typeof me.zoomSlider !== "undefined") {
-            me.zoomSlider.hide();
-        }
-        me.pageSpinner.hide();
-        if (typeof me.separator !== "undefined") {
-            me.separator.hide();
-        }
-    },
-
-    showToolbarEntries: function () {
-        var me = this;
-        if (typeof me.zoomSlider !== "undefined") {
-            me.zoomSlider.show();
-        }
-        me.pageSpinner.show();
-        if (typeof me.separator !== "undefined") {
-            me.separator.show();
-        }
-    },
-
-    fitFacsimile: function () {
-        this.imageViewer.fitInImage();
-    },
-
-    updateZoom: function (zoom) {
-        if (typeof this.zoomSlider !== "undefined") {
-            this.zoomSlider.suspendEvents();
-            this.zoomSlider.setValue(Math.round(zoom * 100));
-            this.zoomSlider.resumeEvents();
-        }
-    },
-
-    zoomChanged: function (slider) {
-        this.imageViewer.setZoomAndCenter(slider.getValue() / 100);
     },
 
     setChapters: function (chapters) {
