@@ -21,6 +21,12 @@
     <head>
         <meta charset="UTF-8"/>
         <title>EdiromOnline</title>
+
+        <!-- **Mobile/Desktop gateway** — must run before any other script/link
+             below so a mobile redirect happens before Desktop's CSS/JS loads. -->
+        <script src="resources/js/bowser/bowser_2.14.1.js"></script>
+        <script src="resources/js/device-gateway.js"></script>
+
         <!-- **CSS** -->
         <!--<link rel="stylesheet" type="text/css" href="resources/css/edirom.css"/>-->
         <link rel="stylesheet" type="text/css" href="resources/css/annotation-style.css"/>
@@ -40,8 +46,11 @@
         <!-- **Raphael JS** -->
         <script type="text/javascript" src="resources/js/raphael-min.js"></script>
                 
-        <!-- **Open Sea Dragon** -->
-        <script type="text/javascript" src="resources/js/openseadragon.min.js"></script>
+        <!-- **Edirom Image Viewer Web Component** -->
+        <script type="module" src="resources/js/edirom-image-viewer/edirom-image-viewer.js"></script>
+
+        <!-- **Shared image-viewer host wiring (plain JS, not an Ext class)** -->
+        <script type="text/javascript" src="resources/js/ImageViewerHost.js"></script>
 
         <!-- **JQUERY** -->
         <script type="text/javascript" src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous" charset="utf-8"></script>
