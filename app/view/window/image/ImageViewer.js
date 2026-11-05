@@ -237,10 +237,13 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 var annoIconId = annoIconContainerId + annoId;
 
                 // reuse existing outer div if already present (multiple annotations on same zone)
-                var annoIconContainer = Ext.get(annoIconContainerId);
+                // Ext.get(idString) resolves via document.getElementById, which can't
+                // find it once this view has been reparented into a WinBox's shadow
+                // root - resolve scoped to shapeDiv instead.
+                var annoIconContainer = Ext.get(shapeDiv.dom.querySelector('#' + annoIconContainerId));
 
                 if (!annoIconContainer) {
-                    
+
                     // no pre-existing annotation icon container
                     // create container
                     annoIconContainer = Ext.DomHelper.append(shapeDiv, {

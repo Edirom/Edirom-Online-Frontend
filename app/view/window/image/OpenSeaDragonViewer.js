@@ -65,7 +65,7 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
           openseadragonEvents = '<div id="' + me.id + '_openseadragonEvents" class="openseadragonEvents"></div>';
          };
 
-        me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;"></div>' + openseadragonEvents;
+        me.html = '<div id="' + me.id + '_openseadragon" style="background-color: black; width:100%; height:100%; top:0px; bottom: 0px; left: 0px; right: 0px; position:absolute;"></div>' + openseadragonEvents;
 
         me.shapes = new Ext.util.MixedCollection();
 
@@ -78,8 +78,20 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     initSurface: function() {
         var me = this;
 
-        me.viewer = OpenSeadragon({
-            id: me.id + '_openseadragon',
+        // OpenSeadragon resolves a string `id` via document.getElementById
+        // internally, which can't find it once this view has been reparented
+        // into a WinBox's shadow root (see Desktop.wrapEdiromWindowInWinBox) -
+        // or, for a view created lazily AFTER that reparent (e.g. a
+        // measure-based view's per-voice viewer), was NEVER in the light DOM
+        // to begin with. In that case resolve the element ourselves and pass
+        // it via `element` instead. Passing `element` unconditionally (even
+        // for the normal light-DOM case) broke the main facsimile viewer for
+        // reasons not fully understood - keep the original `id:` path there,
+        // since it's confirmed working, and only use the `element:` workaround
+        // when actually inside a shadow root.
+        var osdEl = me.el.dom.querySelector('#' + me.id + '_openseadragon');
+        var root = osdEl.getRootNode();
+        var osdOptions = {
             showNavigator:  false,
             showNavigationControl: false,
             // Disable OSD's own resize polling: its built-in resize branches either freeze the
@@ -90,7 +102,13 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
             // viewer is added or removed.
             autoResize: false,
             tileSources:   []
-        });
+        };
+        if (root && root.host) {
+            osdOptions.element = osdEl;
+        } else {
+            osdOptions.id = me.id + '_openseadragon';
+        }
+        me.viewer = OpenSeadragon(osdOptions);
         me.viewer.addHandler('zoom', function(event){ me.fireEvent('zoomChanged', event.zoom);});
         me.viewer.gestureSettingsMouse.clickToZoom = false;
     },
@@ -293,7 +311,10 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
         var me = this;
 
         var svgId = me.id + '_' + overlayId;
-        var overlayOSD = me.viewer.getOverlayById(svgId);
+        // OpenSeadragon resolves a string id via document.getElementById internally,
+        // which can't find it once this view has been reparented into a WinBox's
+        // shadow root - resolve the element ourselves and pass it instead.
+        var overlayOSD = me.viewer.getOverlayById(me.el.dom.querySelector('#' + svgId) || svgId);
         if (overlayOSD !== null ) {
             return;
         }
@@ -321,7 +342,8 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
     removeSVGOverlay: function(overlayId) {
         var me = this;
         var svgId = me.id + '_' + overlayId;
-        me.viewer.removeOverlay(svgId);
+        // see addSVGOverlay - resolve the element ourselves, shadow-root-safe.
+        me.viewer.removeOverlay(me.el.dom.querySelector('#' + svgId) || svgId);
     },
 
     removeShapes: function(groupName) {
@@ -351,7 +373,9 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 console.log('+shape.id: ' + me.id + '_' + id);
             }
 
-            me.viewer.removeOverlay(me.id + '_' + id);
+            // see addSVGOverlay - resolve the element ourselves, shadow-root-safe.
+            var overlayId = me.id + '_' + id;
+            me.viewer.removeOverlay(me.el.dom.querySelector('#' + overlayId) || overlayId);
         };
 
         if(me.shapes.get(groupName).each)
@@ -436,12 +460,14 @@ Ext.define('EdiromOnline.view.window.image.OpenSeaDragonViewer', {
                 // calculate ids for annotation icon container and annotation icon
                 var annoIconContainerId = me.id + '_' + id;
                 var annoIconId = annoIconContainerId + annoId;
-                
+
                 // reuse existing outer div if already present (multiple annotations on same zone)
-                var annoIconContainer = document.getElementById(annoIconContainerId);
-                
+                // getElementById can't find it once this view is reparented into a
+                // WinBox shadow root - resolve scoped to me.el instead.
+                var annoIconContainer = me.el.dom.querySelector('#' + annoIconContainerId);
+
                 if(!annoIconContainer) {
-                    
+
                     // no pre-existing annotation icon container
                     // create container
                     annoIconContainer = document.createElement('div');
