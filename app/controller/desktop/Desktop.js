@@ -112,6 +112,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         params.set('ui', 'mobile');
         if (this.application.activeEdition) params.set('edition', this.application.activeEdition);
         if (this.application.activeWork) params.set('work', this.application.activeWork);
+        // Stay in the Connected Workspace session. The workspace also remembers it per tab
+        // (sessionStorage); the parameter covers a browser that blocks that.
+        var workspace = document.querySelector('#connected-workspace');
+        var sessionId = workspace && workspace.sessionId;
+        if (sessionId) params.set('session', sessionId);
 
         window.location.href = 'mobile/index.html?' + params.toString();
     },
