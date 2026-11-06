@@ -46,7 +46,7 @@ Ext.define('EdiromOnline.view.window.x3d.X3dScene', {
 
         var backendURL = EdiromOnline.getApplication().backendURL;
 
-        var src = backendURL + 'data/xql/getX3dScene.xql?uri=' + encodeURIComponent(uri);
+        var src = backendURL + 'api/document?resource=' + encodeURIComponent(uri) +'&mediaType=' + encodeURIComponent('model/x3d+xml');
 
         var render = function() {
             var cont = me.el.getById(me.id + '_rendCont');
@@ -72,7 +72,7 @@ Ext.define('EdiromOnline.view.window.x3d.X3dScene', {
 
         var backendURL = EdiromOnline.getApplication().backendURL;
 
-        var src = backendURL + 'data/xql/getX3dScene.xql?uri=' + encodeURIComponent(uri);
+        var src = backendURL + 'api/document?resource=' + encodeURIComponent(uri) +'&mediaType=' + encodeURIComponent('model/x3d+xml');
         var viewer = me.el.getById(me.id + '_rendCont').dom.querySelector('edirom-3d-viewer');
         if (viewer) {
             viewer.setAttribute('src', src);
