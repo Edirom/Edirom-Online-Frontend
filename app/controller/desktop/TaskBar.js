@@ -43,13 +43,15 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
         this.taskbars.push(taskbar);
 
         // Restore global toggle button states from sessionStorage on page load
-        var types = { measures: 'icon_toggleMeasuresGlobally', annotations: 'icon_toggleAnnotationsGlobally' };
-        Ext.Object.each(types, function(type, iconId) {
-            if (sessionStorage.getItem('edirom-' + type + '-visible-global') === 'true') {
-                var icon = document.getElementById(iconId);
-                if (icon) icon.setAttribute('pressed', '');
+        var bar = document.getElementById('ediromBottombar');
+        if (bar) {
+            if (sessionStorage.getItem('edirom-measures-visible-global') === 'true') {
+                bar.setAttribute('measures-visible', 'true');
             }
-        });
+            if (sessionStorage.getItem('edirom-annotations-visible-global') === 'true') {
+                bar.setAttribute('annotations-visible', 'true');
+            }
+        }
     },
     
     onSwitchLanguage: function() {

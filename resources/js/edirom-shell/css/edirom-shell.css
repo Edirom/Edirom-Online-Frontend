@@ -1,0 +1,37 @@
+/* Edirom shell tokens. Components also repeat these as :host fallbacks
+   so a single script tag is enough. Link this file when several
+   components share one page. MIT. No framework. */
+
+:root {
+    --edirom-color-bg: #f3f4f6;
+    --edirom-color-bar: #ffffff;
+    --edirom-color-text: #1c1c1c;
+    --edirom-color-muted: #5c6570;
+    --edirom-color-accent: #1f4e79;
+    --edirom-color-line: #d5dbe3;
+    --edirom-color-focus: #0b57d0;
+    --edirom-color-error: #8c1d18;
+    --edirom-color-error-bg: #fce8e6;
+    --edirom-color-warning: #6d4c00;
+    --edirom-color-warning-bg: #fff4d6;
+    --edirom-color-success: #0d652d;
+    --edirom-color-success-bg: #e6f4ea;
+    --edirom-color-info: #0b3d6e;
+    --edirom-color-info-bg: #e8f0fe;
+    --edirom-space: 0.5rem;
+    --edirom-bar-height: 3rem;
+    --edirom-touch-min: 2.75rem;
+    --edirom-font: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --edirom-radius: 0.25rem;
+}
+
+html {
+    font-size: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--edirom-font);
+    color: var(--edirom-color-text);
+    background: var(--edirom-color-bg);
+}

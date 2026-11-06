@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>edirom-notification</title>
+    <link rel="stylesheet" href="../css/edirom-shell.css">
+    <script src="edirom-notification.js"></script>
+</head>
+<body>
+    <main style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;max-width:40rem">
+        <h1>edirom-notification</h1>
+        <edirom-notification id="note" lang="de" level="info" message="Eine Edition ist geladen."></edirom-notification>
+        <div>
+            <button type="button" data-level="error">Fehler</button>
+            <button type="button" data-level="warning">Warnung</button>
+            <button type="button" data-level="success">Erfolg</button>
+            <button type="button" data-level="info">Hinweis</button>
+        </div>
+        <p id="log"></p>
+    </main>
+    <script>
+        var note = document.getElementById('note');
+        document.querySelectorAll('[data-level]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                note.show('Beispiel für ' + button.dataset.level + '.', button.dataset.level);
+            });
+        });
+        note.addEventListener('notification-closed', function (event) {
+            document.getElementById('log').textContent = 'Geschlossen: ' + event.detail.level;
+        });
+    </script>
+</body>
+</html>

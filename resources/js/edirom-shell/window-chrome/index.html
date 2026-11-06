@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>edirom-window-chrome</title>
+    <link rel="stylesheet" href="../css/edirom-shell.css">
+    <script src="edirom-window-chrome.js"></script>
+</head>
+<body>
+    <div style="max-width:28rem;margin:1rem;background:#fff;border:1px solid #d5dbe3">
+        <edirom-window-chrome id="chrome" lang="de" window-title="Trüber Abschied"></edirom-window-chrome>
+        <p style="padding:1rem">Fensterinhalt</p>
+    </div>
+    <p id="log" style="padding:1rem"></p>
+    <script>
+        document.getElementById('chrome').addEventListener('window-close', function () {
+            document.getElementById('log').textContent = 'close';
+        });
+        document.getElementById('chrome').addEventListener('window-maximize', function (event) {
+            var el = event.currentTarget;
+            if (el.hasAttribute('maximized')) el.removeAttribute('maximized');
+            else el.setAttribute('maximized', '');
+        });
+    </script>
+</body>
+</html>

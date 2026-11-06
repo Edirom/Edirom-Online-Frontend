@@ -53,6 +53,8 @@ Ext.define('EdiromOnline.view.window.Window', {
         this.addEvents('viewSwitched', 'loadInternalLink');
 
         this.tbar = this.topbar = new EdiromOnline.view.window.TopBar(this.getTopbarConfig());
+        this.on('afterrender', this.mountShellChrome, this);
+        this.on('titlechange', this.mountShellChrome, this);
 
         /* {id: id, label: label, view: view} */
         this.views = new Array();
@@ -105,6 +107,28 @@ Ext.define('EdiromOnline.view.window.Window', {
 
     getTopbar: function() {
         return this.topbar;
+    },
+
+    mountShellChrome: function () {
+        var me = this;
+        if (!me.header || !me.header.el) return;
+        var headerDom = me.header.el.dom;
+        var chrome = headerDom.querySelector('edirom-window-chrome');
+        if (!chrome) {
+            chrome = document.createElement('edirom-window-chrome');
+            chrome.setAttribute('lang', 'de');
+            headerDom.appendChild(chrome);
+            chrome.addEventListener('window-minimize', function () { me.minimize(); });
+            chrome.addEventListener('window-maximize', function () {
+                if (me.maximized) me.restore();
+                else me.maximize();
+                chrome.setAttribute('maximized', me.maximized ? 'true' : 'false');
+            });
+            chrome.addEventListener('window-close', function () { me.close(); });
+        }
+        chrome.setAttribute('window-title', me.title || '');
+        var tools = headerDom.querySelectorAll('.x-tool');
+        for (var i = 0; i < tools.length; i++) tools[i].style.display = 'none';
     },
     
     showView: function(viewType) {

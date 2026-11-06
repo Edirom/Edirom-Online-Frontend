@@ -52,66 +52,15 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         me.items = [
             {
                 xtype: 'component',
-                html: `
-                    <div id="ediromTaskbarIconsLeft" class="ediromTaskbarIcons">
-                        <edirom-icon role="button" name="eo_sort_grid" style="cursor:pointer;" title="` + getLangString('view.desktop.TaskBar_Sort_grid') + `"></edirom-icon>
-                        <edirom-icon role="button" name="eo_sort_vertical" title="` + getLangString('view.desktop.TaskBar_Sort_vertical') + `"></edirom-icon>
-                        <edirom-icon role="button" name="eo_sort_horizontal" title="` + getLangString('view.desktop.TaskBar_Sort_horizontal') + `"></edirom-icon>
-                        <edirom-icon name="horizontal_rule" rotate="90"></edirom-icon>
-                        <edirom-icon role="button" id="icon_toggleMeasuresGlobally" name="eo_toggle_measures" title="` + getLangString('view.desktop.TaskBar_showMeasures') + `"></edirom-icon>
-                        <edirom-icon role="button" id="icon_toggleAnnotationsGlobally" name="eo_toggle_annotations" title="` + getLangString('view.desktop.TaskBar_showAnnotations') + `"></edirom-icon>
-                        <edirom-icon role="button" id="icon_openConcordanceNavigator" name="eo_concordance_navigator" title="` + getLangString('view.desktop.TaskBar_concordanceNav') + `"></edirom-icon>
-                    </div>
-                `,
+                flex: 1,
+                autoEl: {
+                    tag: 'edirom-bottombar',
+                    id: 'ediromBottombar',
+                    lang: 'de'
+                },
                 listeners: {
-                    afterrender: function(c) {
-                        var iconsDivElem = document.getElementById('ediromTaskbarIconsLeft');
-
-                        // sortGrid button
-                        var sortGridIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_grid"]');
-                        sortGridIconElem.addEventListener('click', function() { me.fireEvent('sortGrid'); });
-
-                        // sortVertically button
-                        var sortVerticallyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_vertical"]');
-                        sortVerticallyIconElem.addEventListener('click', function() { me.fireEvent('sortVertically'); });
-
-                        // sortHorizontally button
-                        var sortHorizontallyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_sort_horizontal"]');
-                        sortHorizontallyIconElem.addEventListener('click', function() { me.fireEvent('sortHorizontally'); });
-
-                        // toggle measure numbers button
-                        var toggleMeasuresGloballyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_toggle_measures"]');
-                        toggleMeasuresGloballyIconElem.addEventListener('click', function() {
-
-                            // toggle pressed state
-                            var newState = toggleMeasuresGloballyIconElem.toggleAttribute('pressed');
-                            
-                            // save new state in session storage
-                            sessionStorage.setItem('edirom-measures-visible-global', newState);
-
-                            // fire event
-                            me.fireEvent('toggleMeasuresGlobally');
-
-                        });
-
-                        // toggle annotations button
-                        var toggleAnnotationsGloballyIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_toggle_annotations"]');
-                        toggleAnnotationsGloballyIconElem.addEventListener('click', function() {
-
-                            // toggle pressed state
-                            var newState = toggleAnnotationsGloballyIconElem.toggleAttribute('pressed');
-                            
-                            // save new state in session storage
-                            sessionStorage.setItem('edirom-annotations-visible-global', newState);
-
-                            // fire event
-                            me.fireEvent('toggleAnnotationsGlobally');
-
-                        });
-
-                        // open concordance navigator button
-                        var openConcordanceNavigatorIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_concordance_navigator"]');
-                        openConcordanceNavigatorIconElem.addEventListener('click', function() { me.fireEvent('openConcordanceNavigator'); });
+                    afterrender: function () {
+                        me.bindShellBottombar(document.getElementById('ediromBottombar'));
                     }
                 }
             },
@@ -123,30 +72,6 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
             },
 
             me.windowBar,
-
-            {
-                xtype: 'component', 
-                html: `
-                    <div id="ediromTaskbarIconsRight" class="ediromTaskbarIcons">
-                        <edirom-icon role="button" class="edirom-icon-button" id="icon_openAbout" name="eo_about" title="` + getLangString('view.desktop.TaskBar_about') + `"></edirom-icon>
-                        <edirom-icon role="button" class="edirom-icon-button" id="icon_openHelp" name="eo_help" title="` + getLangString('view.desktop.TaskBar_help') + `"></edirom-icon>
-                    </div>`,
-                listeners: {
-                    afterrender: function(c) {
-
-                        var iconsDivElem = document.getElementById('ediromTaskbarIconsRight');
-
-                        // openAbout button
-                        var openAboutIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_about"]');
-                        openAboutIconElem.addEventListener('click', function() { me.fireEvent('openAbout'); });
-
-                        // openHelp button
-                        var openHelpIconElem = iconsDivElem.querySelector('edirom-icon[name="eo_help"]');
-                        openHelpIconElem.addEventListener('click', function() { me.fireEvent('openHelp'); });
-                    }
-                }
-            },
-            
 
             // language switch button
             /*{
@@ -163,6 +88,56 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         ];
 
         me.callParent();
+    },
+
+    bindShellBottombar: function (el) {
+        var me = this;
+        if (!el) return;
+
+        el.addEventListener('arrange-request', function (event) {
+            if (event.detail.mode === 'grid') me.fireEvent('sortGrid');
+            if (event.detail.mode === 'vertical') me.fireEvent('sortVertically');
+            if (event.detail.mode === 'horizontal') me.fireEvent('sortHorizontally');
+        });
+        el.addEventListener('toggle-measures', function (event) {
+            sessionStorage.setItem('edirom-measures-visible-global', event.detail.visible);
+            me.fireEvent('toggleMeasuresGlobally');
+        });
+        el.addEventListener('toggle-annotations', function (event) {
+            sessionStorage.setItem('edirom-annotations-visible-global', event.detail.visible);
+            me.fireEvent('toggleAnnotationsGlobally');
+        });
+        el.addEventListener('open-concordance', function () {
+            me.fireEvent('openConcordanceNavigator');
+        });
+        el.addEventListener('open-help', function () {
+            me.fireEvent('openHelp');
+        });
+        el.addEventListener('open-about', function () {
+            me.fireEvent('openAbout');
+        });
+        el.addEventListener('window-selected', function (event) {
+            me.windowBar.items.each(function (item) {
+                if (item.win && item.win.id === event.detail.id) {
+                    me.onWindowBtnClick(item);
+                }
+            });
+        });
+        me.syncShellWindows();
+    },
+
+    syncShellWindows: function () {
+        var el = document.getElementById('ediromBottombar');
+        if (!el || !this.windowBar) return;
+        var windows = [];
+        var active = '';
+        this.windowBar.items.each(function (item) {
+            if (!item.win) return;
+            windows.push({ id: item.win.id, title: item.win.title });
+            if (item.pressed) active = item.win.id;
+        });
+        el.setAttribute('windows', JSON.stringify(windows));
+        if (active) el.setAttribute('active-window', active);
     },
 
     afterLayout: function () {
@@ -255,6 +230,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
 
         var cmp = this.windowBar.add(config);
         cmp.toggle(true);
+        this.syncShellWindows();
         return cmp;
     },
 
@@ -269,6 +245,7 @@ Ext.define('EdiromOnline.view.desktop.TaskBar', {
         if (found) {
             me.windowBar.remove(found);
         }
+        me.syncShellWindows();
         return found;
     },
 

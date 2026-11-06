@@ -63,29 +63,63 @@ Ext.define('EdiromOnline.view.desktop.TopBar', {
         
         me.searchButton.textField = me.searchTextField;
 
+        me.shellBar = Ext.create('Ext.Component', {
+            flex: 1,
+            autoEl: {
+                tag: 'edirom-topbar',
+                id: 'ediromTopbar',
+                lang: 'de'
+            },
+            listeners: {
+                afterrender: function () {
+                    me.bindShellTopbar(document.getElementById('ediromTopbar'));
+                }
+            }
+        });
+
         me.items = [
-            new Ext.toolbar.Toolbar({
-                flex: 1,
-                cls: 'ux-desktop-topbar-flex',
-                items: [
-                        me.homeButton,
-                        { xtype: 'tbtext', text: getLangString('view.desktop.TopBar_homeBtnLabel'), id: 'homeBtnLabel' },
-                        this.workCombo,
-                        {
-                            xtype: 'splitter',
-                            html: '&#160;',
-                            height: 14,
-                            width: 2, //TODO - there should be a CSS way here
-                            cls: 'x-toolbar-separator x-toolbar-separator-horizontal ediTopBarSep'
-                        },
-                    	me.workCombo,
-                        '->',
-                        me.searchTextField,
-                        me.searchButton
-                ]
-            })
+            me.shellBar,
+            me.searchTextField,
+            me.searchButton
         ];
 
         me.callParent();
+    },
+
+    bindShellTopbar: function (el) {
+        var me = this;
+        if (!el) return;
+
+        var syncWorks = function () {
+            var works = [];
+            var active = '';
+            me.workCombo.menu.items.each(function (item) {
+                var id = String(item.id || '').replace('workMenu_', '');
+                works.push({ id: id, title: item.text });
+                if (item.checked) active = id;
+            });
+            el.setAttribute('works', JSON.stringify(works));
+            if (active) el.setAttribute('active-work', active);
+        };
+
+        me.workCombo.menu.on('add', syncWorks);
+        me.workCombo.setText = function (text) {
+            me.workCombo.menu.items.each(function (item) {
+                if (item.text === text) {
+                    el.setAttribute('active-work', String(item.id || '').replace('workMenu_', ''));
+                }
+            });
+        };
+
+        el.addEventListener('work-selected', function (event) {
+            var item = Ext.getCmp('workMenu_' + event.detail.id);
+            if (item) item.setChecked(true);
+        });
+
+        el.addEventListener('home', function () {
+            me.homeButton.fireEvent('click', me.homeButton);
+        });
+
+        syncWorks();
     }
 });

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>edirom-bottombar</title>
+    <link rel="stylesheet" href="../css/edirom-shell.css">
+    <script src="edirom-bottombar.js"></script>
+</head>
+<body>
+    <edirom-bottombar id="bar" lang="de" windows='[{"id":"a","title":"Faksimile"},{"id":"b","title":"Text"}]' active-window="a"></edirom-bottombar>
+    <p id="log" style="padding:1rem"></p>
+    <script>
+        var bar = document.getElementById('bar');
+        bar.addEventListener('arrange-request', function (event) {
+            document.getElementById('log').textContent = 'arrange ' + event.detail.mode;
+        });
+        bar.addEventListener('toggle-measures', function (event) {
+            document.getElementById('log').textContent = 'measures ' + event.detail.visible;
+        });
+        bar.addEventListener('window-selected', function (event) {
+            bar.setAttribute('active-window', event.detail.id);
+        });
+    </script>
+</body>
+</html>

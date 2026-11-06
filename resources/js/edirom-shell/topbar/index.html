@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>edirom-topbar</title>
+    <link rel="stylesheet" href="../css/edirom-shell.css">
+    <script src="edirom-topbar.js"></script>
+</head>
+<body>
+    <edirom-topbar id="bar" lang="de" active-work="w1" works='[{"id":"w1","title":"Trüber Abschied"},{"id":"w2","title":"Zweites Werk"}]'>
+        <button slot="actions" type="button">Suche</button>
+    </edirom-topbar>
+    <p id="log" style="padding:1rem"></p>
+    <script>
+        var bar = document.getElementById('bar');
+        var log = document.getElementById('log');
+        bar.addEventListener('home', function () { log.textContent = 'home'; });
+        bar.addEventListener('work-selected', function (event) {
+            log.textContent = event.detail.id + ' ' + event.detail.title;
+        });
+    </script>
+</body>
+</html>
