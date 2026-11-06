@@ -49,6 +49,16 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
         const frontendURLcitation = frontendURL + 'resources/CITATION.cff';
         const backendURLcitation = backendURL + 'resources/CITATION.cff';
 
+        // Specify URL of the current edition's CITATION.cff file
+        function getEditionCitationURL(editionURI) {
+            const editionPathMatch = editionURI && editionURI.match(/^xmldb:exist:\/\/\/db\/(.+?)\/content(?:\/|$)/);
+            if (!editionPathMatch) return null;
+
+            const resource = 'xmldb:exist:///db/' + editionPathMatch[1] + '/CITATION.cff';
+            return backendURL + 'api/document/?' + new URLSearchParams({resource, mediaType: 'text/plain'});
+        }
+        
+        const editionCitationURL = getEditionCitationURL(EdiromOnline.getApplication().getActiveEdition());
 
         // Fetching content of CITATION.cff files and turn into HTML        
         async function fetchContent(url) {
@@ -56,6 +66,9 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             console.log("Fetching " + url);
 
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Status: ${response.status}`);
+            }
             const citation = await response.text();
 
             const title = citation.match(/^title: (.*)/m)[1];
@@ -64,7 +77,8 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             const releaseDate = citation.match(/^date\-released: (.*)/m)[1];
             const license = citation.match(/^license: (.*)/m)[1];
             const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
-            const doi = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/)[1];
+            const doiMatch = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/);
+            const doi = doiMatch ? doiMatch[1] : null;
             const commit = citation.match(/^commit: (.*)/m)[1];
 
             const resultHTML = `                
@@ -73,7 +87,7 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                     <p>${abstract}</p>
                     <p>Version: ${version}</p>
                     <p>Date: ${releaseDate}</p>
-                    <p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>
+                    ${doi ? `<p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>` : ''}
                     <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
                     <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
                     <p>Revision: <a target="_blank" href="${repoUrl}/tree/${commit}">${commit.substring(0,7)}...</a></p>
@@ -91,8 +105,14 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
         // Fetching content of CITATION.cff files and set result
         Promise.all([
             fetchContent(frontendURLcitation),
-            fetchContent(backendURLcitation)
-        ]).then(function([frontend, backend]) {
+            fetchContent(backendURLcitation),
+            editionCitationURL
+                ? fetchContent(editionCitationURL).catch(function(error) {
+                    console.error('Error fetching edition CITATION.cff file:', error);
+                    return '';
+                })
+                : ''
+        ]).then(function([frontend, backend, editionCitation]) {
             win.setResult(`
                 <div class="tei_body">
                     <h1>About Edirom-Online</h1>
@@ -109,6 +129,7 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                     </section>
                     ${frontend}
                     ${backend}
+                    ${editionCitation}
                 </div>`);
         }).catch(function(error) {
             console.error('Error fetching CITATION.cff files:', error);
