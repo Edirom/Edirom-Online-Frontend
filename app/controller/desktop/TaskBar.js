@@ -32,10 +32,6 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
         me.control({
             'taskbar': {
                 render: this.onTaskbarRendered,
-                switchDesktop: {
-                    fn: this.onSwitchDesktop,
-                    scope: this
-                },
                 switchLanguage: this.onSwitchLanguage,
                 toggleMeasuresGlobally: this.onMeasuresVisibilityChanged,
                 toggleAnnotationsGlobally: this.onAnnotationsVisibilityChanged
@@ -54,10 +50,6 @@ Ext.define('EdiromOnline.controller.desktop.TaskBar', {
                 if (icon) icon.setAttribute('pressed', '');
             }
         });
-    },
-    
-    onSwitchDesktop: function(num) {
-        this.application.switchDesktop(num);
     },
     
     onSwitchLanguage: function() {

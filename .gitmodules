@@ -16,3 +16,6 @@
 [submodule "resources/js/edirom-qr-code-scanner"]
 	path = resources/js/edirom-qr-code-scanner
 	url = https://github.com/Edirom/edirom-qr-code-scanner
+[submodule "resources/js/edirom-connected-workspace"]
+	path = resources/js/edirom-connected-workspace
+	url = https://github.com/Edirom/edirom-connected-workspace.git

@@ -34,9 +34,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             'topbar button[action=openSearchWindow]': {
                 click: this.onOpenSearchWindow
             },
-            'taskbar button[action=openAboutWindow]': {
-                click: this.onOpenAboutWindow
-            },
             'topbar #searchTextFieldTop': {
                 specialkey: this.onSpecialKey
             }
@@ -45,17 +42,17 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
     onDesktopRendered: function(desktop) {
         this.desktop = desktop;
-        this.desktop.taskbar.addListener('switchDesktop', this.switchDesktop, this);
 
         this.desktop.taskbar.addListener('openConcordanceNavigator', this.openConcordanceNavigator, this);
         
         var concNavOnStart = window.getPreference('concordance_navigator_open_on_start', true);
-        if(concNavOnStart != null && concNavOnStart) {
-            this.desktop.taskbar.setConcordanceNavigatorButtonToggleState(true, true);
+        var hasConnectionParam = this.application.activeConnection != null;
+        if ((concNavOnStart != null && concNavOnStart) || hasConnectionParam) {
             Ext.defer(this.openConcordanceNavigator, 1000, this);
         }
-        
+
         this.desktop.taskbar.addListener('openHelp', this.openHelp, this);
+        this.desktop.taskbar.addListener('openAbout', this.openAbout, this);
         //TODO: Suchfenster einbauen
         /*this.desktop.taskbar.addListener('openSearchWindow', this.openSearchWindow, this);*/
 
@@ -75,6 +72,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     openConcordanceNavigator: function() {
         var me = this;
         me.desktop.openConcordanceNavigator();
+    },
+
+    openAbout: function() {
+        var me = this;
+        me.desktop.openAbout();
     },
 
     openHelp: function() {
@@ -100,10 +102,6 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     onOpenAboutWindow: function(button, event, args) {
         var me = this;
         me.desktop.openAboutWindow();
-    },
-
-    switchDesktop: function(desk) {
-        this.desktop.switchDesktop(desk);
     },
 
     cloneWinsCollectionWithoutMinimized: function(wins) {
