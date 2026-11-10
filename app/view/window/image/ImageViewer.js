@@ -781,24 +781,53 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                     zoneKeys.push(key);
                 });
 
-                annoRecs.push({ uri: uri, zoneKeys: zoneKeys });
+                annoRecs.push({ uri: uri, categories: categories, zoneKeys: zoneKeys });
             });
         }
 
-        // Preload each annotation's server-rendered tooltip HTML up front so the
-        // component can render the tooltip itself on hover. All tooltips are
-        // fetched in parallel and zones-data is pushed once they have all
-        // resolved. A safety-net timeout pushes whatever resolved so a single
-        // failed request never permanently hides the page's annotations.
-        var pending = annoRecs.length;
-        var pushed = false;
-        var pushData = function() {
-            if (pushed) return;
-            pushed = true;
+        // The badges are pushed as soon as their glyph fonts are ready, without
+        // waiting for the tooltips. The symbols above may have been measured
+        // before the fonts (e.g. Bravura) were loaded, which centres a fallback
+        // glyph, so they are re-derived first. Tooltip HTML is fetched in parallel
+        // and pushed in a second pass, because the component captures a zone's
+        // tooltip when it renders the badge.
+        var zonesAtStart = me._annotationZones;
+        var pushedBadges = false;
+        var tooltipsDone = false;
+
+        var refreshSymbols = function() {
+            annoRecs.forEach(function(rec) {
+                var symbol = getAnnotationSymbol(rec.categories);
+                rec.zoneKeys.forEach(function(k) {
+                    if (zonesAtStart[k]) zonesAtStart[k].symbol = symbol;
+                });
+            });
+        };
+        var pushBadges = function() {
+            if (pushedBadges || me._annotationZones !== zonesAtStart) return;
+            pushedBadges = true;
+            refreshSymbols();
             me.pushZonesData();
         };
+        var finishTooltips = function() {
+            if (tooltipsDone) return;
+            tooltipsDone = true;
+            if (pushedBadges && me._annotationZones === zonesAtStart) me.pushZonesData();
+        };
 
-        if (pending === 0) { pushData(); return; }
+        var classStrings = Ext.Array.unique(annoRecs.map(function(rec) {
+            return 'annotIcon ' + (rec.categories || '');
+        }));
+        if (EdiromOnline.whenAnnotationFontsLoaded) {
+            EdiromOnline.whenAnnotationFontsLoaded(classStrings).then(pushBadges);
+            // a font that never settles must not keep the badges back
+            setTimeout(pushBadges, 3000);
+        } else {
+            pushBadges();
+        }
+
+        var pending = annoRecs.length;
+        if (pending === 0) { tooltipsDone = true; return; }
 
         annoRecs.forEach(function(rec) {
             window.doAJAXRequest('data/xql/getAnnotation.xql',
@@ -810,16 +839,16 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
                 },
                 function(response) {
                     rec.zoneKeys.forEach(function(k) {
-                        if (me._annotationZones[k]) me._annotationZones[k].tooltip = response.responseText;
+                        if (zonesAtStart[k]) zonesAtStart[k].tooltip = response.responseText;
                     });
                     pending--;
-                    if (pending === 0) pushData();
+                    if (pending === 0) finishTooltips();
                 }
             );
         });
 
         // safety net in case some requests never call back
-        setTimeout(pushData, 8000);
+        setTimeout(finishTooltips, 8000);
     },
 
     // Shows or hides a whole zone TYPE (e.g. 'annotation', 'measure') via the
