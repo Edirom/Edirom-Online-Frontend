@@ -127,9 +127,9 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                             Information about the parts of the software can be found below.
                         </p>
                     </section>
+                    ${editionCitation}
                     ${frontend}
                     ${backend}
-                    ${editionCitation}
                 </div>`);
         }).catch(function(error) {
             console.error('Error fetching CITATION.cff files:', error);
