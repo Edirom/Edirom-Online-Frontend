@@ -109,9 +109,9 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             editionCitationURL
                 ? fetchContent(editionCitationURL).catch(function(error) {
                     console.error('Error fetching edition CITATION.cff file:', error);
-                    return '';
+                    return '<h1>About the edition</h1><p>No CITATION.cff found in edition.</p>';
                 })
-                : ''
+                : '<h1>About the edition</h1><p>No CITATION.cff found in edition.</p>'
         ]).then(function([frontend, backend, editionCitation]) {
             win.setResult(`
                 <div class="tei_body">
