@@ -54,6 +54,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
             'gotoMovement',
             'gotoMeasure',
             'gotoMeasureByName',
+            'gotoFirstMeasureOnPage',
             'gotoZone',
             'afterImagesLoaded');
 
@@ -532,8 +533,11 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         me.bottomBar.add(me.fitFacsimileButton);
     },
 
-    switchInternalView: function(viewId) {
+    // `skipSync` is set by callers that navigate to a specific target right
+    // after switching, so the page/measure synchronisation must not interfere.
+    switchInternalView: function(viewId, skipSync) {
         var me = this;
+        var previousView = me.activeView;
 
         if(viewId == 'pageBasedView') {
             // set pressed state of toggle button
@@ -568,6 +572,37 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var iv = me.pageBasedView && me.pageBasedView.imageViewer;
         if (iv && iv.webComponent && iv.webComponent.setAttribute) {
             iv.webComponent.setAttribute('view-mode', viewId);
+        }
+
+        if(previousView !== viewId && !skipSync)
+            me.syncViewsOnSwitch(viewId);
+    },
+
+    // Keeps the current page shared between the page based and the measure
+    // based view when switching: the page based view shows the page of the
+    // displayed measure (fully zoomed out), the measure based view shows the
+    // first measure of the selected page (if that page contains a measure).
+    syncViewsOnSwitch: function(viewId) {
+        var me = this;
+        var pageView = me.pageBasedView;
+        var measureView = me.measureBasedView;
+        var activePage = pageView.getActivePage();
+        var activePageId = activePage ? activePage.get('id') : null;
+
+        if(viewId == 'pageBasedView') {
+
+            var pageId = measureView.getCurrentPageId();
+
+            if(pageId && measureView.pageNavigated && pageId !== activePageId && pageView.imageSet && pageView.imageSet.getById(pageId))
+                pageView.showPage(pageId);
+
+            if(pageView.imageSet)
+                pageView.fitFacsimile();
+
+        }else if(viewId == 'measureBasedView' && activePageId && measureView.getCurrentPageId() !== activePageId) {
+
+            measureView.pageNavigated = false;
+            me.fireEvent('gotoFirstMeasureOnPage', me, activePageId);
         }
     },
 
@@ -637,7 +672,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         var me = this;
 
         if(me.activeView !== 'measureBasedView')
-        	me.switchInternalView('measureBasedView');
+        	me.switchInternalView('measureBasedView', true);
 
         me.measureBasedView.showMeasure(movementId, measureId, measureCount);
 
@@ -658,7 +693,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     gotoMeasureInImage: function(measureKey, m) {
         var me = this;
         if (me.activeView !== 'pageBasedView')
-            me.switchInternalView('pageBasedView');
+            me.switchInternalView('pageBasedView', true);
         me.pageBasedView.gotoMeasureInImage(measureKey, m);
     },
 
@@ -668,7 +703,7 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
     gotoMdivInImage: function(mdivKey, pageId) {
         var me = this;
         if (me.activeView !== 'pageBasedView')
-            me.switchInternalView('pageBasedView');
+            me.switchInternalView('pageBasedView', true);
         me.pageBasedView.gotoMdivInImage(mdivKey, pageId);
     },
 

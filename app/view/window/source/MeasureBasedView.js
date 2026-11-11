@@ -56,8 +56,29 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         this.callParent();
     },
 
+    // false while the shown measure is not known to be on the page selected in
+    // the page based view (see SourceView.syncViewsOnSwitch); reset to true as
+    // soon as a measure is displayed.
+    pageNavigated: true,
+
     getUri: function() {
         return this.owner.uri;
+    },
+
+    // Page id of the first visible measure viewer (the first part), or null if
+    // no measure has been displayed yet.
+    getCurrentPageId: function() {
+        var me = this;
+        var pageId = null;
+
+        me.viewers.each(function(viewer) {
+            if(!viewer.isHidden() && viewer.pageId) {
+                pageId = viewer.pageId;
+                return false;
+            }
+        });
+
+        return pageId;
     },
 
     createToolbarEntries: function() {
@@ -579,6 +600,9 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
     showMeasure: function(data) {
 
         var me = this;
+
+        me.pageId = (data && data.length) ? data[0]['pageId'] : null;
+        me.owner.pageNavigated = true;
 
         Ext.Array.each(me.imageViewers, function(viewer) {
             viewer.hide();
