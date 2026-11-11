@@ -32,17 +32,13 @@ Ext.define('EdiromOnline.Application', {
         'desktop.TaskBar',
         'desktop.TopBar',
         'navigator.Navigator',
-        'window.about.AboutWindow',
         'window.AnnotationView',
         'window.HeaderView',
-        'window.HelpWindow',
         'window.SingleWindowController',
         'window.iFrameView',
         'window.WindowController',
         'window.XmlView',
         'window.concordanceNavigator.ConcordanceNavigator',
-        'window.audio.AudioView',
-        'window.search.SearchWindow',
         'window.source.SourceView',
         'window.source.PageBasedView',
         'window.source.MeasureBasedView',
@@ -65,6 +61,7 @@ Ext.define('EdiromOnline.Application', {
     activeEdition: '',
     activeWork: '', 
     activeConnection: null,
+    backendURL: '@backend.url@',
     
     init: function () {
         
@@ -85,7 +82,7 @@ Ext.define('EdiromOnline.Application', {
 
         // load config and initialize application
         me.getController('ConfigController').loadConfig(function (config) {
-            me.backendURL = config.backendURL;
+            me.backendURL = config.backendURL || me.backendURL;
             EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
             me.initializeApplication();
