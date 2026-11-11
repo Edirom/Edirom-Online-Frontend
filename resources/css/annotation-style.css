@@ -170,12 +170,18 @@
 .measureInner {
     display: inline-block;
     position: relative;
+    order: -1;
+    flex-shrink: 0;
+    pointer-events: auto;
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 15px;
     padding: 3px 5px 0;
     text-shadow: 0 1px 2px #000000, 0 0 5px #ffffff;
-    top: 50%;
     background-image: radial-gradient(circle at center, rgba(100, 100, 100, 0.3), rgba(0, 0, 0, 0) 5px);
+}
+
+.measureInnerEmpty {
+    display: none;
 }
 
 /*
@@ -184,6 +190,13 @@
  * longer injected into the web component (see edirom-image-viewer.js).
  */
 .measure {
+    /* Override OpenSeadragon's inline display:block. The number and any
+       annotation badges share one centered, non-wrapping stack. */
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
     text-align: center;
     z-index: 5;
     cursor: pointer;
@@ -230,7 +243,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-content: center;
     /* small gap so multiple stacked badges on one measure do not touch */
     gap: 3px;
@@ -241,6 +254,7 @@
 }
 
 .annotation .annotIcon {
+    flex-shrink: 0;
     cursor: pointer;
     /* re-enable interaction on the badge itself (parent has pointer-events:none) */
     pointer-events: auto;

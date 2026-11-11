@@ -426,6 +426,21 @@ Ext.define('EdiromOnline.view.window.image.ImageViewer', {
         var map = Ext.apply({}, me._measureZones || {});
         Ext.apply(map, me._mdivZones || {});
         Ext.apply(map, me._annotationZones || {});
+        // Share a stack only for exactly the same image region and page.
+        var measureGroups = Object.create(null);
+        var regionKey = function(zone) {
+            return JSON.stringify([
+                zone.page == null ? null : Number(zone.page),
+                Number(zone.ulx), Number(zone.uly), Number(zone.lrx), Number(zone.lry)
+            ]);
+        };
+        Object.keys(me._measureZones || {}).forEach(function(key) {
+            measureGroups[regionKey(map[key])] = map[key].group;
+        });
+        Object.keys(me._annotationZones || {}).forEach(function(key) {
+            var group = measureGroups[regionKey(map[key])];
+            if (group) map[key] = Ext.apply(Ext.apply({}, map[key]), { group: group });
+        });
         me.webComponent.setAttribute('zones-data', JSON.stringify(map));
     },
 
