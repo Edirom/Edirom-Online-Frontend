@@ -47,16 +47,32 @@ Ext.define('EdiromOnline.controller.window.XmlView', {
         var uri = xmlview.uri;
         var internalId = xmlview.internalId;
 
-        window.doAJAXRequest('data/xql/getXml.xql',
-            'GET', 
-            {
-                uri: uri,
-                internalId: internalId
-            },
-            Ext.bind(function(response){
-                xmlview.setXmlContent(response.responseText);
-            }, this)
-        );
+        if(internalId) {
+            // request goes to v2 API - relative to backendURI
+            window.doAJAXRequest('api/document',
+                'GET', 
+                {
+                    resource: uri,
+                    ref: internalId,
+                    mediaType: 'text/xml'
+                },
+                Ext.bind(function(response){
+                    xmlview.setXmlContent(response.responseText);
+                }, this)
+            );
+        } else {
+            // request goes to v2 API - relative to backendURI
+            window.doAJAXRequest('api/document',
+                'GET', 
+                {
+                    resource: uri,
+                    mediaType: 'text/xml'
+                },
+                Ext.bind(function(response){
+                    xmlview.setXmlContent(response.responseText);
+                }, this)
+            );
+        }
     },
 
     resize: function(xmlview, width, height){

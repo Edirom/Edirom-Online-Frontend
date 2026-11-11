@@ -24,7 +24,9 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     alias : 'widget.textView',
 
-    layout: 'fit',
+    layout: 'border',
+
+    border: 0,
     
     cls: 'textView',
 
@@ -38,10 +40,25 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             'gotoChapter',
             'documentLoaded');
 
+        this.viewerContainer = Ext.create('Ext.panel.Panel', {
+            region: 'center',
+            border: 0,
+            layout: 'card',
+            items: [
+                {
+                    html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
+                }
+            ]
+        });
+
+        // define bottom bar
+        this.bottomBar = new EdiromOnline.view.window.BottomBar(
+            { owner:this, region:'south', enableOverflow: false }
+        );
+
         this.items = [
-            {
-                html: '<edirom-dom id="' + this.id + '_textCont" class="textViewContent"></edirom-dom>'
-            }
+            this.viewerContainer,
+            this.bottomBar
         ];
 
         this.callParent();
@@ -75,34 +92,61 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     checkGlobalVisibility: function(type) {
         
-        // TODO: align with checkGlobalVisibility in SourceView.js (there it's working)
-
         var me = this;
 
-        // If: measures visibility was set locally, do nothing
-        if(me[type+'VisibilitySetLocaly']) return;
-        
-        // Otherwise: check local visibility state and decide on next visibility state        
-        // only if local state is null (case in which window does not override global) fire event with global visibility
-        var localState = sessionStorage.getItem('edirom-'+type+'-visible-' + me.id);
-        if(localState === null) {
-            visible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
-            me[type+'Visible'] = visible;
-            me.fireEvent(type+'VisibilityChange', me, visible);
+        // global visibility state
+        var globalVisible = sessionStorage.getItem('edirom-'+type+'-visible-global') === 'true';
+
+        // set visibility properties
+        me[type+'VisibilitySetLocaly'] = globalVisible;
+        me[type+'Visible'] = globalVisible;
+
+        // if global is visible and local is also set to visible, do nothing
+        if( globalVisible && sessionStorage.getItem('edirom-'+type+'-visible-' + me.id) === 'true')
+            return;
+
+        // update icon state
+        if(globalVisible){
+            var visibleIcon = document.getElementById('icon_display-annotations-window_'+me.id);
+            if (visibleIcon) visibleIcon.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-'+type+'-visible-' + me.id, 'true');
+
+        } else {
+            var hiddenIcon = document.getElementById('icon_display-annotations-window_'+me.id);
+            if (hiddenIcon) hiddenIcon.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-'+type+'-visible-' + me.id);
         }
+
+        // fire event
+        me.fireEvent(type+'VisibilityChange', me, globalVisible);
 
     },
 
-    toggleAnnotations: function(item, state) {
-        var me = this;
-        me.annotationsVisible = state;
-        me.annotationsVisibilitySetLocaly = true;
+    toggleAnnotations: function() {
 
-        //TODO: Controller mit einbeziehen
-        if(state && me.annotationsLoaded)
-            me.showAnnotations();
-        else
-            this.fireEvent('annotationsVisibilityChange', me, state);
+        var me = this;
+
+        var iconElem = document.getElementById('icon_display-annotations-window_'+me.id);
+        var currentState = iconElem.hasAttribute('pressed');
+
+        if(currentState) {
+            iconElem.removeAttribute('pressed');
+            sessionStorage.removeItem('edirom-annotations-visible-'+me.id);
+        }
+        else {
+            iconElem.setAttribute('pressed', '');
+            sessionStorage.setItem('edirom-annotations-visible-'+me.id, 'true');
+        }
+
+        // update local variables
+        me.annotationsVisible = sessionStorage.getItem('edirom-annotations-visible-'+me.id) === 'true';
+        me.annotationsVisibilitySetLocaly = iconElem.hasAttribute('pressed');
+
+        // just hide measures first to avoid double display
+        me.hideAnnotations();
+
+        // fire event
+        this.fireEvent('annotationsVisibilityChange', me, me.annotationsVisible);
     },
 
     toggleNotesVisibility: function(button) {
@@ -126,24 +170,25 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             var annos = Ext.query('#' + me.id + '_textCont div.annotation');
             Ext.Array.each(annos, function(anno) {
                 Ext.get(anno).show();
+                anno.style.display = 'inline-block';
             });
+
+            me.annotationFilterChanged();
 
             return;
         }   
-        
-        console.log("this is the annotation but it is hidden")
 
-        // me.annotationsLoaded = true;
+        me.annotationsLoaded = true;
 
-        // var tpl = Ext.DomHelper.createTemplate('<div class="annotation"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}"></div></div>');
-        // tpl.compile();
+        var tpl = Ext.DomHelper.createTemplate('<div class="annotation" style="display: inline-block;"><div id="{0}" class="annotIcon {1} {2} {3}" data-edirom-annot-id="{3}" style="margin: auto;"></div></div>');
+        tpl.compile();
 
         annotations.each(function(annotation) {
 
             var annoId = annotation.get('id');
             var name = annotation.get('title');
             var uri = annotation.get('uri');
-            var categories = annotation.get('categories');
+            var categories = annotation.get('taxonomyClasses') || annotation.get('categories');
             var priority = annotation.get('priority');
             var fn = annotation.get('fn');
             var plist = Ext.Array.toArray(annotation.get('plist'));
@@ -153,7 +198,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
                 var target = me.el.getById(me.id + '_' + targetId);
 
                 var shape = tpl.append(target, [me.id + '_' + p.id, categories, priority, annotation.get('id')], true);
-                
+
                 shape.on('mouseenter', me.highlightShape, me, shape, true);
                 shape.on('mouseleave', me.deHighlightShape, me, shape, true);
                 shape.on('mousedown', me.listenForShapeLink, me, {
@@ -175,7 +220,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
                 tip.on('afterrender', function() {
                     window.doAJAXRequest('data/xql/getAnnotation.xql',
-                        'GET', 
+                        'GET',
                         {
                             uri: uri,
                             target: 'tip'
@@ -189,11 +234,13 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
             }, me);
 
         }, me);
+
+        me.annotationFilterChanged();
     },
-    
+
     highlightShape: function(event, owner, shape) {
         shape.addCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).addCls('combinedHighlight');
@@ -201,7 +248,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     deHighlightShape: function(event, owner, shape) {
         shape.removeCls('highlighted');
-        
+
         var annotId = shape.getAttribute('data-edirom-annot-id');
         Ext.select('div[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
         Ext.select('span[data-edirom-annot-id=' + annotId + ']', this.el).removeCls('combinedHighlight');
@@ -233,107 +280,125 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         });
     },
 
-        //TODO: in mixin verpacken, wenn möglich
-    setAnnotationFilter: function(priorities, categories) {
+    //TODO: in mixin verpacken, wenn möglich
+    setAnnotationFilter: function(taxonomies) {
         var me = this;
 
-        if(priorities.getTotalCount() == 0 && categories.getTotalCount() == 0) return;
-
-        me.toggleAnnotationsVisibility = Ext.create('Ext.menu.CheckItem', {
-            id: me.id + '_showAnnotations',
-            checked: me.annotationsVisible,
-            text: getLangString('view.window.text.TextView_showAnnotations'),
-            checkHandler: Ext.bind(me.toggleAnnotations, me, [], true)
-        });
+        // abort if taxonomies array is empty
+        if (!taxonomies || taxonomies.length === 0) return;
 
         me.annotMenu =  Ext.create('Ext.button.Button', {
             text: getLangString('view.window.text.TextView_annotMenu'),
             indent: false,
             cls: 'menuButton',
             menu : {
-                items: [
-                    me.toggleAnnotationsVisibility
-                ]
+                items: []
             }
         });
         me.window.getTopbar().addViewSpecificItem(me.annotMenu, me.id);
 
-        var prioritiesItems = [];
-        priorities.each(function(priority) {
-            prioritiesItems.push({
-                text: priority.get('name'),
-                priorityId: priority.get('id'),
-                checked: true,
-                handler: Ext.bind(me.annotationFilterChanged, me)
+        me.annotTaxonomyMenus = {};
+
+        // iterate over taonomies
+        Ext.Array.each(taxonomies, function(taxonomy) {
+
+            // abort if taxonomy is empty
+            if (!taxonomy.items || taxonomy.items.length === 0) return;
+
+            // process taxonomy items
+            var items = Ext.Array.map(taxonomy.items, function(item) {
+                return {
+                    text: item.name,
+                    classId: item.id,
+                    taxonomyId: taxonomy.id,
+                    checked: true,
+                    handler: Ext.bind(me.annotationFilterChanged, me)
+                };
             });
-        });
 
-        me.annotPrioritiesMenu = Ext.create('Ext.menu.Menu', {
-             items: prioritiesItems
-        });
+            // create menu for taxonomy items
+            var menu = Ext.create('Ext.menu.Menu', { items: items });
 
-        me.annotMenu.menu.add({
-            id: me.id + '_annotCategoryFilter',
-            text: getLangString('view.window.text.TextView_prioMenu'),
-            menu: me.annotPrioritiesMenu
-        });
+            // push taxonomy menu to taxonomy menus array
+            me.annotTaxonomyMenus[taxonomy.id] = menu;
 
-        var categoriesItems = [];
-        categories.each(function(category) {
-            categoriesItems.push({
-                text: category.get('name'),
-                categoryId: category.get('id'),
-                checked: true,
-                handler: Ext.bind(me.annotationFilterChanged, me)
+            // add entry for taxonomy to annotMenu
+            me.annotMenu.menu.add({
+                // set button text to taxonomy.label if it doesn’t match taxonomy.id, else get from locale files
+                text: taxonomy.label !== taxonomy.id ? taxonomy.label : getLangString(taxonomy.id),
+                menu: menu
             });
-        });
-
-        me.annotCategoriesMenu = Ext.create('Ext.menu.Menu', {
-             items: categoriesItems
-        });
-
-        me.annotMenu.menu.add({
-            id: me.id + '_annotPriorityFilter',
-            text: getLangString('view.window.text.TextView_categoriesMenu'),
-            menu: me.annotCategoriesMenu
         });
 
         me.annotMenu.show();
+
+        me.bottomBar.add({xtype: 'tbfill'});
+
+        me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
+            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
+            baseCls: 'edirom-icon-button',
+            handler: Ext.bind(me.toggleAnnotations, me, [])
+        });
+        me.bottomBar.add(me.toggleAnnotationDisplay);
     },
 
     annotationFilterChanged: function(item, event) {
         var me = this;
 
-        if(!me.annotationsVisible) return;
+        if (!me.annotationsVisible) return;
 
-        var visiblePriorities = [];
-        me.annotPrioritiesMenu.items.each(function(item) {
-            if(item.checked)
-                visiblePriorities.push(item.priorityId);
-        });
-        var visibleCategories = [];
-        me.annotCategoriesMenu.items.each(function(item) {
-            if(item.checked)
-                visibleCategories.push(item.categoryId);
+        var visibleTaxonomies = {};
+        var allTaxonomyIds = {};
+        Ext.Object.each(me.annotTaxonomyMenus || {}, function(taxonomyId, menu) {
+            var visibleIds = [];
+            var allIds = [];
+            menu.items.each(function(menuItem) {
+                allIds.push(menuItem.classId);
+                if (menuItem.checked) visibleIds.push(menuItem.classId);
+            });
+            visibleTaxonomies[taxonomyId] = visibleIds;
+            allTaxonomyIds[taxonomyId] = allIds;
         });
 
-        var annotations = Ext.query('#' + this.id + '_textCont span.annotation');
+        var annotations = Ext.query('#' + this.id + '_textCont div.annotation, #' + this.id + '_textCont span.annotation');
         var fn = Ext.bind(function(annotation) {
-            var className = annotation.className.replace('annotation', '').trim();
-            var classes = className.split(' ');
+            var filterElement = annotation.tagName.toLowerCase() === 'div'
+                ? annotation.querySelector('.annotIcon')
+                : annotation;
+            var classes = filterElement ? Ext.Array.toArray(filterElement.classList) : [];
 
-            var hasCategory = false;
-            var hasPriority = false;
+            var visible = true;
+            Ext.Object.each(visibleTaxonomies, function(taxonomyId, visibleIds) {
+                var allIds = allTaxonomyIds[taxonomyId] || [];
 
-            for(var i = 0; i < classes.length; i++) {
-                hasCategory |= Ext.Array.contains(visibleCategories, classes[i]);
-                hasPriority |= Ext.Array.contains(visiblePriorities, classes[i]);
-            }
+                // Ignore taxonomies that do not apply to this annotation.
+                var hasAnyFromTaxonomy = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (Ext.Array.contains(allIds, classes[i])) {
+                        hasAnyFromTaxonomy = true;
+                        break;
+                    }
+                }
+                if (!hasAnyFromTaxonomy) return;
 
-            Ext.get(annotation).setVisible(hasCategory & hasPriority);
+                var matches = false;
+                for (var j = 0; j < classes.length; j++) {
+                    if (Ext.Array.contains(visibleIds, classes[j])) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) visible = false;
+            });
+
+            var annotationElement = Ext.get(annotation);
+            annotationElement.setVisibilityMode(Ext.Element.DISPLAY);
+            annotationElement.setVisible(visible);
+            if(visible)
+                annotationElement.dom.style.display = 'inline-block';
         }, me);
 
-        if(annotations.each)
+        if (annotations.each)
             annotations.each(fn);
         else
             Ext.Array.each(annotations, fn);
@@ -341,10 +406,10 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     setContent: function(text) {
         var me = this;
-		
+
 		Ext.fly(me.id + '_textCont').update(text);
 		this.fireEvent('documentLoaded', me);
-		
+
 		Ext.Array.each(Ext.query('.scrollto'), function(dom, n, all) {
             var elem = Ext.get(dom);
             var scrollTo = elem.getAttribute('data-footnote');
@@ -395,16 +460,16 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     getWeightForInternalLink: function (uri, type, id) {
 		var me = this;
-		
+
 		if (me.uri != uri)
 		return 0;
-		
+
 		if (type == 'unknown' || type == 'graphic' || type == 'surface' || type == 'zone')
 		return 0;
-		
+
 		return 70;
 	},
-	
+
 	loadInternalId: function (internalId, internalIdType) {
 		var me = this;
 
@@ -417,18 +482,18 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     },
 
     scrollToId: function(id) {
-        
+
         var elem = Ext.get(this.id + '_' + id);
 
         var showHide = !elem.isVisible();
 
         if(showHide) elem.show();
-        
+
         Ext.getDom(elem).scrollIntoView(true);
-        
+
         if(showHide) elem.hide();
 	},
-	
+
 	getContentConfig: function() {
         var me = this;
         return {
