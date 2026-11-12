@@ -112,6 +112,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         params.set('ui', 'mobile');
         if (this.application.activeEdition) params.set('edition', this.application.activeEdition);
         if (this.application.activeWork) params.set('work', this.application.activeWork);
+        var concordanceNavigator = this.application.getController('window.concordanceNavigator.ConcordanceNavigator');
+        var connection = concordanceNavigator && concordanceNavigator.getCurrentConnection();
+        if (this.application.activeWork && connection) params.set('connection', connection);
+        params.set('lang', window.getLanguage());
         // Stay in the Connected Workspace session. The workspace also remembers it per tab
         // (sessionStorage); the parameter covers a browser that blocks that.
         var workspace = document.querySelector('#connected-workspace');
