@@ -138,7 +138,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
                 'GET', 
                 {
-                    uri: view.uri
+                    uri: view.uri,
+                    mode: 'taxonomies'
                 },
                 Ext.bind(function(response){
                     var data = response.responseText;
