@@ -29,8 +29,6 @@ Ext.define('EdiromOnline.Application', {
         'ToolsController',
         'LinkController',
         'desktop.Desktop',
-        'desktop.TaskBar',
-        'desktop.TopBar',
         'navigator.Navigator',
         'window.about.AboutWindow',
         'window.AnnotationView',
