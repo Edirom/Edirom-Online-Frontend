@@ -34,6 +34,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             'topbar button[action=openSearchWindow]': {
                 click: this.onOpenSearchWindow
             },
+            'topbar button[action=switchToMobile]': {
+                click: this.onSwitchToMobile
+            },
             'topbar #searchTextFieldTop': {
                 specialkey: this.onSpecialKey
             }
@@ -104,6 +107,27 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         me.desktop.openAboutWindow();
     },
 
+    onSwitchToMobile: function() {
+        var params = new URLSearchParams();
+        params.set('ui', 'mobile');
+        if (this.application.activeEdition) params.set('edition', this.application.activeEdition);
+        if (this.application.activeWork) params.set('work', this.application.activeWork);
+        var concordanceNavigator = this.application.getController('window.concordanceNavigator.ConcordanceNavigator');
+        var connection = concordanceNavigator && concordanceNavigator.getCurrentConnection();
+        if (this.application.activeWork && connection) params.set('connection', connection);
+        params.set('lang', window.getLanguage());
+        // Stay in the Connected Workspace session. The workspace also remembers it per tab
+        // (sessionStorage); the parameter covers a browser that blocks that.
+        var workspace = document.querySelector('#connected-workspace');
+        var sessionId = workspace && workspace.sessionId;
+        if (sessionId) params.set('session', sessionId);
+
+        window.location.href = 'mobile/index.html?' + params.toString();
+    },
+
+    switchDesktop: function(desk) {
+        this.desktop.switchDesktop(desk);
+    },
     cloneWinsCollectionWithoutMinimized: function(wins) {
         var set = new Ext.util.MixedCollection();
 

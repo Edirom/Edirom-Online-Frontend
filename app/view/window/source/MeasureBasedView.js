@@ -22,7 +22,6 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
 
     requires: [
         'EdiromOnline.view.window.image.ImageViewer',
-        'EdiromOnline.view.window.image.OpenSeaDragonViewer',
         'Ext.selection.CheckboxModel',
         'Ext.layout.container.Border'
     ],
@@ -462,12 +461,12 @@ Ext.define('EdiromOnline.view.window.source.MeasureBasedView', {
         }catch(e) {}
     },
 
-    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
+    annotationFilterChanged: function(hiddenFilters, visibleTaxonomies, allTaxonomyIds) {
         var me = this;
 
         // delegate annotationFilterChanged to individual viewers
         me.viewers.each(function(v) {
-            v.annotationFilterChanged(visibleTaxonomies, allTaxonomyIds);
+            v.annotationFilterChanged(hiddenFilters, visibleTaxonomies, allTaxonomyIds);
         });
     }
 });
@@ -516,13 +515,9 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         me.owner.owner.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
         me.owner.owner.on('overlayVisiblityChange', me.onOverlayVisibilityChange, me);
 
-        var image_server = getPreference('image_server');
-        var viewer = null;
-    	if(image_server === 'openseadragon'){
-    		viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {flex: 1, width: '100%', partLabel: me.partLabel});
-    	}else {
-    		viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {flex: 1, partLabel: me.partLabel});
-    	}
+        // Always use the OSD web component; digilib renders through its
+        // buildTileSource digilib branch (see ImageViewer.js).
+        var viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {flex: 1, width: '100%', partLabel: me.partLabel});
 
         viewer.on('imageChanged', me.onViewerImageChange, me);
 
@@ -597,8 +592,6 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         var actSystem = 0;
         var lastULX = 0;
 
-        var image_server = getPreference('image_server');
-
         Ext.Array.each(data, function(d) {
 
             var pageId = d['pageId'];
@@ -632,12 +625,9 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
             if(typeof me.imageViewers[viewerCount - 1] == 'undefined') {
 
 
-           	var viewer = null;
-       		if(image_server === 'openseadragon'){
-       			viewer = Ext.create('EdiromOnline.view.window.image.OpenSeaDragonViewer', {height: '100%', flex:1});
-       		} else{
-       			viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {flex: 1});
-       		}
+                // Always use the OSD web component; digilib renders through its
+                // buildTileSource digilib branch (see ImageViewer.js).
+                var viewer = Ext.create('EdiromOnline.view.window.image.ImageViewer', {height: '100%', flex:1});
 
                 viewer.on('imageChanged', me.onViewerImageChange, me);
 
@@ -741,7 +731,7 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         }
     },
 
-    annotationFilterChanged: function(visibleTaxonomies, allTaxonomyIds) {
+    annotationFilterChanged: function(hiddenFilters, visibleTaxonomies, allTaxonomyIds) {
         var me = this;
 
         if(typeof(debug) !== 'undefined' && debug !== null && debug) {
@@ -753,6 +743,15 @@ Ext.define('EdiromOnline.view.window.source.HorizontalMeasureViewer', {
         // MeasureBasedView renders each measure in its own viewer instance, so we must
         // apply the filter across all of them (contrast: PageBasedView has a single imageViewer).
         Ext.Array.each(me.imageViewers, function(viewer) {
+
+            // Component path: push the generic hidden-token set to the web
+            // component, which owns annotation rendering. Fall back to the legacy
+            // ExtJS taxonomy-based class toggling for the non-OSD ImageViewer.
+            if(typeof viewer.setAnnotationFilter === 'function') {
+                viewer.setAnnotationFilter(hiddenFilters);
+                return;
+            }
+
             var annotations = viewer.getShapes('annotations');
             var annotationDivIds = [];
 

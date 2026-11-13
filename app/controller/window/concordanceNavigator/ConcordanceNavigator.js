@@ -108,6 +108,15 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
     },
 
     /**
+     * The connection the user is on right now, for links that carry it to another UI. A connection from
+     * the URL that is still waiting for the navigator (application.activeConnection) counts too: it is
+     * cleared in concordancesLoaded, from then on the connection is tracked in workspaceConnection.
+     */
+    getCurrentConnection: function () {
+        return this.getWorkspaceConnection() || this.application.activeConnection || null;
+    },
+
+    /**
      * Asks the connected workspace (if there is one) to report this client's state.
      */
     notifyConnectedWorkspace: function () {
