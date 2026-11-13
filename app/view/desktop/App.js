@@ -84,10 +84,9 @@ Ext.define('EdiromOnline.view.desktop.App', {
 
         Ext.apply(cfg, me.desktopConfig);
         Ext.apply(cfg, {
-            wallpaper: 'resources/wallpapers/Blue-Sencha.jpg',
-            wallpaperStretch: false
+            logo: 'resources/img/ViFE-logo-small-144x144-trans.png'
         });
-        
+
         return cfg;
     },
 

@@ -40,6 +40,7 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
 
     wallpaper: null,
     wallpaperStretch: false,
+    logo: null,
 
     /** The <edirom-desktop> element. */
     element: null,
@@ -60,6 +61,7 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
         var desktop = me.element = document.createElement('edirom-desktop');
         if (me.wallpaper) desktop.setAttribute('wallpaper', me.wallpaper);
         if (me.wallpaperStretch) desktop.setAttribute('wallpaper-stretch', '');
+        if (me.logo) desktop.setAttribute('logo', me.logo);
 
         var workspace = document.createElement('div');
         workspace.slot = 'workspace';
