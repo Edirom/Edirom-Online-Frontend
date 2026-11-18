@@ -207,6 +207,26 @@ Ext.define('EdiromOnline.view.window.Window', {
         }
         
     },
+
+    /**
+     * A link to what the window shows right now: its document, with the xml:id of the position in the view that
+     * is active (see View.getCurrentInternalId). Opening the link in Edirom Online (or Edirom Mobile) shows the
+     * same position in the viewer that the id implies. The link is the one the "uri" URL parameter takes.
+     *
+     * @return {String} The link, e.g. xmldb:exist:///db/apps/ed/sources/source1.xml#page1. As long as the window
+     * is loading and has not built its views, it is the link the window was opened with.
+     */
+    getCurrentLink: function() {
+        var me = this;
+        var view = me.getActiveView();
+
+        if(!me.doc || !view || typeof view.getCurrentInternalId != 'function')
+            return me.uri || null;
+
+        var id = view.getCurrentInternalId();
+        return id ? me.doc + '#' + id : me.doc;
+    },
+
     callInternalLinkWhenVisible: function(view, id, type, n) {
         var me = this;
         

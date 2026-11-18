@@ -411,6 +411,25 @@ Ext.define('EdiromOnline.view.window.source.SourceView', {
         return this.pageBasedView.getActivePage();
     },
 
+    /**
+     * The page (page based view) or the measure (measure based view) that is shown, see View.getCurrentInternalId.
+     * Before the pages or measures are loaded nothing is shown yet, and the view is where it was sent.
+     */
+    getCurrentInternalId: function() {
+        var me = this, id = null;
+
+        if(me.activeView == 'measureBasedView') {
+            // The combo shows the measure; it does not exist before the measures are loaded
+            var combo = me.measureBasedView.measureSpinner.combo;
+            id = combo ? combo.getValue() : null;
+        }else {
+            var page = me.getActivePage();
+            id = page ? page.get('id') : null;
+        }
+
+        return id || me.callParent();
+    },
+
     createMenuEntries: function() {
 
         var me = this;

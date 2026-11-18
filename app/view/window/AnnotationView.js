@@ -401,6 +401,19 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         }
     },
 
+    /**
+     * The annotation that is shown on the detail page, see View.getCurrentInternalId. The list shows none:
+     * activeSingleAnnotation is kept when the user returns to the list, so it must not be read there.
+     */
+    getCurrentInternalId: function() {
+        var me = this;
+
+        if(me.getLayout().getActiveItem() != me.singlePlusToolbar)
+            return null;
+
+        return me.activeSingleAnnotation || null;
+    },
+
     onItemDblClicked: function(list, record, item, index, e, eOpts) {
         var me = this;
         me.showSingleAnnotation(record.get('id'));

@@ -116,6 +116,11 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         var connection = concordanceNavigator && concordanceNavigator.getCurrentConnection();
         if (this.application.activeWork && connection) params.set('connection', connection);
         params.set('lang', window.getLanguage());
+        // The document the user is looking at, at the position they are on. Mobile shows one document at a time
+        // and opens it in the viewer that the id of the link implies, so only the front document is passed on.
+        var documentWindow = this.desktop.getFrontDocumentWindow();
+        var documentLink = documentWindow && documentWindow.getCurrentLink();
+        if (documentLink) params.set('uri', documentLink);
         // Stay in the Connected Workspace session. The workspace also remembers it per tab
         // (sessionStorage); the parameter covers a browser that blocks that.
         var workspace = document.querySelector('#connected-workspace');

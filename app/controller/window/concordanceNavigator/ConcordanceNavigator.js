@@ -29,6 +29,7 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
     workspaceConnection: null,        // connection ID last reported to the session (null: none)
     pendingWorkspaceConnection: null, // requested by the session before concordances were loaded; consumed in concordancesLoaded
     concordancesReady: false,         // true once the current work's concordances were passed to the navigator
+    keepWindowsInPlace: false,        // true while a connection is selected that must not move the open windows (see concordancesLoaded)
 
     views: [
         'window.concordanceNavigator.ConcordanceNavigator'
@@ -78,7 +79,8 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         me.ediromConcordanceNavigator.addEventListener('connection-changed', function (e) {
             me.application.fireEvent('concordanceConnectionChanged', e.detail);
             var plist = e.detail.plist;
-            loadLink(plist, { useExisting: true, onlyExisting: true });
+            if (!me.keepWindowsInPlace)
+                loadLink(plist, { useExisting: true, onlyExisting: true });
 
             // Tell the WebSocket session. The connected workspace compares against what the
             // server already knows, so a change that was itself applied from the session
@@ -189,25 +191,37 @@ Ext.define('EdiromOnline.controller.window.concordanceNavigator.ConcordanceNavig
         for (let concordance of concordanceStore.data.items) {
             concordanceStoreRaw.push(concordance.raw);
         }
-        me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
-        me.concordancesReady = true;
+        // A document that the "uri" URL parameter opened stays where its link put it. The connection from the URL
+        // is selected in the navigator, but it must not move the document's window to the connection's measure
+        // (switching from Edirom Mobile carries both the connection and the document, at its own position). The
+        // component reports a connection while its attributes are set, so the windows are kept in place for that.
+        // Any later change of the connection moves the windows as usual.
+        me.keepWindowsInPlace = !!(me.application.activeConnection && me.application.startupUri);
+        me.application.startupUri = null;
 
-        // The component reports a connection only if there is one. Tell the navigator tab there is none,
-        // so that it can show its empty message.
-        if (concordanceStoreRaw.length === 0) {
-            me.application.fireEvent('concordanceConnectionChanged', { connectionId: null, plist: '' });
-        }
+        try {
+            me.ediromConcordanceNavigator.setAttribute("concordances-data", JSON.stringify(concordanceStoreRaw)); // set concordances as attribute to the web component
+            me.concordancesReady = true;
 
-        // Navigate to a specific connection if provided via URL parameter
-        var activeConnection = me.application.activeConnection;
-        if (activeConnection) {
-            if (me.hasConnectionId(concordanceStoreRaw, activeConnection)) {
-                me.ediromConcordanceNavigator.setAttribute("current-connection", activeConnection);
-            } else {
-                console.warn("Connection ID not found in concordances: " + activeConnection);
+            // The component reports a connection only if there is one. Tell the navigator tab there is none,
+            // so that it can show its empty message.
+            if (concordanceStoreRaw.length === 0) {
+                me.application.fireEvent('concordanceConnectionChanged', { connectionId: null, plist: '' });
             }
-            // Clear after applying to avoid re-navigation on subsequent concordance loads
-            me.application.activeConnection = null;
+
+            // Navigate to a specific connection if provided via URL parameter
+            var activeConnection = me.application.activeConnection;
+            if (activeConnection) {
+                if (me.hasConnectionId(concordanceStoreRaw, activeConnection)) {
+                    me.ediromConcordanceNavigator.setAttribute("current-connection", activeConnection);
+                } else {
+                    console.warn("Connection ID not found in concordances: " + activeConnection);
+                }
+                // Clear after applying to avoid re-navigation on subsequent concordance loads
+                me.application.activeConnection = null;
+            }
+        } finally {
+            me.keepWindowsInPlace = false;
         }
 
         // A connection requested by the WebSocket session has now been applied (or turned out

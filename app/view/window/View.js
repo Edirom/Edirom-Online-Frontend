@@ -40,6 +40,24 @@ Ext.define('EdiromOnline.view.window.View', {
         return 0;
     },
     
+    /**
+     * The counterpart of loadInternalId: the xml:id of what the view shows right now. It is used to carry the
+     * position over to Edirom Mobile (see Window.getCurrentLink).
+     *
+     * A view that follows what it shows (e.g. the page or the measure) overrides this. The default is for views
+     * that do not: they are where they were last sent, i.e. at the id of the last internal link of their window.
+     * An override that returns null says that the view shows nothing that has an id right now.
+     *
+     * @return {String} The xml:id, or null if there is none
+     */
+    getCurrentInternalId: function() {
+        var me = this;
+        var id = me.window ? me.window.internalId : null;
+
+        // The id of a link can carry parameters (id?term=...), which are not part of the id
+        return id ? String(id).split('?')[0] : null;
+    },
+
     loadInternalId: function(internalId, internalIdType) {
         var me = this;
         return false;

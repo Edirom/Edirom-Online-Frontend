@@ -591,6 +591,38 @@ Ext.define('EdiromOnline.view.desktop.Desktop', {
         return win;
     },
 
+    /**
+     * The window of a document that the user is looking at: the topmost visible one. The windows of the
+     * Concordance Navigator, the help, about and search are not documents, they do not count even if one of them
+     * is on top. If all document windows are minimized, it is the one that was opened last.
+     *
+     * @return {EdiromOnline.view.window.Window} The window, or null if no document is open
+     */
+    getFrontDocumentWindow: function () {
+        var me = this,
+            zmgr = me.getDesktopZIndexManager(),
+            front = null;
+
+        if (zmgr) {
+            zmgr.eachTopDown(function (comp) {
+                if (comp.isXType('ediromWindow') && !comp.hidden) {
+                    front = comp;
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        if (!front) {
+            me.getActiveWindowsSet().each(function (win) {
+                if (win.isXType('ediromWindow'))
+                    front = win;
+            });
+        }
+
+        return front;
+    },
+
     getDesktopZIndexManager: function () {
         var windows = this.getActiveWindowsSet();
         // TODO - there has to be a better way to get this...

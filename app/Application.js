@@ -65,7 +65,9 @@ Ext.define('EdiromOnline.Application', {
     activeEdition: '',
     activeWork: '', 
     activeConnection: null,
-    
+    // The "uri" URL parameter, until the Concordance Navigator has loaded its concordances (see ConcordanceNavigator.concordancesLoaded)
+    startupUri: null,
+
     init: function () {
         
         Ext.Error.handle = function(err) {
@@ -226,8 +228,9 @@ Ext.define('EdiromOnline.Application', {
             
         if(typeof urlParams.uri != 'undefined') {
             if(window.location.hash != '')
-                urlParams.uri = urlParams.uri + window.location.hash; 
-        
+                urlParams.uri = urlParams.uri + window.location.hash;
+
+            me.startupUri = urlParams.uri;
             app.on('ready', Ext.bind(window.loadLink, me, [urlParams.uri, {sort:'sortGrid'}], false), me, {single: true});
         }else {
             app.on('ready', Ext.bind(me.openStartDocuments, me), me, {single: true});

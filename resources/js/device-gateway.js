@@ -13,6 +13,7 @@
     }
 
     if (target === 'mobile') {
-        window.location.replace('mobile/index.html' + window.location.search);
+        // The hash belongs to the "uri" parameter: index.html?uri=doc.xml#id has its id there
+        window.location.replace('mobile/index.html' + window.location.search + window.location.hash);
     }
 })();
