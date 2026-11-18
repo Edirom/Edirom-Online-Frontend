@@ -169,10 +169,6 @@ $button-default-color: #000000;
 		@include background-image(linear-gradient-bevel(top,darken(#ffffff,5%)));
 		@include border-radius(5px);
 	}
-
-	.x-window-body > span > div:first-child > div:first-child {
-// 		display: none;		
-	}
 	
 	.x-btn-default-small {
 		@include background-image(linear-gradient-bevel(top,darken($window-base-color,20%)));
