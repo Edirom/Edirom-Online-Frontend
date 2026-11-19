@@ -51,10 +51,12 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
         // Specify URL of the current edition's CITATION.cff file
         function getEditionCitationURL(editionURI) {
-            const editionPathMatch = editionURI && editionURI.match(/^xmldb:exist:\/\/\/db\/(.+?)\/content(?:\/|$)/);
+            // The edition's root collection is either everything before a "content" folder
+            // (if the package uses one) or the collection containing the edition file.
+            const editionPathMatch = editionURI && editionURI.match(/^(xmldb:exist:\/\/\/db\/.+?)(?:\/content(?:\/.*)?|\/[^\/]+)$/);
             if (!editionPathMatch) return null;
 
-            const resource = 'xmldb:exist:///db/' + editionPathMatch[1] + '/CITATION.cff';
+            const resource = editionPathMatch[1] + '/CITATION.cff';
             return backendURL + 'api/document/?' + new URLSearchParams({resource, mediaType: 'text/plain'});
         }
         
