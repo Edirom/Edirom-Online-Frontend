@@ -20,6 +20,10 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
     extend: 'Ext.app.Controller',
 
+    requires: [
+        'EdiromOnline.util.CffRenderer'
+    ],
+
     views: [
         'window.about.AboutWindow'
     ],
@@ -69,39 +73,14 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`Status: ${response.status}`);
+                const error = new Error(`Status: ${response.status}`);
+                error.status = response.status;
+                throw error;
             }
             const citation = await response.text();
 
-            const title = citation.match(/^title: (.*)/m)[1];
-            const abstract = String(citation.match(/^abstract:\s>-\n(\s+.*\n)+/gm)).replace(/^abstract:\s>-\n/, '');
-            const version = citation.match(/^version: (.*)/m)[1];
-            const releaseDate = citation.match(/^date\-released: (.*)/m)[1];
-            const license = citation.match(/^license: (.*)/m)[1];
-            const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
-            const doiMatch = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/);
-            const doi = doiMatch ? doiMatch[1] : null;
-            const commit = citation.match(/^commit: (.*)/m)[1];
-
-            const resultHTML = `                
-                <h1>About ${title}</h1>
-                <section class="teidiv0">
-                    <p>${abstract}</p>
-                    <p>Version: ${version}</p>
-                    <p>Date: ${releaseDate}</p>
-                    ${doi ? `<p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>` : ''}
-                    <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
-                    <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
-                    <p>Revision: <a target="_blank" href="${repoUrl}/tree/${commit}">${commit.substring(0,7)}...</a></p>
-                    <p>Contributors: <br/>
-                        <a target="_blank" href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
-                            <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
-                        </a>
-                    </p>
-                </section>                
-            `;
-
-            return resultHTML;
+            const renderer = EdiromOnline.util.CffRenderer;
+            return renderer.render(renderer.parse(citation));
         }
 
         // Fetching content of CITATION.cff files and set result
@@ -110,7 +89,12 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             fetchContent(backendURLcitation),
             editionCitationURL
                 ? fetchContent(editionCitationURL).catch(function(error) {
-                    console.error('Error fetching edition CITATION.cff file:', error);
+                    // Editions do not have to ship a CITATION.cff, so a missing file is expected
+                    if (error.status === 404) {
+                        console.warn('No CITATION.cff found for the edition at ' + editionCitationURL);
+                    } else {
+                        console.error('Error fetching or rendering edition CITATION.cff file:', error);
+                    }
                     return '';
                 })
                 : ''
