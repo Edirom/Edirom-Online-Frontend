@@ -62,6 +62,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
+  "EdiromOnline.util.CffRenderer": [],
   "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
   "EdiromOnline.view.desktop.Desktop": [],
@@ -978,6 +979,7 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
+  "EdiromOnline.util.CffRenderer": [],
   "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
   "EdiromOnline.view.desktop.Desktop": [
