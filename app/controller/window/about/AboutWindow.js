@@ -80,7 +80,8 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             const citation = await response.text();
 
             const renderer = EdiromOnline.util.CffRenderer;
-            return renderer.render(renderer.parse(citation));
+            const cff = renderer.parse(citation);
+            return { cff: cff, html: renderer.render(cff) };
         }
 
         // Fetching content of CITATION.cff files and set result
@@ -95,13 +96,20 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                     } else {
                         console.error('Error fetching or rendering edition CITATION.cff file:', error);
                     }
-                    return '';
+                    return { cff: null, html: '' };
                 })
-                : ''
+                : { cff: null, html: '' }
         ]).then(function([frontend, backend, editionCitation]) {
+            // Compose the window title from the edition's CITATION.cff title, if there is one;
+            // otherwise the title set by the view is kept
+            const editionTitle = editionCitation.cff && EdiromOnline.util.CffRenderer.text(editionCitation.cff.title);
+            if (editionTitle) {
+                win.setTitle(Ext.String.htmlEncode('About ' + editionTitle + ' – Edirom Online'));
+            }
+
             win.setResult(`
                 <div class="tei_body">
-                    ${editionCitation}
+                    ${editionCitation.html}
                     <h1>About Edirom-Online</h1>
                     <section class="teidiv0">
                         <p>
@@ -114,8 +122,8 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                             Information about the parts of the software can be found below.
                         </p>
                     </section>
-                    ${frontend}
-                    ${backend}
+                    ${frontend.html}
+                    ${backend.html}
                 </div>`);
         }).catch(function(error) {
             console.error('Error fetching CITATION.cff files:', error);
