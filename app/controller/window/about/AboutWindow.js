@@ -101,11 +101,12 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
         ]).then(function([frontend, backend, editionCitation]) {
             win.setResult(`
                 <div class="tei_body">
+                    ${editionCitation}
                     <h1>About Edirom-Online</h1>
                     <section class="teidiv0">
                         <p>
-                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions. 
-                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media. 
+                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions.
+                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media.
                             Edirom-Online is developed by the Edirom Project.
                         </p>
                         <p>
@@ -113,7 +114,6 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                             Information about the parts of the software can be found below.
                         </p>
                     </section>
-                    ${editionCitation}
                     ${frontend}
                     ${backend}
                 </div>`);
