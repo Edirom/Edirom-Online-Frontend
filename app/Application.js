@@ -283,12 +283,12 @@ Ext.define('EdiromOnline.Application', {
     callFunctionOfEdition: function(win, fnName, callback, args) {
         var me = this;
 
-        var arguments = Ext.apply({workId: me.activeWork}, args);
+        var editionArgs = Ext.apply({workId: me.activeWork}, args);
         var editions = Ext.getStore('Editions');
         var editionIndex = editions.find('doc', me.activeEdition);
         var edition = editions.getAt(editionIndex);
         
-        edition[fnName](callback, arguments);
+        edition[fnName](callback, editionArgs);
 	},
 	
 	getURLParameter: function(parameter) {
