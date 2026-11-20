@@ -209,6 +209,11 @@ Ext.define('EdiromOnline.Application', {
         me.getController('PreferenceController').initPreferences(me.activeEdition);
         me.getController('LanguageController').initLangFile(me.activeEdition, 'de');
         me.getController('LanguageController').initLangFile(me.activeEdition, 'en');
+
+        // Document language for assistive technology and hyphenation; the value comes from
+        // the lang URL parameter, the edition preference or the 'en' fallback (see PreferenceController).
+        document.documentElement.lang = String(window.getLanguage()).replace(/[^a-zA-Z-]/g, '') || 'en';
+
         me.initDataStores();
 
         var app = Ext.create('EdiromOnline.view.desktop.App', {app: this});
