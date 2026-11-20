@@ -272,7 +272,10 @@ Ext.define('EdiromOnline.Application', {
     selectEdition: function(editionId) {
         this.activeEdition = editionId;
         this.fireEvent('editionSelected', editionId);
-        window.open(window.location.pathname + '?edition=' + editionId, "_self");
+        var lang = this.getURLParameter('lang');
+        var query = 'edition=' + encodeURIComponent(editionId);
+        if (lang) query += '&lang=' + encodeURIComponent(lang);
+        window.open(window.location.pathname + '?' + query, '_self');
     },
     
     selectWork: function(workId) {
