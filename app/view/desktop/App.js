@@ -83,6 +83,9 @@ Ext.define('EdiromOnline.view.desktop.App', {
         };
 
         Ext.apply(cfg, me.desktopConfig);
+        Ext.apply(cfg, {
+            logo: 'resources/img/ViFE-logo-small-144x144-trans.png'
+        });
         
         return cfg;
     },
