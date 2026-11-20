@@ -20,6 +20,10 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
     extend: 'Ext.app.Controller',
 
+    requires: [
+        'EdiromOnline.util.CffRenderer'
+    ],
+
     views: [
         'window.about.AboutWindow'
     ],
@@ -51,10 +55,12 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
         // Specify URL of the current edition's CITATION.cff file
         function getEditionCitationURL(editionURI) {
-            const editionPathMatch = editionURI && editionURI.match(/^xmldb:exist:\/\/\/db\/(.+?)\/content(?:\/|$)/);
+            // The edition's root collection is either everything before a "content" folder
+            // (if the package uses one) or the collection containing the edition file.
+            const editionPathMatch = editionURI && editionURI.match(/^(xmldb:exist:\/\/\/db\/.+?)(?:\/content(?:\/.*)?|\/[^\/]+)$/);
             if (!editionPathMatch) return null;
 
-            const resource = 'xmldb:exist:///db/' + editionPathMatch[1] + '/CITATION.cff';
+            const resource = editionPathMatch[1] + '/CITATION.cff';
             return backendURL + 'api/document/?' + new URLSearchParams({resource, mediaType: 'text/plain'});
         }
         
@@ -67,39 +73,15 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
 
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`Status: ${response.status}`);
+                const error = new Error(`Status: ${response.status}`);
+                error.status = response.status;
+                throw error;
             }
             const citation = await response.text();
 
-            const title = citation.match(/^title: (.*)/m)[1];
-            const abstract = String(citation.match(/^abstract:\s>-\n(\s+.*\n)+/gm)).replace(/^abstract:\s>-\n/, '');
-            const version = citation.match(/^version: (.*)/m)[1];
-            const releaseDate = citation.match(/^date\-released: (.*)/m)[1];
-            const license = citation.match(/^license: (.*)/m)[1];
-            const repoUrl = citation.match(/^repository\-code: (.*)/m)[1];
-            const doiMatch = citation.match(/value: .*?([0-9]+\.[0-9]+\/zenodo\.[0-9]+)/);
-            const doi = doiMatch ? doiMatch[1] : null;
-            const commit = citation.match(/^commit: (.*)/m)[1];
-
-            const resultHTML = `                
-                <h1>About ${title}</h1>
-                <section class="teidiv0">
-                    <p>${abstract}</p>
-                    <p>Version: ${version}</p>
-                    <p>Date: ${releaseDate}</p>
-                    ${doi ? `<p>DOI: <a target="_blank" href="https://doi.org/${doi}">${doi}</a></p>` : ''}
-                    <p>${getLangString('view.window.about.AboutWindow_License')}: ${license}</p>
-                    <p>GitHub: <a target="_blank" href="${repoUrl}">${repoUrl}</a></p>
-                    <p>Revision: <a target="_blank" href="${repoUrl}/tree/${commit}">${commit.substring(0,7)}...</a></p>
-                    <p>Contributors: <br/>
-                        <a target="_blank" href="${repoUrl}/graphs/contributors" title="See contributors to ${title} GitHub project">
-                            <img height="50px" id="github-contributors" src="https://contrib.rocks/image?repo=${repoUrl.replace(/^https?:\/\/github.com\//, '')}&max=14&columns=7" alt="Avatars of contributors to ${title} in GitHub" />
-                        </a>
-                    </p>
-                </section>                
-            `;
-
-            return resultHTML;
+            const renderer = EdiromOnline.util.CffRenderer;
+            const cff = renderer.parse(citation);
+            return { cff: cff, html: renderer.render(cff) };
         }
 
         // Fetching content of CITATION.cff files and set result
@@ -108,18 +90,31 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
             fetchContent(backendURLcitation),
             editionCitationURL
                 ? fetchContent(editionCitationURL).catch(function(error) {
-                    console.error('Error fetching edition CITATION.cff file:', error);
-                    return '';
+                    // Editions do not have to ship a CITATION.cff, so a missing file is expected
+                    if (error.status === 404) {
+                        console.warn('No CITATION.cff found for the edition at ' + editionCitationURL);
+                    } else {
+                        console.error('Error fetching or rendering edition CITATION.cff file:', error);
+                    }
+                    return { cff: null, html: '' };
                 })
-                : ''
+                : { cff: null, html: '' }
         ]).then(function([frontend, backend, editionCitation]) {
+            // Compose the window title from the edition's CITATION.cff title, if there is one;
+            // otherwise the title set by the view is kept
+            const editionTitle = editionCitation.cff && EdiromOnline.util.CffRenderer.text(editionCitation.cff.title);
+            if (editionTitle) {
+                win.setTitle(Ext.String.htmlEncode('About ' + editionTitle + ' – Edirom Online'));
+            }
+
             win.setResult(`
                 <div class="tei_body">
+                    ${editionCitation.html}
                     <h1>About Edirom-Online</h1>
                     <section class="teidiv0">
                         <p>
-                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions. 
-                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media. 
+                            Edirom-Online is a web-based platform for the collaborative editing of complex scholarly digital editions.
+                            It is based on the TEI XML standard and provides a rich set of tools for the collaborative editing of texts, images, and other media.
                             Edirom-Online is developed by the Edirom Project.
                         </p>
                         <p>
@@ -127,9 +122,8 @@ Ext.define('EdiromOnline.controller.window.about.AboutWindow', {
                             Information about the parts of the software can be found below.
                         </p>
                     </section>
-                    ${editionCitation}
-                    ${frontend}
-                    ${backend}
+                    ${frontend.html}
+                    ${backend.html}
                 </div>`);
         }).catch(function(error) {
             console.error('Error fetching CITATION.cff files:', error);
