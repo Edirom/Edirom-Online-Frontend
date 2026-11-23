@@ -33,6 +33,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     annotationsVisible: false,
     annotationsLoaded: false,
     annotationsVisibilitySetLocaly: false,
+    textContentLoaded: false,
 
     initComponent: function () {
 
@@ -335,7 +336,9 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         me.bottomBar.add({xtype: 'tbfill'});
 
         me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations"' +
+                (me.annotationsVisible ? ' pressed' : '') +
+                ' title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.toggleAnnotations, me, [])
         });
@@ -408,6 +411,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         var me = this;
 
 		Ext.fly(me.id + '_textCont').update(text);
+        me.textContentLoaded = true;
 		this.fireEvent('documentLoaded', me);
 
 		Ext.Array.each(Ext.query('.scrollto'), function(dom, n, all) {
