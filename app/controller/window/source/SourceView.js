@@ -55,6 +55,7 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
         view.on('gotoMovement', me.onGotoMovement, me);
         view.on('gotoMeasureByName', me.onGotoMeasureByName, me);
         view.on('gotoMeasure', me.onGotoMeasure, me);
+        view.on('gotoFirstMeasureOnPage', me.onGotoFirstMeasureOnPage, me);
         view.on('gotoZone', me.onGotoZone, me);
 
         ToolsController.addMeasuresVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
@@ -335,6 +336,27 @@ Ext.define('EdiromOnline.controller.window.source.SourceView', {
                 var data = response.responseText;
 				this.gotoMeasure(Ext.JSON.decode(data), view);
             }, me)
+        );
+	},
+
+	// Shows the first measure of the given page in the measure based view; does
+	// nothing if the page contains no measure.
+	onGotoFirstMeasureOnPage: function (view, pageId) {
+
+		window.doAJAXRequest('data/xql/getMeasuresOnPage.xql',
+            'GET',
+            {
+                uri: view.uri,
+				pageId: pageId
+            },
+            function(response){
+                // Ignore the response if the user has moved on in the meantime.
+                if(view.activeView !== 'measureBasedView' || view.measureBasedView.pageNavigated) return;
+
+                var measures = Ext.JSON.decode(response.responseText);
+                if(measures && measures.length)
+                    view.gotoMeasure(measures[0].id);
+            }
         );
 	},
 
