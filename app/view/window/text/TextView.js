@@ -33,6 +33,7 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
     annotationsVisible: false,
     annotationsLoaded: false,
     annotationsVisibilitySetLocaly: false,
+    textContentLoaded: false,
 
     // Resolves this view's own text container element WITHOUT going through
     // document.getElementById/Ext.get(string) - this view can be reparented
@@ -343,7 +344,9 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
         me.bottomBar.add({xtype: 'tbfill'});
 
         me.toggleAnnotationDisplay = Ext.create('Ext.button.Button', {
-            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations" title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
+            html: '<edirom-icon id="icon_display-annotations-window_'+me.id+'" role="button" name="eo_toggle_annotations"' +
+                (me.annotationsVisible ? ' pressed' : '') +
+                ' title="' + getLangString('view.window.text.TextView_showAnnotations') + '"></edirom-icon>',
             baseCls: 'edirom-icon-button',
             handler: Ext.bind(me.toggleAnnotations, me, [])
         });
@@ -414,8 +417,14 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     setContent: function(text) {
         var me = this;
+<<<<<<< HEAD
 		
 		Ext.fly(me.getTextContEl()).update(text);
+=======
+
+		Ext.fly(me.id + '_textCont').update(text);
+        me.textContentLoaded = true;
+>>>>>>> origin/develop
 		this.fireEvent('documentLoaded', me);
 		
 		Ext.Array.each(Ext.query('.scrollto', me.getTextContEl()), function(dom, n, all) {

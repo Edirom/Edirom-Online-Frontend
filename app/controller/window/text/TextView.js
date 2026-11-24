@@ -42,6 +42,7 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.initialized = true;
 
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
+        view.on('documentLoaded', me.onDocumentLoaded, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
         ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
@@ -132,6 +133,7 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
     onAnnotationsVisibilityChange: function(view, visible) {
         var me = this;
 
+<<<<<<< HEAD
         if(visible) {
             window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
                 'GET',
@@ -143,13 +145,46 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
                         fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
                         data: Ext.JSON.decode(response.responseText)
                     });
+=======
+        if (!visible) {
+            view.hideAnnotations();
+            return;
+        }
 
+        if (!view.textContentLoaded) return;
+
+        window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
+            'GET',
+            {
+                uri: view.uri,
+                mode: 'taxonomies'
+            },
+            Ext.bind(function(response){
+                var data = response.responseText;
+>>>>>>> origin/develop
+
+                var annotations = Ext.create('Ext.data.Store', {
+                    fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
+                    data: Ext.JSON.decode(data)
+                });
+
+                if (view.annotationsVisible)
                     me.annotationsLoaded(annotations, view);
+<<<<<<< HEAD
                 }, this)
             );
         } else {
             view.hideAnnotations();
         }
+=======
+            }, this)
+        );
+    },
+
+    onDocumentLoaded: function(view) {
+        if (view.annotationsVisible)
+            this.onAnnotationsVisibilityChange(view, true);
+>>>>>>> origin/develop
     },
 
     annotationsLoaded: function(annotations, view) {

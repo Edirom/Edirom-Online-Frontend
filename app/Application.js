@@ -43,6 +43,7 @@ Ext.define('EdiromOnline.Application', {
         'window.source.PageBasedView',
         'window.source.MeasureBasedView',
         'window.source.VerovioView',
+        'window.x3d.X3dView',
         'window.text.FacsimileView',
         'window.text.TextFacsimileSplitView',
         'window.text.TextView',
@@ -94,7 +95,7 @@ Ext.define('EdiromOnline.Application', {
 
         window.getActiveEdition = Ext.bind(this.getActiveEdition, this);
 
-        me.addEvents('workSelected');
+        me.addEvents('workSelected', 'concordanceConnectionChanged');
         
         var editionParam = me.getURLParameter('edition');
 

@@ -54,6 +54,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.window.text.FacsimileView": [],
   "EdiromOnline.controller.window.text.TextFacsimileSplitView": [],
   "EdiromOnline.controller.window.text.TextView": [],
+  "EdiromOnline.controller.window.x3d.X3dView": [],
   "EdiromOnline.model.AnnotationParticipant": [],
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
@@ -99,6 +100,8 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.view.window.text.TextFacsimileSplitView": [],
   "EdiromOnline.view.window.text.TextView": [],
   "EdiromOnline.view.window.util.PageSpinner": [],
+  "EdiromOnline.view.window.x3d.X3dScene": [],
+  "EdiromOnline.view.window.x3d.X3dView": [],
   "Ext.AbstractComponent": [],
   "Ext.AbstractManager": [],
   "Ext.AbstractPlugin": [],
@@ -500,6 +503,7 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.grid.RowEditor": [],
   "Ext.grid.RowEditorButtons": [],
+  "Ext.grid.Scroller": [],
   "Ext.grid.View": [],
   "Ext.grid.ViewDropZone": [],
   "Ext.grid.column.Action": [
@@ -961,6 +965,7 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.window.text.FacsimileView": [],
   "EdiromOnline.controller.window.text.TextFacsimileSplitView": [],
   "EdiromOnline.controller.window.text.TextView": [],
+  "EdiromOnline.controller.window.x3d.X3dView": [],
   "EdiromOnline.model.AnnotationParticipant": [],
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
@@ -1058,6 +1063,10 @@ Ext.ClassManager.addNameAliasMappings({
   ],
   "EdiromOnline.view.window.util.PageSpinner": [
     "widget.pageSpinner"
+  ],
+  "EdiromOnline.view.window.x3d.X3dScene": [],
+  "EdiromOnline.view.window.x3d.X3dView": [
+    "widget.x3dView"
   ],
   "Ext.AbstractComponent": [],
   "Ext.AbstractManager": [],
@@ -1494,6 +1503,7 @@ Ext.ClassManager.addNameAliasMappings({
   "Ext.grid.RowEditorButtons": [
     "widget.roweditorbuttons"
   ],
+  "Ext.grid.Scroller": [],
   "Ext.grid.View": [
     "widget.gridview"
   ],
