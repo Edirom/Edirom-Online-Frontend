@@ -133,19 +133,6 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
     onAnnotationsVisibilityChange: function(view, visible) {
         var me = this;
 
-<<<<<<< HEAD
-        if(visible) {
-            window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
-                'GET',
-                {
-                    uri: view.uri
-                },
-                Ext.bind(function(response){
-                    var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
-                        data: Ext.JSON.decode(response.responseText)
-                    });
-=======
         if (!visible) {
             view.hideAnnotations();
             return;
@@ -161,7 +148,6 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             },
             Ext.bind(function(response){
                 var data = response.responseText;
->>>>>>> origin/develop
 
                 var annotations = Ext.create('Ext.data.Store', {
                     fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
@@ -170,13 +156,6 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
 
                 if (view.annotationsVisible)
                     me.annotationsLoaded(annotations, view);
-<<<<<<< HEAD
-                }, this)
-            );
-        } else {
-            view.hideAnnotations();
-        }
-=======
             }, this)
         );
     },
@@ -184,7 +163,6 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
     onDocumentLoaded: function(view) {
         if (view.annotationsVisible)
             this.onAnnotationsVisibilityChange(view, true);
->>>>>>> origin/develop
     },
 
     annotationsLoaded: function(annotations, view) {

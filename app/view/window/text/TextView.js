@@ -417,15 +417,9 @@ Ext.define('EdiromOnline.view.window.text.TextView', {
 
     setContent: function(text) {
         var me = this;
-<<<<<<< HEAD
-		
-		Ext.fly(me.getTextContEl()).update(text);
-=======
-
-		Ext.fly(me.id + '_textCont').update(text);
+        Ext.fly(me.getTextContEl()).update(text);
         me.textContentLoaded = true;
->>>>>>> origin/develop
-		this.fireEvent('documentLoaded', me);
+        this.fireEvent('documentLoaded', me);
 		
 		Ext.Array.each(Ext.query('.scrollto', me.getTextContEl()), function(dom, n, all) {
             var elem = Ext.get(dom);
