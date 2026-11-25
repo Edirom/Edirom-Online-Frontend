@@ -146,9 +146,6 @@ Ext.define('EdiromOnline.controller.LinkController', {
             var posConfig = (positions == null?{}:positions['win_' + i]);
             var cfg = Ext.apply(config, posConfig);
             if(win == 'newWindow') {
-	            if(cfg['y']) {
-	            	cfg['y'] = cfg['y'] - 41; // hack: height of TopBar
-	            }
                 windowsUsed.add(this.parseExistLink(singleUri, cfg));
             }
             else {
