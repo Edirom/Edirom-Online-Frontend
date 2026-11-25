@@ -21,6 +21,11 @@
     <!-- info for WebSocket server (empty = WebSocket features disabled) -->
     <property name="ws.url" value=""/>
 
+    <!-- Keycloak integration (empty = disabled) -->
+    <property name="keycloak.url" value=""/>
+    <property name="keycloak.realm" value=""/>
+    <property name="keycloak.client-id" value=""/>
+
     <!-- other properties -->
     <property name="project.version" value="1.5.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
@@ -86,6 +91,9 @@
                 <filter token="backend.url" value="${backend.url}"/>
                 <filter token="backend.path" value="${backend.path}"/>
                 <filter token="ws.url" value="${ws.url}"/>
+                <filter token="keycloak.url" value="${keycloak.url}"/>
+                <filter token="keycloak.realm" value="${keycloak.realm}"/>
+                <filter token="keycloak.client-id" value="${keycloak.client-id}"/>
             </filterset>
         </copy>
     </target>

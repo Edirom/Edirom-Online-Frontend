@@ -61,6 +61,9 @@ Available properties for override:
 - `backend.port` (default: `8080`)
 - `backend.path` (default: `/exist/apps/Edirom-Online-Backend/`)
 - `ws.url` (default: empty — WebSocket features disabled, see [Enabling the Connected Workspace](#enabling-the-connected-workspace-websocket-server-url))
+- `keycloak.url` (default: empty — Keycloak sign-in disabled)
+- `keycloak.realm` (default: empty)
+- `keycloak.client-id` (default: empty)
 - `project.version` (default: `1.5.0`)
 - `project.app` (default: `Edirom-Online-Frontend`)
 - `project.title` (default: `Edirom-Online Frontend`)
@@ -78,7 +81,25 @@ backend.protocol=https
 backend.host=my-custom-host
 backend.port=9090
 ws.url=wss://example.com/ws
+keycloak.url=https://keycloak.example.com
+keycloak.realm=edirom
+keycloak.client-id=edirom-online
 project.version=2.0.0
+```
+
+The Keycloak settings are written to `keycloakURL`, `keycloakRealm`, and `keycloakClientId` in `config.json`. When all three are present, Edirom Online enables the Keycloak button and lazily loads the pinned `@edirom/keycloak-handler` module.
+
+For an nginx deployment, add these values to the existing runtime `config.json`:
+
+```json
+{
+  "backendURL": "http://localhost:8080/exist/apps/Edirom-Online-Backend/",
+  "backendPath": "/exist/apps/Edirom-Online-Backend/",
+  "wsURL": "",
+  "keycloakURL": "http://localhost:8082",
+  "keycloakRealm": "edirom-test-realm",
+  "keycloakClientId": "edirom-online"
+}
 ```
 
 #### Setting Backend URL at Runtime in Container environments

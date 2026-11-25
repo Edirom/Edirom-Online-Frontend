@@ -14,6 +14,9 @@ FROM eclipse-temurin:8-jdk-focal as builder
 
 ARG ANT_VERSION=1.10.12
 ARG BE_PORT=8080
+ARG KEYCLOAK_URL
+ARG KEYCLOAK_REALM
+ARG KEYCLOAK_CLIENT_ID
 ARG SENCHA_BUILD_ENV=production
 
 
@@ -66,6 +69,9 @@ RUN echo "Writing backend.port=$BE_PORT to local.properties…"; \
     else \
         echo "backend.port=$BE_PORT" >> local.properties; \
     fi && \
+    if [ -n "$KEYCLOAK_URL" ]; then printf 'keycloak.url=%s\n' "$KEYCLOAK_URL" >> local.properties; fi && \
+    if [ -n "$KEYCLOAK_REALM" ]; then printf 'keycloak.realm=%s\n' "$KEYCLOAK_REALM" >> local.properties; fi && \
+    if [ -n "$KEYCLOAK_CLIENT_ID" ]; then printf 'keycloak.client-id=%s\n' "$KEYCLOAK_CLIENT_ID" >> local.properties; fi && \
     echo "Building Frontend XAR..." && \
     sencha app build ${SENCHA_BUILD_ENV}
 

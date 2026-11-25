@@ -76,10 +76,24 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
 
         var authentication = document.createElement('edirom-authentication');
         authentication.setAttribute('backend-url', EdiromOnline.getApplication().backendURL);
+
+        var configController = EdiromOnline.getApplication().getController('ConfigController');
+        var keycloakUrl = configController.getConfig('keycloakURL');
+        var keycloakRealm = configController.getConfig('keycloakRealm');
+        var keycloakClientId = configController.getConfig('keycloakClientId');
+        if (keycloakUrl && keycloakRealm && keycloakClientId) {
+            authentication.setAttribute('keycloak-url', keycloakUrl);
+            authentication.setAttribute('keycloak-realm', keycloakRealm);
+            authentication.setAttribute('keycloak-client-id', keycloakClientId);
+            authentication.setAttribute(
+                'keycloak-handler-src',
+                'https://cdn.jsdelivr.net/npm/@edirom/keycloak-handler@0.1.0/keycloak-handler.js'
+            );
+        }
         actions.appendChild(authentication);
 
         // The connected workspace should only instantiate when a wsURL is actually configured.
-        var wsUrl = EdiromOnline.getApplication().getController('ConfigController').getConfig('wsURL');
+        var wsUrl = configController.getConfig('wsURL');
         var connectedWorkspacePlaceholder = null;
         if (wsUrl) {
             connectedWorkspacePlaceholder = document.createElement('div');

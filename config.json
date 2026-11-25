@@ -1,5 +1,8 @@
 {
     "backendURL": "@backend.url@",
     "backendPath": "@backend.path@",
-    "wsURL": "@ws.url@"
+    "wsURL": "@ws.url@",
+    "keycloakURL": "@keycloak.url@",
+    "keycloakRealm": "@keycloak.realm@",
+    "keycloakClientId": "@keycloak.client-id@"
 }
