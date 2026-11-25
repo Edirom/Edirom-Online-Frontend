@@ -25,3 +25,6 @@
 [submodule "resources/js/edirom-desktop"]
 	url = https://github.com/Edirom/edirom-desktop.git
 	path = resources/js/edirom-desktop
+[submodule "resources/js/edirom-keycloak-handler"]
+	path = resources/js/edirom-keycloak-handler
+	url = https://github.com/Edirom/edirom-keycloak-handler.git
