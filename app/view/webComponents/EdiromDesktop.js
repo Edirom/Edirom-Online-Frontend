@@ -71,14 +71,21 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
 
         desktop.append(workspace, navigator);
 
+        var actions = document.createElement('div');
+        actions.slot = 'topbar-actions';
+
+        var authentication = document.createElement('edirom-authentication');
+        authentication.setAttribute('backend-url', EdiromOnline.getApplication().backendURL);
+        actions.appendChild(authentication);
+
         // The connected workspace should only instantiate when a wsURL is actually configured.
         var wsUrl = EdiromOnline.getApplication().getController('ConfigController').getConfig('wsURL');
-        var actions = null;
+        var connectedWorkspacePlaceholder = null;
         if (wsUrl) {
-            actions = document.createElement('div');
-            actions.slot = 'topbar-actions';
-            desktop.append(actions);
+            connectedWorkspacePlaceholder = document.createElement('div');
+            actions.appendChild(connectedWorkspacePlaceholder);
         }
+        desktop.append(actions);
 
         me.el.dom.appendChild(desktop);
 
@@ -88,9 +95,9 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
             style: 'position: absolute; top: 0; right: 0; bottom: 0; left: 0;'
         });
 
-        if (actions) {
+        if (connectedWorkspacePlaceholder) {
             me.connectedWorkspace = Ext.create('EdiromOnline.view.webComponents.EdiromConnectedWorkspace', {
-                renderTo: actions
+                renderTo: connectedWorkspacePlaceholder
             });
         }
     },
