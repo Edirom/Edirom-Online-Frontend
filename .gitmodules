@@ -28,3 +28,4 @@
 [submodule "resources/js/edirom-authentication"]
 	path = resources/js/edirom-authentication
 	url = https://github.com/Edirom/edirom-authentication.git
+	branch = keycloak

@@ -6,7 +6,6 @@
  */
 Ext.Loader.addClassPathMappings({
   "EdiromOnline": "app",
-  "EdiromOnline.view.desktop.TrayClock": "app/view/desktop/TaskBar.js",
   "EdiromOnline.view.window.image.ImageLoader": "app/view/window/image/ImageViewer.js",
   "EdiromOnline.view.window.source.GotoMsg": "app/view/window/source/SourceView.js",
   "EdiromOnline.view.window.source.HorizontalMeasureViewer": "app/view/window/source/MeasureBasedView.js",
@@ -35,8 +34,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.controller.PreferenceController": [],
   "EdiromOnline.controller.ToolsController": [],
   "EdiromOnline.controller.desktop.Desktop": [],
-  "EdiromOnline.controller.desktop.TaskBar": [],
-  "EdiromOnline.controller.desktop.TopBar": [],
   "EdiromOnline.controller.navigator.Navigator": [],
   "EdiromOnline.controller.webComponents.EdiromConnectedWorkspace": [],
   "EdiromOnline.controller.window.AnnotationView": [],
@@ -62,16 +59,12 @@ Ext.ClassManager.addNameAlternateMappings({
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
-  "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
-  "EdiromOnline.view.desktop.Desktop": [],
-  "EdiromOnline.view.desktop.TaskBar": [],
-  "EdiromOnline.view.desktop.TopBar": [],
-  "EdiromOnline.view.desktop.TrayClock": [],
   "EdiromOnline.view.navigator.Navigator": [],
   "EdiromOnline.view.utils.EnhancedSlider": [],
   "EdiromOnline.view.utils.Lightbox": [],
   "EdiromOnline.view.webComponents.EdiromConnectedWorkspace": [],
+  "EdiromOnline.view.webComponents.EdiromDesktop": [],
   "EdiromOnline.view.window.AnnotationView": [],
   "EdiromOnline.view.window.BottomBar": [],
   "EdiromOnline.view.window.HeaderView": [],
@@ -508,7 +501,6 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.grid.RowEditor": [],
   "Ext.grid.RowEditorButtons": [],
-  "Ext.grid.Scroller": [],
   "Ext.grid.View": [],
   "Ext.grid.ViewDropZone": [],
   "Ext.grid.column.Action": [
@@ -951,8 +943,6 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.controller.PreferenceController": [],
   "EdiromOnline.controller.ToolsController": [],
   "EdiromOnline.controller.desktop.Desktop": [],
-  "EdiromOnline.controller.desktop.TaskBar": [],
-  "EdiromOnline.controller.desktop.TopBar": [],
   "EdiromOnline.controller.navigator.Navigator": [],
   "EdiromOnline.controller.webComponents.EdiromConnectedWorkspace": [],
   "EdiromOnline.controller.window.AnnotationView": [],
@@ -978,20 +968,7 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.model.Edition": [],
   "EdiromOnline.model.MeasureShape": [],
   "EdiromOnline.model.Work": [],
-  "EdiromOnline.view.Settings": [],
   "EdiromOnline.view.desktop.App": [],
-  "EdiromOnline.view.desktop.Desktop": [
-    "widget.desktop"
-  ],
-  "EdiromOnline.view.desktop.TaskBar": [
-    "widget.taskbar"
-  ],
-  "EdiromOnline.view.desktop.TopBar": [
-    "widget.topbar"
-  ],
-  "EdiromOnline.view.desktop.TrayClock": [
-    "widget.trayclock"
-  ],
   "EdiromOnline.view.navigator.Navigator": [
     "widget.navigator"
   ],
@@ -999,6 +976,9 @@ Ext.ClassManager.addNameAliasMappings({
   "EdiromOnline.view.utils.Lightbox": [],
   "EdiromOnline.view.webComponents.EdiromConnectedWorkspace": [
     "widget.ediromConnectedWorkspace"
+  ],
+  "EdiromOnline.view.webComponents.EdiromDesktop": [
+    "widget.ediromDesktop"
   ],
   "EdiromOnline.view.window.AnnotationView": [
     "widget.annotationView"
@@ -1516,7 +1496,6 @@ Ext.ClassManager.addNameAliasMappings({
   "Ext.grid.RowEditorButtons": [
     "widget.roweditorbuttons"
   ],
-  "Ext.grid.Scroller": [],
   "Ext.grid.View": [
     "widget.gridview"
   ],
