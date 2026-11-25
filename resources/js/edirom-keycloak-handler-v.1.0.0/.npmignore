@@ -1,0 +1,16 @@
+# Development files
+.git
+.gitignore
+.github
+node_modules/
+
+# Documentation
+README.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CITATION.cff
+
+# Examples and tests
+index.html
+silent-check-sso.html
+*.md

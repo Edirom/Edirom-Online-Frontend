@@ -1,0 +1,24 @@
+# Node/npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Build/Dist/Temp
+dist/
+build/
+*.log
+tmp/
+*.tmp
+
+# Dependency/Cache
+package-lock.json
+yarn.lock
+.env
+.env.*

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: Edirom Keycloak Handler Web Component
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Silke
+    family-names: Reich
+    email: digitnaut@protonmail.com
+    affiliation: Goethe-Universität Frankfurt am Main
+    orcid: 'https://orcid.org/0009-0007-8817-0299'
+repository-code: 'https://github.com/Edirom/edirom-keycloak-handler'
+abstract: >-
+  This web component provides a login interface for Keycloak,
+  an open-source identity and access management solution.
+  It is intended to be used in the Edirom Online, but can also be (re-)used in other web
+  applications. No compilation or building is necessary to
+  use the web component.
+license: MIT

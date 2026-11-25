@@ -1,0 +1,32 @@
+{
+  "name": "@edirom/keycloak-handler",
+  "version": "0.1.0",
+  "description": "A reusable Web Component for Keycloak authentication in vanilla JavaScript applications",
+  "type": "module",
+  "main": "keycloak-handler.js",
+  "exports": {
+    ".": "./keycloak-handler.js"
+  },
+  "files": [
+    "keycloak-handler.js",
+    "vendor/",
+    "LICENSE.txt"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Edirom/edirom-keycloak-handler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Edirom/edirom-keycloak-handler/issues"
+  },
+  "homepage": "https://github.com/Edirom/edirom-keycloak-handler#readme",
+  "keywords": [
+    "keycloak",
+    "authentication",
+    "web-component",
+    "sso",
+    "oauth2"
+  ],
+  "author": "Edirom Project",
+  "license": "MIT"
+}
