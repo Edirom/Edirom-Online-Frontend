@@ -21,8 +21,47 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     extend: 'Ext.app.Controller',
 
     views: [
-        'desktop.Desktop'
+        'webComponents.EdiromDesktop'
     ],
+
+    requires: [
+        'EdiromOnline.view.navigator.Navigator'
+    ],
+
+    activeWindowCls: 'ux-desktop-active-win',
+    inactiveWindowCls: 'ux-desktop-inactive-win',
+
+    windowKinds: {
+        'EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator': 'concordance-navigator',
+        'EdiromOnline.view.window.HelpWindow': 'help',
+        'EdiromOnline.view.window.about.AboutWindow': 'about',
+        'EdiromOnline.view.window.search.SearchWindow': 'search'
+    },
+
+    hiddenInTaskbarKinds: ['concordance-navigator', 'search'],
+
+    labelKeys: {
+        home: 'view.desktop.TaskBar_home',
+        homeLabel: 'view.desktop.TopBar_homeBtnLabel',
+        workSwitch: 'view.desktop.TaskBar_work',
+        searchField: 'view.desktop.TopBar_searchField',
+        search: 'view.desktop.TaskBar_search',
+        sortGrid: 'view.desktop.TaskBar_Sort_grid',
+        sortVertical: 'view.desktop.TaskBar_Sort_vertical',
+        sortHorizontal: 'view.desktop.TaskBar_Sort_horizontal',
+        showMeasures: 'view.desktop.TaskBar_showMeasures',
+        showAnnotations: 'view.desktop.TaskBar_showAnnotations',
+        concordanceNav: 'view.desktop.TaskBar_concordanceNav',
+        about: 'view.desktop.TaskBar_about',
+        help: 'view.desktop.TaskBar_help',
+        languageSwitch: 'view.desktop.TaskBar_lang',
+        restore: 'view.desktop.Desktop_Restore',
+        minimize: 'view.desktop.Desktop_Minimize',
+        maximize: 'view.desktop.Desktop_Maximize',
+        close: 'view.desktop.Desktop_Close',
+        closeOther: 'view.desktop.Desktop_CloseOther',
+        closeAll: 'view.desktop.Desktop_CloseAll'
+    },
 
     // ExtJS's own component-rendering internals (Ext.util.Renderable#finishRender,
     // used whenever a NEW child component is created/rendered lazily - e.g. a
@@ -57,53 +96,408 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     init: function() {
         this.patchGetElementByIdForShadowRoots();
 
+        this.view = null;
         this.desktop = null;
+        this.navigator = null;
+        this.windows = new Ext.util.MixedCollection();
 
         this.control({
-            'desktop': {
+            'ediromDesktop': {
                 afterrender: this.onDesktopRendered
-            },
-            'topbar button[action=openSearchWindow]': {
-                click: this.onOpenSearchWindow
-            },
-            'topbar #searchTextFieldTop': {
-                specialkey: this.onSpecialKey
             }
         });
     },
 
-    onDesktopRendered: function(desktop) {
-        this.desktop = desktop;
+    onDesktopRendered: function(view) {
+        var me = this;
+        var app = me.application;
+        var desktop = me.desktop = view.element;
+        me.view = view;
 
-        this.desktop.taskbar.addListener('openConcordanceNavigator', this.openConcordanceNavigator, this);
-        
+        desktop.labels = me.getLabels();
+        desktop.lang = window.getLanguage();
+        desktop.showClock = true;
+        desktop.measuresVisible = sessionStorage.getItem('edirom-measures-visible-global') === 'true';
+        desktop.annotationsVisible = sessionStorage.getItem('edirom-annotations-visible-global') === 'true';
+        desktop.activeWork = app.activeWork || null;
+
+        var works = Ext.getStore('Works');
+        works.on('load', me.updateWorks, me);
+        if (!works.isLoading()) me.updateWorks();
+        app.on('workSelected', function(workId) { desktop.activeWork = workId; });
+
+        var handlers = {
+            'window-focus-request': me.onWindowFocusRequest,
+            'window-minimize-request': me.onWindowMinimizeRequest,
+            'window-restore-request': me.onWindowRestoreRequest,
+            'window-maximize-request': me.onWindowMaximizeRequest,
+            'window-close-request': me.onWindowCloseRequest,
+            'active-window-change': me.onActiveWindowChange,
+            'sort-windows-request': me.onSortWindowsRequest,
+            'toggle-measures-global': function(detail) { me.setGlobalVisibility('measures', detail.visible); },
+            'toggle-annotations-global': function(detail) { me.setGlobalVisibility('annotations', detail.visible); },
+            'concordance-navigator-toggle-request': me.openConcordanceNavigator,
+            'open-help-request': me.openHelp,
+            'open-about-request': me.openAbout,
+            'search-request': function(detail) { me.openSearchWindow(detail.term); },
+            'work-select': function(detail) { app.selectWork(detail.workId); },
+            'language-switch-request': me.switchLanguage,
+            'desktop-resize': me.positionNavigator
+        };
+        Ext.Object.each(handlers, function(type, handler) {
+            desktop.addEventListener(type, function(event) {
+                handler.call(me, event.detail || {});
+            });
+        });
+
+        me.createNavigator();
+
         var concNavOnStart = window.getPreference('concordance_navigator_open_on_start', true);
-        var hasConnectionParam = this.application.activeConnection != null;
+        var hasConnectionParam = app.activeConnection != null;
         if ((concNavOnStart != null && concNavOnStart) || hasConnectionParam) {
-            Ext.defer(this.openConcordanceNavigator, 1000, this);
+            Ext.defer(me.openConcordanceNavigator, 1000, me);
         }
-
-        this.desktop.taskbar.addListener('openHelp', this.openHelp, this);
-        this.desktop.taskbar.addListener('openAbout', this.openAbout, this);
-        //TODO: Suchfenster einbauen
-        /*this.desktop.taskbar.addListener('openSearchWindow', this.openSearchWindow, this);*/
-
-        this.desktop.taskbar.addListener('sortGrid', this.sortGrid, this);
-        this.desktop.taskbar.addListener('sortHorizontally', this.sortHorizontally, this);
-        this.desktop.taskbar.addListener('sortVertically', this.sortVertically, this);
     },
 
-    addWindowToActiveDesktop: function(window) {
-        this.desktop.addWindow(window);
+    getLabels: function() {
+        var labels = {};
+        Ext.Object.each(this.labelKeys, function(name, key) {
+            labels[name] = getLangString(key);
+        });
+        return labels;
+    },
+
+    updateWorks: function() {
+        var works = [];
+        Ext.getStore('Works').each(function(work) {
+            works.push({ id: work.get('id'), title: work.get('title') });
+        });
+        this.desktop.works = works;
+    },
+
+    createNavigator: function() {
+        var me = this;
+        var navigator = me.navigator = Ext.create('EdiromOnline.view.navigator.Navigator');
+        me.navigatorHeight = navigator.height;
+        me.cappedNavigatorHeight = null;
+        navigator.on('resize', me.onNavigatorResize, me);
+        navigator.show();
+        me.syncNavigatorPlaceholder();
+        me.positionNavigator();
+    },
+
+    onNavigatorResize: function(navigator, width, height) {
+        if (height !== this.cappedNavigatorHeight) this.navigatorHeight = height;
+        this.syncNavigatorPlaceholder();
+    },
+
+    syncNavigatorPlaceholder: function() {
+        var navigator = this.navigator;
+        if (!navigator || !this.view.navigatorPlaceholder) return;
+        var style = this.view.navigatorPlaceholder.style;
+        style.width = navigator.getWidth() + 'px';
+        style.height = navigator.getHeight() + 'px';
+    },
+
+    positionNavigator: function() {
+        var navigator = this.navigator;
+        if (!navigator || !navigator.rendered) return;
+        var region = this.view.workspace.getEl().getViewRegion();
+        var height = Math.min(this.navigatorHeight, region.bottom - region.top);
+        if (navigator.getHeight() !== height) {
+            this.cappedNavigatorHeight = height;
+            navigator.setHeight(height);
+        }
+        navigator.setPagePosition(region.right - navigator.getWidth(), region.top);
+        this.syncWinBoxHostBounds();
     },
 
     getActiveDesktop: function() {
-        return this.desktop;
+        return this;
+    },
+
+    addWindowToActiveDesktop: function(win) {
+        return this.addWindow(win);
+    },
+
+    getSizeAndPosition: function(maxWidth, maxHeight) {
+        return this.desktop.getSizeAndPosition(maxWidth, maxHeight);
+    },
+
+    getUsableSize: function() {
+        return this.desktop.getUsableSize();
+    },
+
+    getTopBarHeight: function() {
+        return this.desktop.getTopBarHeight();
+    },
+
+    getWindow: function(id) {
+        return this.windows.get(id);
+    },
+
+    getActiveWindowsSet: function(excludeSpecial) {
+        var me = this;
+        var set = new Ext.util.MixedCollection();
+        me.windows.each(function(win) {
+            if (!excludeSpecial || me.getKind(win) === null) set.add(win.id, win);
+        });
+        return set;
+    },
+
+    getGridPositioning: function(numWins) {
+        return this.getPositioning('grid', numWins);
+    },
+
+    getHorizontalPositioning: function(numWins) {
+        return this.getPositioning('horizontal', numWins);
+    },
+
+    getVerticalPositioning: function(numWins) {
+        return this.getPositioning('vertical', numWins);
+    },
+
+    getPositioning: function(mode, numWins) {
+        var positions = {};
+        Ext.Array.each(this.desktop.getLayout(mode, numWins), function(rect, i) {
+            positions['win_' + i] = rect;
+        });
+        return positions;
+    },
+
+    getWorkspacePageXY: function() {
+        return this.view.workspace.getEl().getXY();
+    },
+
+    addWindow: function(win) {
+        var me = this;
+        var kind = me.getKind(win);
+        if (me.windows.get(win.id)) return win;
+
+        me.windows.add(win.id, win);
+        if (!win.isExtWindowProxy) me.view.workspace.add(win);
+
+        me.desktop.registerWindow({
+            id: win.id,
+            title: win.title || '',
+            kind: kind,
+            special: kind !== null,
+            hiddenInTaskbar: win.hideTaskButton || Ext.Array.contains(me.hiddenInTaskbarKinds, kind),
+            hidden: !win.isVisible(),
+            minimized: win.minimized === true,
+            maximized: win.maximized === true,
+            rect: me.getRect(win)
+        });
+
+        if (!win.isExtWindowProxy) {
+            win.on({
+                show: me.onWindowShow,
+                hide: me.onWindowHide,
+                activate: me.onWindowActivate,
+                minimize: me.onWindowMinimize,
+                maximize: me.onWindowBoxChange,
+                restore: me.onWindowBoxChange,
+                move: me.onWindowBoxChange,
+                resize: me.onWindowBoxChange,
+                titlechange: me.onWindowTitleChange,
+                destroy: me.onWindowDestroy,
+                scope: me
+            });
+        }
+        return win;
+    },
+
+    getRect: function(win) {
+        if (win.useWinBoxChrome && win._winbox) {
+            return {
+                x: win._winbox.x || 0,
+                y: win._winbox.y || 0,
+                width: win._winbox.width,
+                height: win._winbox.height
+            };
+        }
+        if (win.isExtWindowProxy) {
+            var position = win.getPosition();
+            var size = win._winbox ? { width: win._winbox.width, height: win._winbox.height } : {};
+            return { x: position[0], y: position[1], width: size.width, height: size.height };
+        }
+        if (!win.rendered) return null;
+        var position = win.getPosition(true);
+        var size = win.getSize();
+        return { x: position[0], y: position[1], width: size.width, height: size.height };
+    },
+
+    isRegistered: function(win) {
+        return !!this.desktop && this.desktop.hasWindow(win.id);
+    },
+
+    updateProxyWindow: function(win, changes) {
+        if (this.isRegistered(win)) this.desktop.updateWindow(win.id, changes);
+    },
+
+    onWindowShow: function(win) {
+        if (!this.isRegistered(win)) return;
+        win.minimized = false;
+        this.desktop.updateWindow(win.id, { hidden: false, minimized: false, rect: this.getRect(win) });
+    },
+
+    onWindowHide: function(win) {
+        if (!this.isRegistered(win)) return;
+        this.desktop.updateWindow(win.id, { hidden: true, minimized: win.minimized === true });
+    },
+
+    onWindowActivate: function(win) {
+        if (!this.isRegistered(win) || !win.isVisible()) return;
+        this.activeWindowId = win.id;
+        this.desktop.setActiveWindow(win.id);
+    },
+
+    onWindowMinimize: function(win) {
+        win.minimized = true;
+        win.hide();
+    },
+
+    onWindowBoxChange: function(win) {
+        if (!this.isRegistered(win) || win.isDestroyed) return;
+        this.desktop.updateWindow(win.id, { maximized: win.maximized === true, rect: this.getRect(win) });
+    },
+
+    onWindowTitleChange: function(win, title) {
+        if (this.isRegistered(win)) this.desktop.updateWindow(win.id, { title: title || '' });
+    },
+
+    onWindowDestroy: function(win) {
+        this.windows.removeAtKey(win.id);
+        if (this.desktop && this.desktop.hasWindow(win.id)) this.desktop.unregisterWindow(win.id);
+    },
+
+    onActiveWindowChange: function(detail) {
+        var previous = detail.previousId && this.windows.get(detail.previousId);
+        var active = detail.id && this.windows.get(detail.id);
+        this.activeWindowId = detail.id || null;
+        if (previous && previous.rendered) {
+            previous.addCls(this.inactiveWindowCls);
+            previous.removeCls(this.activeWindowCls);
+        }
+        if (active && active.rendered) {
+            active.addCls(this.activeWindowCls);
+            active.removeCls(this.inactiveWindowCls);
+        }
+    },
+
+    onWindowFocusRequest: function(detail) {
+        var win = this.windows.get(detail.id);
+        if (!win) return;
+        if (win.minimized || win.hidden) win.show();
+        else win.toFront();
+    },
+
+    onWindowMinimizeRequest: function(detail) {
+        var win = this.windows.get(detail.id);
+        if (win) win.minimize();
+    },
+
+    onWindowRestoreRequest: function(detail) {
+        var win = this.windows.get(detail.id);
+        if (!win) return;
+        if (win.isVisible()) {
+            win.restore();
+            win.toFront();
+        } else {
+            win.show();
+        }
+    },
+
+    onWindowMaximizeRequest: function(detail) {
+        var win = this.windows.get(detail.id);
+        if (!win) return;
+        win.maximize();
+        win.toFront();
+    },
+
+    onWindowCloseRequest: function(detail) {
+        var me = this;
+        Ext.Array.each(detail.ids || [], function(id) {
+            var win = me.windows.get(id);
+            if (win) win.close();
+        });
+    },
+
+    onSortWindowsRequest: function(detail) {
+        var me = this;
+        Ext.Object.each(detail.rects || {}, function(id, rect) {
+            var win = me.windows.get(id);
+            if (!win) return;
+            me.arrangeWindow(win, rect);
+        });
+    },
+
+    arrangeWindow: function(win, rect) {
+        if (win.useWinBoxChrome && win._winbox) {
+            this.arrangeWinBoxWindow(win, rect);
+            return;
+        }
+        if (win.isExtWindowProxy) {
+            win.animate({ to: rect });
+            this.updateProxyWindow(win, { rect: rect });
+            return;
+        }
+        var contentConfig = win.getContentConfig ? win.getContentConfig() : null;
+        win.animate({
+            duration: 1000,
+            to: { left: rect.x, top: rect.y, width: rect.width, height: rect.height },
+            listeners: {
+                afteranimate: function() {
+                    if (contentConfig) win.setContentConfig(contentConfig);
+                }
+            }
+        });
+    },
+
+    setGlobalVisibility: function(type, visible) {
+        sessionStorage.setItem('edirom-' + type + '-visible-global', visible);
+        this.application.getController('ToolsController').setGlobalVisibility(type);
+    },
+
+    switchLanguage: function() {
+        var lang = window.getLanguage() === 'de' ? 'en' : 'de';
+        window.setCookie('edirom-language', lang);
+        if (window.confirm(window.getLangString('controller.desktop.TaskBar_confirmReload'))) {
+            window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname
+                + '?edition=' + this.application.getActiveEdition() + '&work=' + this.application.activeWork;
+        }
+    },
+
+    getKind: function(win) {
+        return win.kind || this.windowKinds[Ext.getClassName(win)] || null;
+    },
+
+    findWindowByKind: function(kind) {
+        var me = this;
+        return me.windows.findBy(function(win) { return me.getKind(win) === kind; });
     },
 
     openConcordanceNavigator: function() {
         var me = this;
-        me.desktop.openConcordanceNavigator();
+        var win = me.findWindowByKind('concordance-navigator');
+        if (!win) {
+            win = Ext.create('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator');
+            var size = me.view.workspace.getEl().getViewSize();
+            var bodyHeight = size.height - 70;
+            var x = size.width - win.width - 5;
+            var y = me.navigator.getHeight() + 10;
+            if (bodyHeight - win.height < y) {
+                x = size.width - me.navigator.getWidth() - win.width - 10;
+                y = bodyHeight - win.height - 5;
+            }
+            Ext.apply(win, { x: x, y: y });
+            me.addWindow(win);
+            win.show();
+        } else if (win.isVisible()) {
+            win.hide();
+        } else {
+            win.show();
+        }
     },
 
     // Shared factory behind openHelp/openAbout/openSearch/openAudioView. Owns
@@ -145,7 +539,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         // the clicked window before we read the maximum z-index.
         var maxExtZ = function() {
             var maxZ = 0;
-            desktop.getActiveWindowsSet().each(function(w) {
+            me.getActiveWindowsSet().each(function(w) {
                 if (w && w.el && w.el.dom) {
                     var z = parseInt(w.el.getStyle('z-index'), 10);
                     if (!isNaN(z) && z > maxZ) maxZ = z;
@@ -189,7 +583,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 // window sitting below an explicitly-focused one (e.g. clicking
                 // Help while Search was raised) would not bring it to the front.
                 if (winboxEl) {
-                    desktop.getActiveWindowsSet().each(function(w) {
+                    me.getActiveWindowsSet().each(function(w) {
                         if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
                             w._winbox.focus();
                             return false;
@@ -233,7 +627,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
         if (opts.findExisting) {
             var existing = null;
-            desktop.getActiveWindowsSet().each(function(w) {
+            me.getActiveWindowsSet().each(function(w) {
                 if (opts.findExisting(w)) { existing = w; return false; }
             });
             if (existing) {
@@ -250,7 +644,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             // the topbar, left of the navigator) so the window can not cover
             // and block the topbar, taskbar or navigator.
             var usable = desktop.getUsableSize();
-            var bodyXY = desktop.body.getXY();
+            var bodyXY = me.getWorkspacePageXY();
             host.style.position = 'fixed';
             host.style.top = bodyXY[1] + 'px';
             host.style.left = bodyXY[0] + 'px';
@@ -276,6 +670,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             var winTitle = opts.title;
 
             var proxy = {
+                id: winId,
                 isWindow: true,
                 isExtWindowProxy: true,
                 hidden: false,
@@ -283,8 +678,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 maximized: false,
                 active: true,
                 title: winTitle,
+                kind: opts.proxyExtras && opts.proxyExtras.kind,
                 iconCls: undefined,
-                taskButton: null,
                 animateTarget: null,
                 on: function() { return this; },
                 un: function() { return this; },
@@ -301,19 +696,19 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 isVisible: function() {
                     return !this.hidden;
                 },
-                // sortHorizontally/sortVertically/sortGrid pass page-absolute x/y
-                // (the same coordinate space real ExtJS windows use), but WinBox's
-                // own move() expects coordinates relative to the WinBox host
-                // element (#ediromWindowsHost, positioned at desktop.body's page
-                // XY) -> translate by subtracting the host's current page position.
+                // Layout coordinates are relative to the workspace, which is also
+                // the origin of the WinBox host.
                 setPosition: function(x, y) {
                     if (this._winbox) {
-                        var bodyXY = desktop.body.getXY();
-                        this._winbox.move(x - bodyXY[0], y - bodyXY[1]);
+                        this._winbox.move(x, y);
+                        me.updateProxyWindow(this, { rect: me.getRect(this) });
                     }
                 },
                 setSize: function(width, height) {
-                    if (this._winbox) this._winbox.resize(width, height);
+                    if (this._winbox) {
+                        this._winbox.resize(width, height);
+                        me.updateProxyWindow(this, { rect: me.getRect(this) });
+                    }
                 },
                 // WinBox windows have no facsimile/viewport state worth
                 // preserving across a re-arrange (unlike source/facsimile
@@ -341,6 +736,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     var el = getShadowEl(winId);
                     if (el) el.style.display = 'none';
                     this.hidden = true;
+                    me.updateProxyWindow(this, { hidden: true });
                 },
                 show: function(animTarget, callback) {
                     var el = getShadowEl(winId);
@@ -352,11 +748,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     }
                     this.hidden = false;
                     this.minimized = false;
+                    this.maximized = false;
                     this.active = true;
-                    if (this.taskButton) {
-                        this.taskButton.toggle(true);
-                        this.taskButton.enable();
-                    }
+                    me.updateProxyWindow(this, { hidden: false, minimized: false, maximized: false });
+                    if (me.desktop && me.desktop.hasWindow(this.id)) me.desktop.setActiveWindow(this.id);
                     if (typeof callback === 'function') callback();
                 },
                 restore: function() {
@@ -369,26 +764,28 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     this.hidden = true;
                     this.minimized = true;
                     this.active = false;
-                    if (this.taskButton) {
-                        this.taskButton.toggle(false);
-                        this.taskButton.enable();
-                    }
+                    me.updateProxyWindow(this, { hidden: true, minimized: true });
                 },
-                maximize: function() {},
+                maximize: function() {
+                    if (proxy._winbox && proxy._winbox.maximize) proxy._winbox.maximize();
+                    this.maximized = true;
+                    me.updateProxyWindow(this, { maximized: true });
+                },
                 toFront: function() {
                     var el = getShadowEl(winId);
                     if (el) el.style.display = '';
                     raiseHostAboveExt();
                     if (proxy._winbox && proxy._winbox.focus) proxy._winbox.focus();
+                    this.active = true;
+                    if (me.desktop && me.desktop.hasWindow(this.id)) me.desktop.setActiveWindow(this.id);
                 },
                 close: function() {
+                    if (this._closing) return;
+                    this._closing = true;
                     var el = getShadowEl(winId);
-                    if (el) el.remove();
-                    if (desktop && this.taskButton) {
-                        desktop.getActiveWindowsSet().remove(this);
-                        desktop.taskbar.removeTaskButton(this.taskButton);
-                        desktop.updateActiveWindow();
-                    }
+                    if (this._winbox && this._winbox.close) this._winbox.close();
+                    else if (el) el.remove();
+                    me.onWindowDestroy(this);
                 },
                 destroy: function() { this.close(); }
             };
@@ -415,7 +812,8 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 onfocus: function() {
                     proxy.active = true;
                     raiseHostAboveExt();
-                    if (proxy.taskButton) proxy.taskButton.toggle(true);
+                    me.updateProxyWindow(proxy, { hidden: false, minimized: false, rect: me.getRect(proxy) });
+                    if (me.desktop && me.desktop.hasWindow(proxy.id)) me.desktop.setActiveWindow(proxy.id);
                 },
                 onblur: function() {
                     // Do NOT set proxy.active = false here.
@@ -431,14 +829,20 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     proxy.hidden = true;
                     proxy.minimized = true;
                     proxy.active = false;
-                    if (proxy.taskButton) proxy.taskButton.toggle(false);
+                    me.updateProxyWindow(proxy, { hidden: true, minimized: true });
                     return false; // prevent WinBox default minimize (strip at bottom)
                 },
                 onresize: function(width, height) {
+                    me.updateProxyWindow(proxy, { rect: me.getRect(proxy) });
                     if (opts.onResize) opts.onResize(width, height, winbox);
                 },
+                onmove: function() {
+                    me.updateProxyWindow(proxy, { rect: me.getRect(proxy) });
+                },
                 onclose: function() {
-                    proxy.close();
+                    if (proxy._closing) return;
+                    proxy._closing = true;
+                    me.onWindowDestroy(proxy);
                 }
             });
 
@@ -454,7 +858,9 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             if (winbox.focused && winbox.blur) winbox.blur();
             if (winbox.focus) winbox.focus();
 
-            desktop.addWebComponentWindow(proxy);
+            me.addWindow(proxy);
+            me.updateProxyWindow(proxy, { hidden: false, minimized: false, rect: me.getRect(proxy) });
+            me.desktop.setActiveWindow(proxy.id);
             raiseHostAboveExt();
 
             if (opts.onOpen) opts.onOpen(winbox, getShadowEl(winId), host, proxy);
@@ -492,6 +898,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
     wrapEdiromWindowInWinBox: function(win) {
         var me = this;
         var desktop = me.desktop;
+        if (desktop && !me.isRegistered(win)) me.addWindow(win);
 
         var host = document.getElementById('ediromWindowsHost');
         if (!host) {
@@ -502,7 +909,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
         var maxExtZ = function() {
             var maxZ = 0;
-            desktop.getActiveWindowsSet().each(function(w) {
+            me.getActiveWindowsSet().each(function(w) {
                 if (w && w.el && w.el.dom) {
                     var z = parseInt(w.el.getStyle('z-index'), 10);
                     if (!isNaN(z) && z > maxZ) maxZ = z;
@@ -540,7 +947,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 }
                 var inWinbox = !!winboxEl;
                 if (winboxEl) {
-                    desktop.getActiveWindowsSet().each(function(w) {
+                    me.getActiveWindowsSet().each(function(w) {
                         if (w && w._winbox && w._winbox.id === winboxEl.id && w._winbox.focus) {
                             w._winbox.focus();
                             return false;
@@ -603,7 +1010,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
 
         var doWrap = function() {
             var usable = desktop.getUsableSize();
-            var bodyXY = desktop.body.getXY();
+            var bodyXY = me.getWorkspacePageXY();
             host.style.position = 'fixed';
             host.style.top = bodyXY[1] + 'px';
             host.style.left = bodyXY[0] + 'px';
@@ -733,11 +1140,15 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     var size = computeBodySize(this, w, h);
                     setWinSize(size.w, size.h);
                     var currentWinbox = this;
+                    if (me.isRegistered(win)) me.desktop.updateWindow(win.id, { rect: me.getRect(win) });
                     Ext.defer(function() {
                         if (currentWinbox.body) {
                             setWinSize(currentWinbox.body.offsetWidth, currentWinbox.body.offsetHeight);
                         }
                     }, 0);
+                },
+                onmove: function() {
+                    if (me.isRegistered(win)) me.desktop.updateWindow(win.id, { rect: me.getRect(win) });
                 },
                 onclose: function() {
                     win._wbWrapperClosing = true;
@@ -877,6 +1288,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                     id: 'help-window-' + Date.now(),
                     title: getLangString('view.window.HelpWindow_Title'),
                     maxWidth: 750,
+                    proxyExtras: { kind: 'help' },
                     html: '<div style="overflow:auto;height:100%;"><div class="textViewContent" style="padding:10px;">' + response.responseText + '</div></div>',
                     onOpen: function(winbox, winboxEl, host) {
                         me.wireInPageAnchors(winboxEl, host);
@@ -894,6 +1306,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
             me.createWinBoxWindow({
                 id: 'about-window-' + Date.now(),
                 title: getLangString('view.window.about.AboutWindow_Title'),
+                proxyExtras: { kind: 'about' },
                 html: htmlContent,
                 onOpen: function(winbox, winboxEl, host) {
                     me.wireInPageAnchors(winboxEl, host);
@@ -1034,7 +1447,7 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 if (term && existing.runSearch) existing.runSearch(term);
                 if (existing.focusSearchField) existing.focusSearchField();
             },
-            proxyExtras: { isSearchProxy: true, hideTaskButton: true },
+            proxyExtras: { isSearchProxy: true, hideTaskButton: true, kind: 'search' },
             onOpen: function(winbox, winboxEl, host, proxy) {
                 var inputEl = winboxEl ? winboxEl.querySelector('.searchTextField') : null;
                 var btnEl = winboxEl ? winboxEl.querySelector('.doSearchBtn') : null;
@@ -1079,6 +1492,10 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
                 if (inputEl) inputEl.focus();
             }
         });
+    },
+
+    openSearchWindow: function(term) {
+        return this.openSearch(term);
     },
 
     // Audio window — rendered with the WinBox web component (mirrors openHelp /
@@ -1733,27 +2150,13 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         me.openAbout();
     },
 
-    cloneWinsCollectionWithoutMinimized: function(wins) {
-        var set = new Ext.util.MixedCollection();
-
-        wins.each(function(win) {
-            if(!win.minimized) set.add(win);
-        });
-
-        return set;
-    },
-
-    // The WinBox host element's on-screen bounds are only set once, when a
-    // WinBox window is first opened (see createWinBoxWindow). Refresh them
-    // here so proxy.setPosition's page-XY -> host-local conversion stays
-    // correct even if the desktop was resized since then.
+    // Keep the popup host aligned with the workspace as the component resizes.
     syncWinBoxHostBounds: function() {
-        var desktop = this.desktop;
         var host = document.getElementById('ediromWindowsHost');
         if (!host) return;
 
-        var usable = desktop.getUsableSize();
-        var bodyXY = desktop.body.getXY();
+        var usable = this.getUsableSize();
+        var bodyXY = this.getWorkspacePageXY();
 
         host.style.position = 'fixed';
         host.style.top = bodyXY[1] + 'px';
@@ -1764,293 +2167,46 @@ Ext.define('EdiromOnline.controller.desktop.Desktop', {
         host.style.bottom = 'auto';
     },
 
-    // sortHorizontally/sortVertically/sortGrid compute `to` as a desktop-relative
-    // {x,y,width,height} box and normally apply it via win.animate(...) - but a
-    // useWinBoxChrome window is rendered non-floating, straight into a WinBox
-    // body (see wrapEdiromWindowInWinBox), so it has no page position of its own
-    // to animate. Move/resize the WinBox shell instead (no animation - WinBox has
-    // none), then let the WinBox's own onresize handler resize the Ext content.
+    // Layout rectangles are workspace-relative, matching the WinBox host origin.
     arrangeWinBoxWindow: function(win, to) {
-        var desktop = this.desktop;
-        var bodyXY = desktop.body.getXY();
-        var contentConfig = win.getContentConfig();
-        win._winbox.move(to.x - bodyXY[0], to.y - bodyXY[1]);
+        var contentConfig = win.getContentConfig ? win.getContentConfig() : null;
+        win._winbox.move(to.x, to.y);
         win._winbox.resize(to.width, to.height);
-        win.setContentConfig(contentConfig);
+        if (contentConfig) win.setContentConfig(contentConfig);
+        if (this.isRegistered(win)) this.desktop.updateWindow(win.id, { rect: to });
+    },
+
+    getArrangeableWindowsSet: function() {
+        var wins = new Ext.util.MixedCollection();
+        this.windows.each(function(win) {
+            if (this.getKind(win) === null && win.isVisible() && !win.minimized) {
+                wins.add(win.id, win);
+            }
+        }, this);
+        return wins;
+    },
+
+    sortWindows: function(mode) {
+        this.syncWinBoxHostBounds();
+        var wins = this.getArrangeableWindowsSet();
+        if (!wins.getCount()) return;
+        var rects = this.desktop.getLayout(mode, wins.getCount());
+        var me = this;
+        wins.each(function(win, index) {
+            if (rects[index]) me.arrangeWindow(win, rects[index]);
+        });
     },
 
     sortHorizontally: function() {
-        var me = this;
-        var desktop = this.desktop;
-        this.syncWinBoxHostBounds();
-        var wins = desktop.getArrangeableWindowsSet();
-        wins = this.cloneWinsCollectionWithoutMinimized(wins);
-
-        if(wins == null || wins.length == 0)
-	        return;
-
-        var size = desktop.getUsableSize();
-
-        var left = 0;
-        var n = wins.length;
-		var w = size.width/n;
-
-		wins.each(function(win) {
-
-            var to = {
-                y: desktop.getTopBarHeight() + 2,
-                x: left + 3,
-                width: w - 6,
-                height: size.height - 4
-            };
-
-            if (win.useWinBoxChrome && win._winbox) {
-                me.arrangeWinBoxWindow(win, to);
-                left = left + w;
-                return;
-            }
-
-            var contentConfig = win.getContentConfig();
-
-            win.animate(Ext.apply({
-                duration: 1000,
-                listeners: {
-                    afteranimate: Ext.Function.bind(win.setContentConfig, win, [contentConfig])
-                },
-                to: to
-            }, true));
-
-			left = left + w;
-		});
+        this.sortWindows('horizontal');
     },
 
     sortVertically: function() {
-        var me = this;
-        var desktop = this.desktop;
-        this.syncWinBoxHostBounds();
-        var wins = desktop.getArrangeableWindowsSet();
-        wins = this.cloneWinsCollectionWithoutMinimized(wins);
-
-        if(wins == null || wins.length == 0)
-	        return;
-
-        var size = desktop.getUsableSize();
-
-        var top = desktop.getTopBarHeight();
-        var n = wins.length;
-		var h = size.height/n;
-
-		wins.each(function(win) {
-
-            var to = {
-                y: top + 2,
-                x: 3,
-                width: size.width - 6,
-                height: h - 4
-            };
-
-            if (win.useWinBoxChrome && win._winbox) {
-                me.arrangeWinBoxWindow(win, to);
-                top = top + h;
-                return;
-            }
-
-		  var contentConfig = win.getContentConfig();
-
-            win.animate(Ext.apply({
-                duration: 1000,
-                listeners: {
-                    afteranimate: Ext.Function.bind(win.setContentConfig, win, [contentConfig])
-                },
-                to: to
-            }, true));
-
-			top = top + h;
-		});
+        this.sortWindows('vertical');
     },
 
     sortGrid: function() {
-        var me = this;
-        var desktop = this.desktop;
-        this.syncWinBoxHostBounds();
-        var wins = desktop.getArrangeableWindowsSet();
-        wins = this.cloneWinsCollectionWithoutMinimized(wins);
-
-        if(wins == null || wins.length == 0)
-            return;
-
-        var size = desktop.getUsableSize();
-
-        var left = 0;
-        var top = desktop.getTopBarHeight();
-
-        var optArray = this.findOptimalLenBrt(wins.length);
-
-        wins.each(function(win) {
-            if (!win.isVisible() || win.maximized)
-                return;
-
-            if((left + (size.width / optArray[0])) > size.width) {
-			    top = top + (size.height / optArray[1]);
-				left = 0;
-			}
-
-            var to = {
-                y: top + 2,
-                x: left + 3,
-                width: size.width / optArray[0] - 6,
-                height: size.height / optArray[1] - 4
-            };
-
-            if (win.useWinBoxChrome && win._winbox) {
-                me.arrangeWinBoxWindow(win, to);
-                left = left + (size.width / optArray[0]);
-                return;
-            }
-
-            var contentConfig = win.getContentConfig();
-
-            win.animate(Ext.apply({
-                duration: 1000,
-                listeners: {
-                    afteranimate: Ext.Function.bind(win.setContentConfig, win, [contentConfig])
-                },
-                to: to
-            }, true));
-
-            left = left + (size.width / optArray[0]);
-        });
-    },
-    getGridPositioning: function(numWins) {
-        var desktop = this.desktop;
-        var size = desktop.getUsableSize();
-
-        var positions = {};
-
-        var left = 0;
-        var top = 0;
-
-        var optArray = this.findOptimalLenBrt(numWins);
-
-        for(var i = 0; i < numWins; i++) {
-
-            if((left + (size.width / optArray[0])) > size.width) {
-			    top = top + (size.height / optArray[1]);
-				left = 0;
-			}
-
-            positions['win_' + i] = {
-                y: top + 2,
-                x: left + 3,
-                width: size.width / optArray[0] - 6,
-                height: size.height / optArray[1] - 4
-            };
-
-            left = left + (size.width / optArray[0]);
-        }
-
-        return positions;
-    },
-    
-    getHorizontalPositioning: function(numWins) {
-        var desktop = this.desktop;
-        var size = desktop.getUsableSize();
-        var w = size.width/numWins;
-        
-        var positions = {};
-
-        var left = 0;
-        var top = 0;
-
-        for(var i = 0; i < numWins; i++) {
-
-            positions['win_' + i] = {
-                y: top + 2,
-                x: left + 3,
-                width: w - 6,
-                height: size.height - 4
-            };
-
-            left = left + w;
-        }
-
-        return positions;
-    },
-    
-    getVerticalPositioning: function(numWins) {
-        var desktop = this.desktop;
-        var size = desktop.getUsableSize();
-        var h = size.height/numWins;
-        
-        var positions = {};
-
-        var left = 0;
-        var top = 0;
-
-        for(var i = 0; i < numWins; i++) {
-
-            positions['win_' + i] = {
-                y: top + 2,
-                x: left + 3,
-                width: size.width - 6,
-                height: h - 4
-            };
-
-            top = top + h;
-        }
-
-        return positions;
-    },
-
-    findOptimalLenBrt: function(number){
-    	//finds optimal length breadth for each window [number = total windows]
-		if(number == 1)
-			return [1,1];
-
-		else if(number == 2)
-			return [2,1];
-
-		//number should be non prime
-		var isPrime = this.isPrime(number);
-
-		if(isPrime)
-			number = number+1;
-
-		//Length should be greater than breadth
-		var diff = number;
-		var j = 1;
-		var opti;
-		var optj;
-
-        for(var i = 1; i <= number/2; i++) {
-			if(number % i != 0)
-				continue;
-
-			j = number/i;
-
-			var tmpDiff = j - i;
-
-			if(tmpDiff < diff && tmpDiff>=0) {
-				diff = tmpDiff;
-				opti = i;
-				optj = j;
-			}
-		}
-
-        if(optj < opti)
-			return [opti,optj];
-
-		return [optj,opti];
-	 },
-
-    isPrime:function(number){
-    	for(var i = 2; i <= number / 2 + 1; i++) {
-			if(number % i == 0) {
-				return false;
-			}
-
-		}
-    	return true; 
+        this.sortWindows('grid');
     }
 });
 

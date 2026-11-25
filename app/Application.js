@@ -29,8 +29,6 @@ Ext.define('EdiromOnline.Application', {
         'ToolsController',
         'LinkController',
         'desktop.Desktop',
-        'desktop.TaskBar',
-        'desktop.TopBar',
         'navigator.Navigator',
         'window.AnnotationView',
         'window.HeaderView',
@@ -208,6 +206,11 @@ Ext.define('EdiromOnline.Application', {
         me.getController('PreferenceController').initPreferences(me.activeEdition);
         me.getController('LanguageController').initLangFile(me.activeEdition, 'de');
         me.getController('LanguageController').initLangFile(me.activeEdition, 'en');
+
+        // Document language for assistive technology and hyphenation; the value comes from
+        // the lang URL parameter, the edition preference or the 'en' fallback (see PreferenceController).
+        document.documentElement.lang = String(window.getLanguage()).replace(/[^a-zA-Z-]/g, '') || 'en';
+
         me.initDataStores();
 
         var app = Ext.create('EdiromOnline.view.desktop.App', {app: this});
@@ -266,7 +269,10 @@ Ext.define('EdiromOnline.Application', {
     selectEdition: function(editionId) {
         this.activeEdition = editionId;
         this.fireEvent('editionSelected', editionId);
-        window.open(window.location.pathname + '?edition=' + editionId, "_self");
+        var lang = this.getURLParameter('lang');
+        var query = 'edition=' + encodeURIComponent(editionId);
+        if (lang) query += '&lang=' + encodeURIComponent(lang);
+        window.open(window.location.pathname + '?' + query, '_self');
     },
     
     selectWork: function(workId) {
@@ -277,12 +283,12 @@ Ext.define('EdiromOnline.Application', {
     callFunctionOfEdition: function(win, fnName, callback, args) {
         var me = this;
 
-        var arguments = Ext.apply({workId: me.activeWork}, args);
+        var editionArgs = Ext.apply({workId: me.activeWork}, args);
         var editions = Ext.getStore('Editions');
         var editionIndex = editions.find('doc', me.activeEdition);
         var edition = editions.getAt(editionIndex);
         
-        edition[fnName](callback, arguments);
+        edition[fnName](callback, editionArgs);
 	},
 	
 	getURLParameter: function(parameter) {

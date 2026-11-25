@@ -80,9 +80,6 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
         me.html = `<edirom-concordance-navigator id="${me.id}-concordance-navigator" show-connection-button-label-data="${me.showConnectionButtonLabel}"></edirom-concordance-navigator>`;
 
         me.callParent();
-
-        // set attribute pressed of button for opening concordance navigator in task bar
-        document.getElementById('icon_openConcordanceNavigator').setAttribute('pressed', '');
     },
 
     applyWinBoxChrome: function() {
@@ -353,11 +350,7 @@ Ext.define('EdiromOnline.view.window.concordanceNavigator.ConcordanceNavigator',
         me.itemSelection.setValue(me.itemSlider.getEnhancedValue());
     }, 
     
-    close: function() {
-        // unset attribute pressed of button for opening concordance navigator in task bar
-        document.getElementById('icon_openConcordanceNavigator').removeAttribute('pressed');
-
-        this.callParent(arguments);
-
+    close: function () {
+        this.hide();
     }
 });
