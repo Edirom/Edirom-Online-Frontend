@@ -22,7 +22,6 @@ Ext.define('EdiromOnline.Application', {
     extend: 'Ext.app.Application',
     
     controllers: [
-        'AJAXController',
         'ConfigController',
         'CookieController',
         'LanguageController',
@@ -30,8 +29,6 @@ Ext.define('EdiromOnline.Application', {
         'ToolsController',
         'LinkController',
         'desktop.Desktop',
-        'desktop.TaskBar',
-        'desktop.TopBar',
         'navigator.Navigator',
         'window.about.AboutWindow',
         'window.AnnotationView',
@@ -48,9 +45,11 @@ Ext.define('EdiromOnline.Application', {
         'window.source.PageBasedView',
         'window.source.MeasureBasedView',
         'window.source.VerovioView',
+        'window.x3d.X3dView',
         'window.text.FacsimileView',
         'window.text.TextFacsimileSplitView',
-        'window.text.TextView'
+        'window.text.TextView',
+        'webComponents.EdiromConnectedWorkspace'
     ],
     
     models: [
@@ -80,11 +79,14 @@ Ext.define('EdiromOnline.Application', {
     launch: function() {
         var me = this;
 
+        // initialize methods from non-ExtJS controllers
+        window.initializeAJAX(this);
+
+        // load config and initialize application
         me.getController('ConfigController').loadConfig(function (config) {
             me.backendURL = config.backendURL;
             EdiromOnline.model.Edition.updateProxyUrl(me.backendURL);
             EdiromOnline.model.Work.updateProxyUrl(me.backendURL);
-            EdiromOnline.model.Annotation.updateProxyUrl(me.backendURL);
             me.initializeApplication();
         }, me);
     },
@@ -94,19 +96,15 @@ Ext.define('EdiromOnline.Application', {
 
         window.getActiveEdition = Ext.bind(this.getActiveEdition, this);
 
-        me.addEvents('workSelected');
+        me.addEvents('workSelected', 'concordanceConnectionChanged');
         
         var editionParam = me.getURLParameter('edition');
 
         if(editionParam == null) {
 
-            Ext.Ajax.request({
-                url: me.backendURL + "data/xql/getEditions.xql",
-                method: 'GET',
-                params: {},
-                success: Ext.bind(function(response){
-                    var editions = JSON.parse(response.responseText);
-                    
+            fetch(me.backendURL + "data/xql/getEditions.xql")
+                .then(response => response.json())
+                .then(editions => {
                     // If there is no edition in the backend
                     if(editions == null) {
                         let html = `<div class="container" style="margin: 8.75%;">
@@ -157,12 +155,12 @@ Ext.define('EdiromOnline.Application', {
                         html += '</ul></div>';
                         document.body.innerHTML = html;
                     }                 
+                })
+                .catch(error => {
+                    console.error('Error fetching editions:', error);
+                });
 
-                }, this),
-                async: true
-            });
-
-        }else {
+        } else {
             me.activeEdition = editionParam;
             me.loadEdiromForEdition();
         }
@@ -211,6 +209,11 @@ Ext.define('EdiromOnline.Application', {
         me.getController('PreferenceController').initPreferences(me.activeEdition);
         me.getController('LanguageController').initLangFile(me.activeEdition, 'de');
         me.getController('LanguageController').initLangFile(me.activeEdition, 'en');
+
+        // Document language for assistive technology and hyphenation; the value comes from
+        // the lang URL parameter, the edition preference or the 'en' fallback (see PreferenceController).
+        document.documentElement.lang = String(window.getLanguage()).replace(/[^a-zA-Z-]/g, '') || 'en';
+
         me.initDataStores();
 
         var app = Ext.create('EdiromOnline.view.desktop.App', {app: this});
@@ -269,7 +272,10 @@ Ext.define('EdiromOnline.Application', {
     selectEdition: function(editionId) {
         this.activeEdition = editionId;
         this.fireEvent('editionSelected', editionId);
-        window.open(window.location.pathname + '?edition=' + editionId, "_self");
+        var lang = this.getURLParameter('lang');
+        var query = 'edition=' + encodeURIComponent(editionId);
+        if (lang) query += '&lang=' + encodeURIComponent(lang);
+        window.open(window.location.pathname + '?' + query, '_self');
     },
     
     selectWork: function(workId) {
@@ -280,12 +286,12 @@ Ext.define('EdiromOnline.Application', {
     callFunctionOfEdition: function(win, fnName, callback, args) {
         var me = this;
 
-        var arguments = Ext.apply({workId: me.activeWork}, args);
+        var editionArgs = Ext.apply({workId: me.activeWork}, args);
         var editions = Ext.getStore('Editions');
         var editionIndex = editions.find('doc', me.activeEdition);
         var edition = editions.getAt(editionIndex);
         
-        edition[fnName](callback, arguments);
+        edition[fnName](callback, editionArgs);
 	},
 	
 	getURLParameter: function(parameter) {

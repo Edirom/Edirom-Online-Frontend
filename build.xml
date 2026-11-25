@@ -18,6 +18,9 @@
     <property name="backend.path" value="/exist/apps/Edirom-Online-Backend/"/>
     <property name="backend.url" value="${backend.protocol}://${backend.host}:${backend.port}${backend.path}"/>
 
+    <!-- info for WebSocket server (empty = WebSocket features disabled) -->
+    <property name="ws.url" value=""/>
+
     <!-- other properties -->
     <property name="project.version" value="1.5.0"/>
     <property name="project.app" value="Edirom-Online-Frontend"/>
@@ -82,6 +85,7 @@
             <filterset begintoken="@" endtoken="@">
                 <filter token="backend.url" value="${backend.url}"/>
                 <filter token="backend.path" value="${backend.path}"/>
+                <filter token="ws.url" value="${ws.url}"/>
             </filterset>
         </copy>
     </target>

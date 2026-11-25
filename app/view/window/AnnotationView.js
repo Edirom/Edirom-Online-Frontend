@@ -18,14 +18,14 @@
  */
 Ext.define('EdiromOnline.view.window.AnnotationView', {
     extend: 'EdiromOnline.view.window.View',
-    
+
     cls: 'annotationView',
-    
+
     requires: [
         'Ext.grid.Panel',
         /*'Ext.grid.PagingScroller',*/
         'Ext.ux.grid.FiltersFeature',
-        'EdiromOnline.model.Annotation',
+        /*'EdiromOnline.model.Annotation',*/
         'EdiromOnline.model.AnnotationParticipant',
         'EdiromOnline.view.utils.Lightbox',
         'EdiromOnline.view.window.annotationLayouts.AnnotationLayout1',
@@ -46,53 +46,38 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
        
         me.addEvents('showAnnotation');
 
+        me.addEvents('annotationsLoaded');
+
         me.activeSingleAnnotation = "";
 
-        me.list = Ext.create('Ext.grid.Panel', {
-            store: me.createStore(),
-            title: getLangString('view.window.AnnotationView_Title'),
-            bodyBorder: false,
-            border: '0 0 0 0',
-            cls: 'annotationList',
-            features: [{
-                ftype: 'filters',
-                encode: false,
-                local: true,
-                filters: []
-            }],
-            columns: [
-            	{
-                    header: getLangString('view.window.AnnotationView_No'),
-                    dataIndex: 'pos',
-                    width: 35
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_TitleLabel'),
-                    dataIndex: 'title',
-                    flex: 4,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Categories'),
-                    dataIndex: 'categories',
-                    flex: 2,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Priority'),
-                    dataIndex: 'priority',
-                    flex: 1,
-                    filter: true
-                },
-                {
-                    header: getLangString('view.window.AnnotationView_Sigla'),
-                    dataIndex: 'sigla',
-                    flex: 2,
-                    filter: true
-                }
-            ]
-        });
+        me.annotationsLoaded = false;
 
+        // Initialize components that don't depend on loaded annotation data
+        me.initializeIndependentComponents();
+
+        me.callParent();
+
+        me.on('afterrender', me.createToolbarEntries, me, {single: true});
+        me.on('afterrender', me.createMenuEntries, me, {single: true});
+
+        // IMPORTANT: Load annotations and create dependent components after render
+        me.on('afterrender', function() {
+            me.fireEvent('loadAnnotations', me);
+        }, me, {single: true});
+
+        me.window.on('loadInternalLink', me.loadInternalId, me);
+
+        me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
+        me.on('resize', me.resizePanels, me, {buffer: 100});
+
+    },
+
+    initializeIndependentComponents: function() {
+        var me = this;
+
+        /*
+         * Create the single annotation perspective
+         */
         me.participantsList = Ext.create('Ext.grid.Panel', {
             store: Ext.create('Ext.data.Store', {
                 model: 'EdiromOnline.model.AnnotationParticipant'
@@ -180,24 +165,12 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             ]
         });
 
+        // Initially add only the single view toolbar, list will be added after data loads
         me.items = [
-            me.list,
             me.singlePlusToolbar
         ];
-
-        me.callParent();
-
-        me.on('afterrender', me.createToolbarEntries, me, {single: true});
-        me.on('afterrender', me.createMenuEntries, me, {single: true});
-        me.on('show', me.loadStore, me, {single: true});
-
-        me.window.on('loadInternalLink', me.loadInternalId, me);
-
-        me.on('resize', me.calculateLimitingImageFactor, me, {buffer: 100});
-        me.on('resize', me.resizePanels, me, {buffer: 100});
-
-        me.list.on('itemdblclick', me.onItemDblClicked, me);
     },
+
 
     resizePanels: function() {
         var me = this;
@@ -282,31 +255,129 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         });
         me.bottomBar.add(me.closeAllButton);
 
-        
+
 
     },
 
-    createStore: function() {
+
+
+    getColumns: function(storeFields, emptyFields) {
         var me = this;
 
-        me.listStore = Ext.create('Ext.data.Store', {
-            model: 'EdiromOnline.model.Annotation',
-            autoLoad: false
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: getColumns for:');
+            console.log(storeFields);
+        }
+
+        // The flattened legacy fields are only delivered when the backend could not express the
+        // document's classification as taxonomy fields. Their absence is the signal to drop the
+        // columns entirely — there is no data behind them.
+        const storeFieldNames = storeFields.map(field =>
+            typeof field === 'string' ? field : field.name);
+        const legacyColumns = ['priority', 'categories'];
+
+        // default columns configuration
+        var columns = [
+            {
+                header: getLangString('view.window.AnnotationView_AnnotationID'),
+                dataIndex: 'id',
+                flex: 1,
+                hidden: true
+            },
+            {
+                header: getLangString('view.window.AnnotationView_No'),
+                dataIndex: 'pos',
+                cls: 'pos',
+                tdCls: 'pos',
+                width: 45
+            },
+            {
+                header: getLangString('view.window.AnnotationView_Sigla'),
+                dataIndex: 'sigla',
+                flex: 2,
+                filter: true
+            },
+            {
+                header: getLangString('view.window.AnnotationView_TitleLabel'),
+                dataIndex: 'title',
+                flex: 4,
+                filter: true
+            },
+            {
+                header: getLangString('view.window.AnnotationView_Priority') + ' (legacy)',
+                dataIndex: 'priority',
+                flex: 1,
+                filter: true
+            },
+            {
+                header: getLangString('view.window.AnnotationView_Category') + ' (legacy)',
+                dataIndex: 'categories',
+                flex: 2,
+                filter: true
+            }
+
+        ].filter(column =>
+            !legacyColumns.includes(column.dataIndex) || storeFieldNames.includes(column.dataIndex));
+
+        // save existing dataIndex entries as column names
+        const existingColumnNames = columns.map(column =>
+            column.dataIndex);
+
+        //iterate over storeFields to create missing grid columns
+        storeFields.forEach(field => {
+            if (!existingColumnNames.includes(typeof field === 'string' ? field : field.name)) {
+                // if existingColumnNames does not include the value of field or field.name
+                // create fieldObject
+                const fieldName = typeof field === 'string' ? field : field.name;
+                const fieldObject = {
+                    header: getLangString(fieldName),
+                    dataIndex: fieldName,
+                    renderer: me.createFieldRenderer(fieldName),
+                    flex: 1, //TODO evaluate filed content length to set more appropriate flex value
+                    filter: true,
+                    hidden: emptyFields ? emptyFields.includes(fieldName) : false
+                };
+                // push fieldObject to columns array
+                columns.push(fieldObject);
+            }
+            else {
+                // find columns entry with dataIndex === field
+                const fieldName = typeof field === 'string' ? field : field.name;
+                const existingColumn = columns.find(column => column.dataIndex === fieldName);
+                
+                if (existingColumn) {
+                    // if column.hidden === true leave as is
+                    // if column.hidden === undefined set to emptyFields.includes(field)
+                    if (existingColumn.hidden !== true) {
+                        existingColumn.hidden = emptyFields ? emptyFields.includes(fieldName) : false;
+                    }
+                }
+            }
+            
         });
 
-        me.listStore.getProxy().extraParams = {
-            uri: me.uri,
-            lang: getPreference('application_language'),
-            edition: EdiromOnline.getApplication().activeEdition
-        };
+        if(typeof(debug) !== 'undefined' && debug !== null && debug) {
+            console.log('view: AnnotationView: finished columns:');
+            console.log(columns);
+        }
 
-        return me.listStore;
+        return columns;
     },
 
-    loadStore: function() {
-        var me = this;
-        me.listStore.load();
+    createFieldRenderer: function(fieldName) {
+        // For fields with dots, create a custom renderer that accesses the data correctly
+        if (fieldName.includes('.')) {
+            return function(value, metaData, record) {
+                // Access the field value directly from record data using bracket notation
+                var data = record.data || record.raw;
+                return data && data[fieldName] ? data[fieldName] : '';
+            };
+        }
+        // For regular fields, return undefined to use default rendering
+        return undefined;
     },
+
+
 
     getWeightForInternalLink: function(uri, type, id) {
         var me = this;
@@ -338,10 +409,11 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
     showList: function() {
         var me = this;
 
-        if(me.getLayout().getActiveItem() != me.list)
+        if(me.list && me.getLayout().getActiveItem() != me.list)
             me.getLayout().setActiveItem(me.list);
 
-        var selection = me.list.getSelectionModel().getSelection();
+        if(me.list) {
+            var selection = me.list.getSelectionModel().getSelection();
 
         if(selection.length == 0) {
             if(me.activeSingleAnnotation != "") {
@@ -349,6 +421,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
                 me.list.getSelectionModel().select(activeIndex);
             }else
                 me.list.getSelectionModel().select(0);
+            }
         }
     },
 
@@ -672,30 +745,6 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
         me.calculateLimitingImageFactor();
     },
 
-    loadParticipantSingleContent: function() {
-        var me = this;
-
-        var contEl = me.el.getById(me.id + '_annotationParticipantsSingle');
-        var previewTxtData = contEl.query('input.previewTxtData');
-
-        if (previewTxtData.length == 0) return;
-
-        var txtData = previewTxtData[0].value;
-        var uri = txtData.match(/uri:(.*)__\$\$__/)[1];
-        var id = txtData.match(/__\$\$__participantId:(.*)/)[1];
-
-        window.doAJAXRequest('data/xql/getReducedDocument.xql?uri=' + uri + '&selectionId=' + id + '&subtreeRoot=div&idPrefix=' + me.id + '_',
-            'GET', 
-            {},
-            Ext.bind(function(response){
-                var contEl = this.el.getById(me.id + '_annotationParticipantsSingle');
-                var txtBox = new Ext.Element(contEl.query('div.txtBox')[0]);
-                txtBox.update(response.responseText);
-
-                contEl.query('#' + this.id + '_' + id)[0].scrollIntoView(txtBox);
-            }, me)
-        );
-    },
 
     previousParticipantSingle: function() {
         //TODO: console.log(arguments);
@@ -728,7 +777,7 @@ Ext.define('EdiromOnline.view.window.AnnotationView', {
             } break;
             case 'single': {
                 me.participantsPanel.getLayout().setActiveItem(me.participantsPanelSingle);
-                me.loadParticipantSingleContent();
+                me.fireEvent('loadParticipantSingleContent', me);
 
             } break;
             case 'list': {

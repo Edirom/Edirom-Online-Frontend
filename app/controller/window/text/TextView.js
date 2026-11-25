@@ -42,6 +42,7 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
         view.initialized = true;
 
         view.on('annotationsVisibilityChange', me.onAnnotationsVisibilityChange, me);
+        view.on('documentLoaded', me.onDocumentLoaded, me);
         view.on('gotoChapter', me.onGotoChapter, me);
 
         ToolsController.addAnnotationsVisibilityListener(view.id, Ext.bind(view.checkGlobalVisibility, view));
@@ -91,7 +92,8 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
             'GET',
             {
                 uri: view.uri,
-                lang: getPreference('application_language')
+                lang: getPreference('application_language'),
+                mode: 'taxonomies'
             },
             Ext.bind(function(response){
                 var me = this;
@@ -99,16 +101,29 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
 
                 data = Ext.JSON.decode(data);
 
-                var priorities = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['priorities']
-                });
-                var categories = Ext.create('Ext.data.Store', {
-                    fields: ['id', 'name'],
-                    data: data['categories']
-                });
+                // if taxonomies array is empty but categories and priorities are
+                // populated merge those to a taxonomies array
+                var taxonomies = data['taxonomies'] || [];
+                if (taxonomies.length === 0) {
+                    var categories = data['categories'] || [];
+                    var priorities = data['priorities'] || [];
+                    if (categories.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromCategory',
+                            label: 'ediromCategory',
+                            items: categories
+                        });
+                    }
+                    if (priorities.length > 0) {
+                        taxonomies.push({
+                            id: 'ediromPriority',
+                            label: 'ediromPriority',
+                            items: priorities
+                        });
+                    }
+                }
 
-                me.annotInfosLoaded(priorities, categories, view);
+                me.annotInfosLoaded(taxonomies, view);
             }, this)
         );
     },
@@ -120,33 +135,44 @@ Ext.define('EdiromOnline.controller.window.text.TextView', {
     onAnnotationsVisibilityChange: function(view, visible) {
         var me = this;
 
-        if(visible)
-            window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
-                'GET', 
-                {
-                    uri: view.uri
-                },
-                Ext.bind(function(response){
-                    var data = response.responseText;
-
-                    var annotations = Ext.create('Ext.data.Store', {
-                        fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'fn'],
-                        data: Ext.JSON.decode(data)
-                    });
-
-                    me.annotationsLoaded(annotations, view);
-                }, this)
-            );
-        else
+        if (!visible) {
             view.hideAnnotations();
+            return;
+        }
+
+        if (!view.textContentLoaded) return;
+
+        window.doAJAXRequest('data/xql/getAnnotationsInText.xql',
+            'GET',
+            {
+                uri: view.uri,
+                mode: 'taxonomies'
+            },
+            Ext.bind(function(response){
+                var data = response.responseText;
+
+                var annotations = Ext.create('Ext.data.Store', {
+                    fields: ['id', 'title', 'text', 'uri', 'plist', 'svgList', 'priority', 'categories', 'taxonomyClasses', 'fn'],
+                    data: Ext.JSON.decode(data)
+                });
+
+                if (view.annotationsVisible)
+                    me.annotationsLoaded(annotations, view);
+            }, this)
+        );
+    },
+
+    onDocumentLoaded: function(view) {
+        if (view.annotationsVisible)
+            this.onAnnotationsVisibilityChange(view, true);
     },
 
     annotationsLoaded: function(annotations, view) {
         view.showAnnotations(annotations);
     },
 
-    annotInfosLoaded: function(priorities, categories, view) {
-        view.setAnnotationFilter(priorities, categories);
+    annotInfosLoaded: function(taxonomies, view) {
+        view.setAnnotationFilter(taxonomies);
     },
 
     onGotoChapter: function(view, chapter) {

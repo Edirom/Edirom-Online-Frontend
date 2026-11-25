@@ -12,11 +12,6 @@ $window-ghost-opacity: 0.95;
 
 $button-default-color: #000000;
 
-.ediromDesktop .ux-wallpaper {
-	@include background-image(radial-gradient(center 70% , rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0)), linear-gradient(center top , #586E75, #839496) !important);
-	//background-color: black !important;
-}
-
 #navigator {
 	border-radius: 0 0 0 8px;
 	border-top: none;
@@ -173,10 +168,6 @@ $button-default-color: #000000;
 		box-shadow: 0 1px 2px #333333 inset;
 		@include background-image(linear-gradient-bevel(top,darken(#ffffff,5%)));
 		@include border-radius(5px);
-	}
-
-	.x-window-body > span > div:first-child > div:first-child {
-// 		display: none;		
 	}
 	
 	.x-btn-default-small {

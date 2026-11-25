@@ -16,6 +16,15 @@
 [submodule "resources/js/edirom-qr-code-scanner"]
 	path = resources/js/edirom-qr-code-scanner
 	url = https://github.com/Edirom/edirom-qr-code-scanner
+[submodule "resources/js/edirom-connected-workspace"]
+	path = resources/js/edirom-connected-workspace
+	url = https://github.com/Edirom/edirom-connected-workspace.git
+[submodule "resources/js/edirom-3d-viewer"]
+	path = resources/js/edirom-3d-viewer
+	url = https://github.com/Edirom/edirom-3d-viewer.git
+[submodule "resources/js/edirom-desktop"]
+	url = https://github.com/Edirom/edirom-desktop.git
+	path = resources/js/edirom-desktop
 [submodule "resources/js/edirom-authentication"]
 	path = resources/js/edirom-authentication
 	url = https://github.com/Edirom/edirom-authentication.git
