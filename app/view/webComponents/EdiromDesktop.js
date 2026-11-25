@@ -87,7 +87,7 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
             authentication.setAttribute('keycloak-client-id', keycloakClientId);
             authentication.setAttribute(
                 'keycloak-handler-src',
-                'https://cdn.jsdelivr.net/npm/@edirom/keycloak-handler@0.1.0/keycloak-handler.js'
+                'https://cdn.jsdelivr.net/gh/Edirom/edirom-keycloak-handler@v.1.0.0/keycloak-handler.js'
             );
         }
         actions.appendChild(authentication);
