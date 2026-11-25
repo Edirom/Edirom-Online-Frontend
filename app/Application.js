@@ -315,8 +315,8 @@ Ext.define('EdiromOnline.Application', {
             if (components['edirom_keycloak_handler']) {
                 // Dynamically load the keycloak handler script
                 var handlerScript = document.createElement('script');
-                handlerScript.src = components['edirom_keycloak_handler'].script || 'resources/js/edirom-keycloak-handler-v.1.0.0/keycloak-handler.js';
-                fetch(handlerScript.src).then((res) => {
+                handlerScript.src = components['edirom_keycloak_handler'].script || 'resources/js/edirom-keycloak-handler/keycloak-handler.js';
+                fetch(handlerScript.src).then((res) => {‚
                     if (res.ok) {
                         document.body.appendChild(handlerScript);
 
