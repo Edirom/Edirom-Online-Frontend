@@ -28,9 +28,7 @@ Ext.define('EdiromOnline.view.desktop.App', {
 
     requires: [
         'Ext.container.Viewport',
-        'EdiromOnline.view.desktop.Desktop',
-        'EdiromOnline.view.desktop.TaskBar',
-        'EdiromOnline.view.desktop.TopBar'
+        'EdiromOnline.view.webComponents.EdiromDesktop'
     ],
 
     isReady: false,
@@ -45,10 +43,15 @@ Ext.define('EdiromOnline.view.desktop.App', {
 
         me.mixins.observable.constructor.call(this, config);
 
+        // The desktop controller calls methods of <edirom-desktop> as soon as it renders.
+        var start = function () {
+            customElements.whenDefined('edirom-desktop').then(Ext.bind(me.init, me));
+        };
+
         if (Ext.isReady) {
-            Ext.Function.defer(me.init, 10, me);
+            Ext.Function.defer(start, 10);
         } else {
-            Ext.onReady(me.init, me);
+            Ext.onReady(start);
         }
     },
 
@@ -60,7 +63,7 @@ Ext.define('EdiromOnline.view.desktop.App', {
         }
 
         desktopCfg = me.getDesktopConfig();
-        me.desktop = new EdiromOnline.view.desktop.Desktop(desktopCfg);
+        me.desktop = Ext.create('EdiromOnline.view.webComponents.EdiromDesktop', desktopCfg);
 
         me.viewport = new Ext.container.Viewport({
             layout: 'fit',
@@ -76,15 +79,12 @@ Ext.define('EdiromOnline.view.desktop.App', {
     getDesktopConfig: function () {
 
         var me = this, cfg = {
-            app: me.app,
-            taskbarConfig: me.getTaskbarConfig(),
-            topbarConfig: me.getTopbarConfig()
+            app: me.app
         };
 
         Ext.apply(cfg, me.desktopConfig);
         Ext.apply(cfg, {
-            wallpaper: 'resources/wallpapers/Blue-Sencha.jpg',
-            wallpaperStretch: false
+            logo: 'resources/img/ViFE-logo-small-144x144-trans.png'
         });
         
         return cfg;
@@ -93,30 +93,6 @@ Ext.define('EdiromOnline.view.desktop.App', {
     createWindow: function(module) {
         var window = module.createWindow();
         window.show();
-    },
-
-    getTaskbarConfig: function () {
-        var me = this, cfg = {
-            app: me
-        };
-
-        Ext.apply(cfg, me.taskbarConfig);
-        Ext.apply(cfg, {
-            trayItems: [
-                { xtype: 'trayclock', flex: 1 }
-            ]
-        });
-
-        return cfg;
-    },
-    
-    getTopbarConfig: function () {
-        var me = this, cfg = {
-            app: me
-        };
-
-        Ext.apply(cfg, me.topbarConfig);
-        return cfg;
     },
 
     onReady : function(fn, scope) {
