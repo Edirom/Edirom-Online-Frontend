@@ -87,7 +87,7 @@ keycloak.client-id=edirom-online
 project.version=2.0.0
 ```
 
-The Keycloak settings are written to `keycloakURL`, `keycloakRealm`, and `keycloakClientId` in `config.json`. When all three are present, Edirom Online enables the Keycloak button and lazily loads the pinned `@edirom/keycloak-handler` module from its GitHub release via jsDelivr.
+The Keycloak settings are written to `keycloakURL`, `keycloakRealm`, and `keycloakClientId` in `config.json`. When all three are present, Edirom Online initializes the pinned Keycloak JavaScript adapter with PKCE and silent SSO. Access tokens stay in memory and can be retrieved by frontend API code through `edirom-authentication.getAccessToken()`.
 
 For an nginx deployment, add these values to the existing runtime `config.json`:
 
