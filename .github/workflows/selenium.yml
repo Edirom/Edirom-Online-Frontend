@@ -1,0 +1,85 @@
+name: Selenium tests
+
+# Builds Edirom Online from this frontend (the PR branch) and the backend's
+# develop branch, deploys EditionExample and runs the Selenium tests from
+# https://github.com/Edirom/Edirom-Online/tree/develop/tests/selenium
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BE_BRANCH: develop
+  EDITION_EXAMPLE_XAR: https://github.com/Edirom/EditionExample/releases/download/v0.2.1/EditionExample-0.2.1.xar
+
+jobs:
+
+  selenium:
+    name: Run Selenium tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Edirom-Online (docker compose setup and tests)
+        uses: actions/checkout@v7
+        with:
+          repository: Edirom/Edirom-Online
+          ref: develop
+
+      - name: Download edition XAR
+        run: |
+          curl -fsSL -o backend/autodeploy/EditionExample.xar "$EDITION_EXAMPLE_XAR"
+          ls -l backend/autodeploy
+
+      - name: Build and start Edirom Online
+        env:
+          # PRs from forks are built from the fork
+          FE_REPO: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
+          FE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          echo "Frontend: $FE_REPO ($FE_BRANCH), Backend: $BE_BRANCH"
+          docker compose up --build -d
+
+      - name: Wait until the backend has deployed all packages
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:8080/exist/rest/db/apps/edirom/edition-example/content/ediromEditions/edirom_edition_example.xml \
+              && curl -sf -o /dev/null http://localhost:8089/; then
+              echo "Edirom Online is ready"
+              exit 0
+            fi
+            echo "waiting for Edirom Online ..."
+            sleep 10
+          done
+          echo "**** timeout ... aborting ****"
+          docker compose logs
+          exit 1
+
+      - name: Install test dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install selenium pytest pytest-html
+
+      - name: Run tests
+        working-directory: tests/selenium
+        env:
+          HEADLESS: 1
+        run: ../../.venv/bin/pytest -v -rs --html=report.html --self-contained-html
+
+      - name: Upload test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: selenium-report
+          path: tests/selenium/report.html
+          if-no-files-found: warn
+
+      - name: Show container logs on failure
+        if: ${{ failure() }}
+        run: docker compose logs --tail=200
