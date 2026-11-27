@@ -75,7 +75,6 @@ Ext.define('EdiromOnline.view.webComponents.EdiromDesktop', {
         actions.slot = 'topbar-actions';
 
         var authentication = document.createElement('edirom-authentication');
-        authentication.setAttribute('backend-url', EdiromOnline.getApplication().backendURL);
 
         var configController = EdiromOnline.getApplication().getController('ConfigController');
         var keycloakUrl = configController.getConfig('keycloakURL');
